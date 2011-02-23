@@ -30,7 +30,7 @@ class Update:
         self.repo_db = dbapi.RepositoryDB()
 
     def update_repository(self, repo_name):
-        exceptions = ['info', 'libraries']
+        exceptions = ['info', 'libraries', '.git', '.svn']
         # fistly, drop the repo
         self.repo_db.drop_repo(repo_name)
         repo_path = os.path.join(cst.repos, repo_name)
