@@ -63,9 +63,9 @@ def export(variable, value):
 def opt(option, cmd_options, default_options):
     def decision(data_set):
         for o in data_set:
-            if len(o.split("-")) == 1 and o == option:
+            if o[0] != "-" and o == option:
                 return True
-            elif len(o.split("-")) > 1:
+            elif o[0] == "-":
                 if "".join(o.split("-")[1:]) == option:
                     return False
     for data_set in (cmd_options, default_options):
