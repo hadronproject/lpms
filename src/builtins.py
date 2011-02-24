@@ -216,8 +216,8 @@ def insexe(source, target):
 def insbin(source, target='/usr/bin'):
     return install_executable(source, prepare_target(target))
 
-def system(cmd):
-    return shelltools.system(cmd)
+def system(*cmd):
+    return shelltools.system(" ".join(cmd))
 
 def joinpath(*args):
     return "/".join(args)
