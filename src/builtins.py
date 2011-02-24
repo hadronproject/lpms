@@ -171,7 +171,7 @@ def apply_patch(patches, level, reverse):
         out.notify("applying patch %s" % out.color(basename(patch), "brightwhite"))
         ret = shelltools.system("patch --remove-empty-files --no-backup-if-mismatch %s -p%d -i \"%s\"" % 
                 (reverse, level, patch), show=False)
-        if ret: return True
+        if not ret: return False
 
 def patch(*args, **kwarg):
     level = 0; reverse = ""
@@ -185,7 +185,7 @@ def patch(*args, **kwarg):
         ptch = glob.glob(patch_dir+"/*"+cst.patch_suffix)
         if len(ptch) == 0:
             lpms.catch_error("no patch found in \'files\' directory.")
-        if not apply_patch(ptch, level, reverse):
+        if apply_patch(ptch, level, reverse) is not None:
             lpms.catch_error("patch failed")
         return 
 
@@ -207,7 +207,7 @@ def patch(*args, **kwarg):
                 if len(ptch) == 0:
                     lpms.catch_error("%s is an directory and it is not involve any patches." % patch_name)
                 patches += ptch
-    if not apply_patch(patches, level, reverse):
+    if apply_patch(patches, level, reverse) is not None:
         lpms.catch_error("patch failed")
 
 def insexe(source, target):
