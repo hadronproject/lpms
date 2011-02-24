@@ -221,3 +221,21 @@ def system(*cmd):
 
 def joinpath(*args):
     return "/".join(args)
+
+# output commands
+
+def notify(msg):
+    out.notify(msg)
+
+def warn(msg):
+    out.warn_notify(msg)
+
+def error(msg):
+    out.error(msg)
+
+def write(msg):
+    out.write(msg)
+
+def color(msg, color):
+    return out.color(msg, color)
+
