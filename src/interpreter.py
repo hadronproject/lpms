@@ -83,7 +83,8 @@ class Interpreter(object):
         out.normal("preparing source...")
         prepared_file = os.path.join(self.env.build_dir.split("source")[0],
                 ".prepared")
-        if os.path.isfile(prepared_file) and lpms.getopt("--resume-build"):
+        if os.path.isfile(prepared_file): 
+            #and lpms.getopt("--resume-build"):
             out.warn_notify("source already prepared.")
             return True
         self.run_stage("prepare")
