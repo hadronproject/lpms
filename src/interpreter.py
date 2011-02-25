@@ -48,7 +48,11 @@ class Interpreter(object):
 
     def run_func(self, func_name):
         def run_with_sandbox(func_name):
-            import catbox
+            try:
+                import catbo
+            except ImportError as err:
+                lpms.catch_error("catbox could not imported, please check it!")
+
             valid_dirs = utils.sandbox_dirs()
             valid_dirs.append(self.config.build_dir)
             for i in ('build_dir', 'install_dir'):
