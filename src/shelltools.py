@@ -26,6 +26,13 @@ import lpms
 from lpms import conf
 from lpms import out
 
+def binary_isexists(binary):
+    path = os.environ['PATH'].split(':')
+    for directory in path:
+        if os.path.exists(os.path.join(directory, binary)):
+            return True
+    return False
+
 def makedirs(target):
     try:
         if not os.access(target, os.F_OK):
