@@ -91,6 +91,8 @@ def set_environment_variables():
     export('CXXFLAGS', config.CXXFLAGS)
     export('LDFLAGS', config.LDFLAGS)
     export('JOBS', config.MAKEOPTS)
+    export('CC', config.CHOST+"-"+"gcc")
+    export('CXX', config.CHOST+"-"+"g++")
 
 def check_metadata(metadata):
     for tag in ('summary', 'license', 'homepage'):
