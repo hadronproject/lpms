@@ -22,6 +22,20 @@ from lpms import utils
 from lpms import out
 from lpms import shelltools
 
+def binutils_cmd(command):
+    try:
+        host = os.environ['HOST']
+    except KeyError:
+        out.warn_notify("HOST value does not defined in environment.")
+        return ''
+
+    cmd = "%s-%s" % (host, command)
+
+    if not shelltools.binary_isexists(cmd):
+        out.warn_notify("%s not found." % cmd)
+        return ''
+    return cmd
+
 def insdoc(*sources):
     return shelltools.install_readable(sources, prepare_target("/usr/share/doc/%s" % pkgname))
 
