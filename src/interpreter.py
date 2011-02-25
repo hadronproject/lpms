@@ -49,7 +49,7 @@ class Interpreter(object):
     def run_func(self, func_name):
         def run_with_sandbox(func_name):
             try:
-                import catbo
+                import catbox
             except ImportError as err:
                 lpms.catch_error("catbox could not imported, please check it!")
 
