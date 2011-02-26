@@ -15,12 +15,33 @@
 # You should have received a copy of the GNU General Public License
 # along with lpms.  If not, see <http://www.gnu.org/licenses/>.
 
+import os
 import glob
 import inspect
 
 from lpms import utils
 from lpms import out
 from lpms import shelltools
+
+def addflag(fn):
+    def wrapped(flag):
+        name = fn.__name__.split("_")[1].upper()
+        result = get_env(name)+" "+fn(flag)
+        os.environ[name] = result
+        return result
+    return wrapped
+
+@addflag
+def append_cflags(flag):
+    return flag
+
+@addflag
+def append_cxxflags(flag):
+    return flag
+
+@addflag
+def append_ldflags(flag):
+    return flag
 
 def binutils_cmd(command):
     try:
@@ -35,6 +56,26 @@ def binutils_cmd(command):
         out.warn_notify("%s not found." % cmd)
         return ''
     return cmd
+
+def delflag(fn):
+    def wrapped(flag):
+        name = fn.__name__.split("_")[1].upper()
+        result = " ".join(get_env(name).split(flag))
+        os.environ[name] = result
+        return result
+    return wrapped
+
+@delflag
+def del_cflags(flag):
+    return flag
+
+@delflag
+def del_cxxflags(flag):
+    return flag
+
+@delflag
+def del_ldflags(flag):
+    return flag
 
 def insdoc(*sources):
     return shelltools.install_readable(sources, prepare_target("/usr/share/doc/%s" % pkgname))
