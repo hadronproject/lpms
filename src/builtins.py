@@ -265,10 +265,7 @@ def patch(*args, **kwarg):
     if apply_patch(patches, level, reverse) is not None:
         lpms.catch_error("patch failed")
 
-def insexe(source, target):
-    return install_executable(source, prepare_target(target))
-
-def insbin(source, target='/usr/bin'):
+def insexe(source, target='/usr/bin'):
     return install_executable(source, prepare_target(target))
 
 def system(*cmd):
