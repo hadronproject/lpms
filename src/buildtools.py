@@ -103,6 +103,10 @@ def linstall(parameters='', arg='install'):
     if not shelltools.system(args):
         lpms.catch_error("listall failed.")
 
+def aclocal(*parameters):
+    if not shelltools.system("aclocal %s" % " ".join(parameters)):
+        lpms.catch_error("aclocal failed.")
+
 def autoconf(*parameters):
     if not shelltools.system("autoconf %s" % " ".join(parameters)):
         lpms.catch_error("autoconf failed.")
