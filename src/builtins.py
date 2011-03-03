@@ -93,9 +93,9 @@ def prepare_target(path):
         return os.path.join(install_dir, path)
 
 # FIXME: Is this good?
-def get(*libraries):
-    import __builtin__
-    __builtins__.update({"libraries": libraries})
+#def gt(*libraries, env=False):
+#    import __builtin__
+#    __builtins__.update({"libraries": libraries})
 
 def opt(option):
     return utils.opt(option, cmd_options, default_options)
