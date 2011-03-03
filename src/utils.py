@@ -17,6 +17,7 @@
 
 import re
 import os
+import sys
 import stat
 import hashlib
 
@@ -24,6 +25,18 @@ import lpms
 from lpms import out
 from lpms import conf
 from lpms import constants as cst
+
+def confirm(text):
+    turns = 5
+    while turns:
+        turns -= 1
+        out.warn(text+"["+out.color("yes", "green")+"/"+out.color("no", "red")+"]")
+        answer = sys.stdin.readline().strip()
+        if answer == "yes" or answer == "y" or answer == "":
+            return True
+        elif answer == "no" or answer == "n":
+            return False
+        out.write(out.color("Sorry, response " + answer + " not understood! yes/y or no/n\n", "red"))
 
 def parse_pkgname(script_name):
     pkgname = []; version = []
@@ -160,8 +173,7 @@ def metadata_parser(data):
     return info
 
 def import_script(script_path):
-    import builtins
-    objects = {"get": builtins.get}
+    objects = {}
     try:
         exec compile(open(script_path).read(), "error", "exec") in objects
     except SyntaxError, err:
