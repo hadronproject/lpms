@@ -20,13 +20,15 @@ import glob
 
 import lpms
 from lpms import constants as cst
+from lpms import internals
 from lpms.db import dbapi
 from lpms import utils
 from lpms import syncer
 from lpms import out
 
-class Update:
+class Update(internals.InternalFuncs):
     def __init__(self):
+        super(Update, self).__init__()
         self.repo_db = dbapi.RepositoryDB()
 
     def update_repository(self, repo_name):
@@ -47,8 +49,8 @@ class Update:
                 os.chdir(os.path.join(repo_path, category, my_pkg))
                 for pkg in glob.glob("*"+cst.spec_suffix):
                     script_path = os.path.join(repo_path, category, my_pkg, pkg)
-                    metadata = utils.metadata_parser(
-                            utils.import_script(script_path)["metadata"])
+                    self.import_script(script_path)
+                    metadata = utils.metadata_parser(self.env.metadata)
                     name, version = utils.parse_pkgname(pkg)
                     metadata.update({"name": name, "version": version})
                     if not "options" in metadata.keys():
