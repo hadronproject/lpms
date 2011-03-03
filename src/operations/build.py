@@ -41,6 +41,7 @@ class Build(internals.InternalFuncs):
         self.repo_db = dbapi.RepositoryDB()
         self.download_plan = []
         self.extract_plan = []
+        self.urls = []
         self.env.__dict__.update({"get": self.get, "cmd_options": [], "options": []})
         self.spec_file = None
         self.config = conf.LPMSConfig()
@@ -83,11 +84,12 @@ class Build(internals.InternalFuncs):
         return [o for o in opts if utils.opt(o, self.env.cmd_options, self.env.default_options)]
 
     def check_cache(self, url):
-        if os.path.isfile(os.path.join(self.config.src_cache, os.path.basename(url))):
-            return True
+        return os.path.isfile(
+                os.path.join(self.config.src_cache,
+                os.path.basename(url)))
 
-    def prepare_download_plan(self, urls, applied):
-        for url in urls:
+    def prepare_download_plan(self, applied):
+        for url in self.urls:
             self.extract_plan.append(url)
             if type(url) != tuple:
                 if self.check_cache(url):
@@ -98,6 +100,7 @@ class Build(internals.InternalFuncs):
                     continue
                 if url[0] in applied: self.download_plan.append(url[1])
         self.env.extract_plan = self.extract_plan
+        print self.download_plan
 
     def prepare_environment(self):
         """ Prepares self.environment """ 
@@ -135,7 +138,6 @@ class Build(internals.InternalFuncs):
             shelltools.touch(unpack_file)
             
     def parse_url_tag(self):
-        download_list = []
         def set_shortening(data, opt=False):
             for short in ('$name', '$version', '$fullname', '$my_fullname', '$my_name', '$my_version'):
                 try:
@@ -143,17 +145,16 @@ class Build(internals.InternalFuncs):
                 except KeyError:
                     pass
             if opt:
-                download_list.append((opt, data))
+                self.urls.append((opt, data))
             else:
-                download_list.append(data)
-            return download_list
+                self.urls.append(data)
 
         for i in self.env.src_url.split(" "):
             result = i.split("(")
             if len(result) == 1:
-                return set_shortening(result[0])
+                set_shortening(result[0])
             elif len(result) == 2:
-                return set_shortening(result[1], opt=True)
+                set_shortening(result[1], opt=True)
 
 def prepare_plan(pkgnames, instruct):
     # dependency resolotion will be here as well.
@@ -208,7 +209,6 @@ def prepare_plan(pkgnames, instruct):
         #for short in ('my_fullname', 'my_name', 'my_version', 'srcdir'):
         #    if short in opr.env.__dict__.keys():
         #        opr.env.__dict__[short] = local_env[short]
-        opr.prepare_download_plan(opr.parse_url_tag(), opr.env.applied)
         plan.append(opr.env.__dict__)
         
     return plan
@@ -240,8 +240,10 @@ def main(pkgnames, instruct):
             out.notify("sandbox is enabled")
         else:
             out.warn_notify("sandbox is disabled")
-        
+
         # fetch packages which are in download_plan list
+        opr.parse_url_tag()
+        opr.prepare_download_plan(opr.env.applied)
         if not fetcher.URLFetcher().run(opr.download_plan):
             lpms.catch_error("\nplease check the spec")
 
