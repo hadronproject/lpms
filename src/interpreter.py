@@ -23,27 +23,26 @@ import lpms
 from lpms import out
 from lpms import conf
 from lpms import utils
+from lpms import internals
 from lpms.exceptions import *
 from lpms.shelltools import touch
 from lpms import constants as cst
 
-class Interpreter(object):
+class Interpreter(internals.InternalFuncs):
     def __init__(self, script, env):
+        super(Interpreter, self).__init__()
         self.env = env
+        self.env.__setattr__("get", self.get)
         self.env.__setattr__("standart_procedure", True)
         self.script = script
         self.config = conf.LPMSConfig()
         for bi in ('builtins.py', 'buildtools.py'):
             self.import_script(os.path.join(cst.lpms_path, bi))
-        try:
-            self.env.__setattr__("libraries", self.env.__builtins__["libraries"])
-        except KeyError:
-            self.env.__setattr__("libraries", [])
         self.import_script(self.script)
         self.get_build_libraries()
 
     def get_build_libraries(self):
-        for lib in self.env.libraries:
+        for lib in self.libraries:
             self.import_script(os.path.join(cst.repos, self.env.repo, "libraries", lib+".py"))
 
     def run_func(self, func_name):
@@ -127,14 +126,14 @@ class Interpreter(object):
             lpms.terminate()
     
     def run_install(self):
-        out.normal("installing %s to %s" % (self.env.full_name, self.env.install_dir))
+        out.normal("installing %s to %s" % (self.env.fullname, self.env.install_dir))
         installed_file = os.path.join(self.env.build_dir.split("source")[0],
             ".installed")
         if os.path.isfile(installed_file) and lpms.getopt("--resume-build"):
             out.warn_notify("source already installed.")
             return True
         self.run_stage("install")
-        out.notify("%s/%s installed." % (self.env.category, self.env.full_name))
+        out.notify("%s/%s installed." % (self.env.category, self.env.fullname))
         if not os.path.isfile(installed_file):
             touch(installed_file)
         if self.env.stage == "install":
@@ -149,18 +148,15 @@ class Interpreter(object):
             # if it is exists, run it
             self.run_func(stage)
         else:
-            if len(self.env.libraries) == 0 and self.env.standart_procedure:
+            if len(self.libraries) == 0 and self.env.standart_procedure:
                 self.run_func("standard_"+stage)
                 # and now, search build libraries' configuration function
-            for lib in self.env.libraries:
+            for lib in self.libraries:
                 if self.env.standart_procedure and lib+"_"+stage in self.env.__dict__.keys():
                     self.run_func(lib+"_"+stage)
                 else:
                     if self.env.standart_procedure and (stage != "post_install" or stage != "post_remove"):
                         self.run_func("standard_"+stage)
-
-    def import_script(self, script_path):
-        exec compile(open(script_path).read(), "error", "exec") in self.env.__dict__
 
 def run(script, env):
     ipr = Interpreter(script, env)
@@ -183,3 +179,4 @@ def run(script, env):
             traceback.print_exc(err)
             out.error("an error occurred when running the %s function." % out.color(opr, "red"))
             lpms.terminate()
+    ipr.env.__dict__.clear()
