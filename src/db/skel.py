@@ -69,6 +69,7 @@ def repo_schema():
             repo text,
             category text,
             name text,
+            version text,
             build blob,
             runtime blob
         );
