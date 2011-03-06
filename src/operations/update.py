@@ -60,6 +60,22 @@ class Update(internals.InternalFuncs):
                             metadata["homepage"], metadata["license"], metadata["src_url"], metadata["options"])
                     repo, category, name, version, summary, homepage, _license, src_url, options = data
                     self.repo_db.add_pkg(data, commit=False)
+                    # add dependency mumbo-jumbo
+                    runtime = []; build = []
+                    if 'depends' in self.env.__dict__.keys():
+                            deps = utils.depends_parser(self.env.depends)
+                            if 'runtime' in deps.keys():
+                                runtime = deps['runtime']
+                            if 'build' in deps.keys():
+                                build = deps['build']
+                    dependencies = (repo, category, name, version, build, runtime)
+                    self.repo_db.add_depends(dependencies)
+                    # remove optional keys
+                    for key in ('depends', 'options'):
+                        try:
+                            del self.env.__dict__[key]
+                        except KeyError:
+                            pass
         self.repo_db.commit()
 
 def main(repo_name=None):
