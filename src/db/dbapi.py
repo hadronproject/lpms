@@ -41,7 +41,7 @@ class API(object):
     def get_repos(self):
         return self.db.get_repos()
 
-    def add_pkg(self, data, commit):
+    def add_pkg(self, data, commit=False):
         return self.db.add_pkg(data, commit)
 
     def drop_repo(self, repo_name):
@@ -100,11 +100,11 @@ class API(object):
     def get_options(self, pkgname, repo_name = None, pkg_category = None):
         return self.get_from_metadata("options", pkgname, repo_name, pkg_category)
 
-    def add_depends(self, data):
-        return self.db.add_depends(data)
+    def add_depends(self, data, commit=False):
+        return self.db.add_depends(data, commit)
 
-    def get_build_depends(self, repo_name, category, pkgname):
-        return self.db.get_depends("build", repo_name, category, pkgname)
+    def get_depends(self, repo_name, category, pkgname, version=None):
+        return self.db.get_depends(repo_name, category, pkgname, version)
 
     def get_runtime_depends(self, repo_name, category, pkgname):
         return self.db.get_depends("runtime", repo_name, category, pkgname)

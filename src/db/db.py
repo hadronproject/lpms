@@ -94,19 +94,25 @@ class PackageDatabase:
                     % ("repo", "category", "name"), (rname, category, name,))
         self.commit()
 
-    def add_depends(self, data):
-        for __data in data:
-            repo_name, category, name, build, runtime = __data
-            if self.get_depends(repo_name, category, name) is not None:
-                continue
-            self.cursor.execute('''insert into depends values (?, ?, ?, ?)''', 
-                    (repo_name, category, name, 
+    def add_depends(self, data, commit=True):
+        repo_name, category, name, version, build, runtime = data
+        if not self.get_depends(repo_name, category, name, version) is not None:
+            self.cursor.execute('''insert into depends values (?, ?, ?, ?, ?, ?)''', 
+                    (repo_name, category, name, version,
                     sqlite3.Binary(pickle.dumps(build, 1)),
                     sqlite3.Binary(pickle.dumps(runtime, 1))
                     ))
-        self.commit()
+        if commit:
+            self.commit()
 
-    def get_depends(self, _type, repo_name, category, name):
-        for deps in self.cursor.execute('''select %s from depends where repo=(?) and category=(?) and name=(?)''' % _type,
-                (repo_name, category, name,)):
-            return pickle.loads(deps[0])
+    def get_depends(self, repo_name, category, name, version=None):
+        data = self.cursor.execute('''select * from depends where repo=(?) and category=(?) and name=(?)''', 
+                (repo_name, category, name,))
+        if version is not None:
+            data = self.cursor.execute('''select * from depends where repo=(?) and category=(?) and name=(?) and version=(?)''', (
+                    repo_name, category, name, version,))
+
+        for deps in data:
+            result = {'runtime': pickle.loads(str(deps[4])),
+                    'build': pickle.loads(str(deps[5]))}
+            return result
