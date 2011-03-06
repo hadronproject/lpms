@@ -172,6 +172,20 @@ def metadata_parser(data):
             info["".join(tag)] = "".join(data)
     return info
 
+def depends_parser(depends):
+    deps = {}
+    for atom in depends.strip().split('\n'):
+        if len(atom.split('@')) == 2:
+            opt = atom.split('@')[0].strip()
+            deps[opt] = []; data = atom.split('@')[1]
+            if data != '\n' and data != '\t' and data != '':
+                deps[opt].append(data.strip())
+        else:
+            data = atom.split('@')[0]
+            if data != '\n' and data != '\t' and data != '':
+                deps[opt].append(data.strip())
+    return deps
+
 def import_script(script_path):
     objects = {}
     try:
