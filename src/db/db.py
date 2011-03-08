@@ -62,12 +62,18 @@ class PackageDatabase:
         if not self.pkg_is_exists(repo, category, name):
             self.cursor.execute('''insert into metadata values (?, ?, ?, ?, ?, ?, ?, ?, ?)''', (
                 repo, category, name, version, summary, homepage, _license, src_url, options))
+        else:
+            current_version = self.get_metadata('version', repo, category, name)
+            version += " "+current_version[0]
+            self.cursor.execute('''update metadata set version=(?) where repo=(?) and category=(?) and name=(?)''', (
+                (version, repo, category, name)))
         if commit:
             self.commit()
 
-    def pkg_is_exists(self, rname, category, name):
-        if (rname, category, name) in self.find_pkg(name):
-            return True
+    def pkg_is_exists(self, repo, category, name):
+        for pkg in self.find_pkg(name):
+            if (repo, category, name) == pkg[:-1]:
+                return True
         return False
 
     def find_pkg(self, name):

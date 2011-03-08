@@ -399,11 +399,12 @@ def vercmp(ver1, ver2, silent=1):
 	return rval
 
 def best_version(data):
-    versions = [__data[-1] for __data in data]
+    versions = data[3].split(' ')
     for ver in versions:
         i = 0
         for __ver in versions:
             if ver !=  __ver:
                 i += vercmp(ver, __ver)
         if len(versions)-1 == i:
-            return data[versions.index(ver)]
+            repo, category, name = data[:-1]
+            return repo, category, name, ver
