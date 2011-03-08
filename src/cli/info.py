@@ -27,24 +27,45 @@ class Info(object):
         self.params = params
 
     def usage(self):
-        pass
+        out.normal("Get information about given package")
+        out.green("General Usage:\n")
+        out.write(" $ lpms -i repo/category/pkgname\n")
+        out.write("\nrepo and category keywords are optional.\n")
+        lpms.terminate()
 
     def get_info(self, pkg):
         repo, category, name, version = pkg
         out.write('%s/%s' % (category, out.color(name, 'brightgreen')+'\n'))
-        out.write('    %-20s: %s' % (out.color("version", 'green'), version+'\n'))
+        out.write('    %-20s %s' % (out.color("available versions:", 'green'), version+'\n'))
         for tag in ('summary', 'homepage', 'license', 'options'):
             data = getattr(self.repo_db, "get_"+tag)(name, repo, category)[0]
             if data is not None:
-                out.write('    %-20s: %s' % (out.color(tag, 'green'), data+'\n'))
-        out.write('    %-20s: %s' % (out.color("repo", 'green'), repo+'\n'))
+                out.write('    %s %s' % (out.color(tag+":", 'green'), data+'\n'))
+        out.write('    %s %s' % (out.color("repo:", 'green'), repo+'\n'))
 
 
     def run(self):
-        for param in self.params:
-            data = self.repo_db.find_pkg(param)
-            if len(data) == 0:
-                lpms.catch_error("%s not found!" % param)
+        if lpms.getopt("--help") or len(self.params) == 0:
+            self.usage()
 
-            for pkg in data:
-                self.get_info(pkg)
+        for param in self.params:
+            param = param.split("/")
+            if len(param) == 3:
+                myrepo, mycategory, myname = param
+                data = self.repo_db.find_pkg(myname, myrepo, mycategory)
+            elif len(param) == 2:
+                mycategory, myname = param
+                data = self.repo_db.find_pkg(myname, pkg_category=mycategory)
+            elif len(param) == 1:
+                data = self.repo_db.find_pkg(param[0])
+            else:
+                lpms.catch_error("%s seems invalid." % out.color("/".join(param), "brightred"))
+
+            if not data:
+                lpms.catch_error("%s not found!" % out.color("/".join(param), "brightred"))
+
+            if type(data).__name__ == 'tuple':
+                self.get_info(data)
+            else:
+                for pkg in data:
+                    self.get_info(pkg)
