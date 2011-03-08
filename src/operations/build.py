@@ -75,13 +75,13 @@ class Build(internals.InternalFuncs):
         return spec_file, repo, pkgname, category, version
 
     def options_info(self):
-        # FIXME: This is no good
-        opts = self.env.options
-        if opts is not None:
-            opts = opts.split(" ")
+        # FIXME: This is no good.
+        if self.env.options is not None:
+            self.env.options = self.env.options.split(" ")
         else:
-            opts = []
-        return [o for o in opts if utils.opt(o, self.env.cmd_options, self.env.default_options)]
+            self.env.options = []
+        return [o for o in self.env.options if utils.opt(o, self.env.cmd_options, 
+            self.env.default_options)]
 
     def check_cache(self, url):
         return os.path.isfile(
@@ -100,7 +100,6 @@ class Build(internals.InternalFuncs):
                     continue
                 if url[0] in applied: self.download_plan.append(url[1])
         self.env.extract_plan = self.extract_plan
-        print self.download_plan
 
     def prepare_environment(self):
         """ Prepares self.environment """ 
@@ -181,6 +180,7 @@ def prepare_plan(pkgnames, instruct):
             opr.env.repo = "local"
 
         metadata = utils.metadata_parser(opr.env.metadata)
+        opr.env.__dict__.update(instruct)
 
         opr.env.fullname = opr.env.name+"-"+opr.env.version
         opr.env.options = metadata["options"]
@@ -192,11 +192,10 @@ def prepare_plan(pkgnames, instruct):
         else:
             opr.env.srcdir = opr.env.fullname
 
-        opr.env.__dict__.update(instruct)
         if instruct["pretend"]:
             show(opr.env.repo, opr.env.category,
                     opr.env.name, opr.env.version,
-                    opr.env.applied, opr.env.default_options,
+                    opr.env.applied, opr.env.options,
                     [])
             continue
 
@@ -214,15 +213,16 @@ def prepare_plan(pkgnames, instruct):
     return plan
 
 def main(pkgnames, instruct):
+    #pkgnames = resolve_dependencies(pkgnames)
     operation_plan = prepare_plan(pkgnames, instruct)
     count = len(operation_plan); i = 1
     if instruct["ask"]:
         out.normal("these packages will be merged, respectively:\n")
         for x in operation_plan:
             show(x["repo"], x["category"], x["name"], x["version"],
-                    x["applied"], x["default_options"], [])
+                    x["applied"], x["options"], [])
         out.write("\nTotal %s package will be merged.\n\n" % out.color(str(count), "green"))
-        if not utils.confirm("would you like to merge these packages?"):
+        if not utils.confirm("do you want to continue?"):
             out.write("quitting...\n")
             lpms.terminate()
 
@@ -269,7 +269,7 @@ def show(repo, category, pkgname, version, applied, options, download_plan):
         out.write("(")
         for o in options:
             if o in applied:
-                out.write(out.color(o, "red"))
+                out.write(out.color(o, "brightred"))
                 if options[-1] != o:
                     out.write(" ")
             else:
