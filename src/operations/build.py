@@ -32,6 +32,7 @@ from lpms import constants as cst
 
 from lpms.db import dbapi
 
+# FIXME: This module is very ugly. I will re-write it.
 
 class Build(internals.InternalFuncs):
     def __init__(self, pkgname):
@@ -52,20 +53,26 @@ class Build(internals.InternalFuncs):
         result = []
         if self.pkgname.startswith("="):
             name, version = utils.parse_pkgname(self.pkgname[1:]+cst.spec_suffix)
+            # FIXME: if there are the same packages in different categories, 
+            # warn user.
             for pkg in self.repo_db.find_pkg(name):
-                if pkg[3] == version:
-                    result = pkg
+                repo_ver = pkg[3].split(' ')
+                if version in repo_ver:
+                    repo, category, name = pkg[:-1]
+                    result = (repo, category, name, version)
             if len(result) == 0:
                 lpms.catch_error("%s not found!" % out.color(self.pkgname[1:], "brightred"))
         else:
-            data = self.repo_db.find_pkg(self.pkgname)
+            data = self.repo_db.find_pkg(self.pkgname)[0]
             if len(data) == 0:
                 lpms.catch_error("%s not found!" % out.color(self.pkgname, "brightred"))
-            elif len(data) != 1:
+            
+            repo_ver = data[3].split(' ')
+            if len(repo_ver) != 1:
                 result = utils.best_version(data)
             else:
-                result = data[0]
-
+                result = data
+        
         repo = result[0]; category = result[1]
         version = result[3]; pkgname = result[2]
         spec_file = os.path.join(cst.repos, repo, category,
