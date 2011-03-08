@@ -63,10 +63,11 @@ class Build(internals.InternalFuncs):
             if len(result) == 0:
                 lpms.catch_error("%s not found!" % out.color(self.pkgname[1:], "brightred"))
         else:
-            data = self.repo_db.find_pkg(self.pkgname)[0]
-            if len(data) == 0:
+            data = self.repo_db.find_pkg(self.pkgname)
+            if not data:
                 lpms.catch_error("%s not found!" % out.color(self.pkgname, "brightred"))
             
+            data = data[0]
             repo_ver = data[3].split(' ')
             if len(repo_ver) != 1:
                 result = utils.best_version(data)
