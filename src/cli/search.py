@@ -40,6 +40,8 @@ class Search(object):
         for repo, category, name in self.repo_db.get_all_names():
             summary = self.repo_db.get_summary(name, repo, category)[0]
             if replace.match(name) is not None or replace.search(summary) is not None:
-                out.write("%s/%s -- %s" % (category,
+                versions = self.repo_db.get_version(name, repo, category)[0]
+                out.write("%s/%s (%s)\n    %s" % (category,
                     replace.sub(out.color(r"\1", "red"), name),
-                    replace.sub(out.color(r"\1", "red"), summary))+"\n")
+                    versions,
+                    replace.sub(out.color(r"\1", "red"), summary))+'\n')
