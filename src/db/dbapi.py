@@ -24,14 +24,24 @@ class API(object):
 
     def find_pkg(self, pkgname, repo_name = None, pkg_category = None):
         result = self.db.find_pkg(pkgname)
-        if repo_name is not None or pkg_category is not None:
-            for repo, category, name in result:
+        if repo_name is None and pkg_category is None:
+            return result
+        elif repo_name is not None and pkg_category is None:
+            for repo, category, name, version in result:
                 if repo_name == repo:
-                    return repo, category, name
-                elif pkg_category == category:
-                    return repo, category, name
-        return result
-    
+                    return repo, category, name, version
+            return False
+        elif repo_name is None and pkg_category is not None:
+            for repo, category, name, version in result:
+                if pkg_category == category:
+                    return repo, category, name, version
+            return False
+        elif repo_name is not None and pkg_category is not None:
+            for repo, category, name, version in result:
+                if repo_name == repo and pkg_category == category:
+                    return repo, category, name, version
+            return False
+
     def commit(self):
         return self.db.commit()
 
