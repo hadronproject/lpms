@@ -24,6 +24,9 @@ class InternalFuncs(object):
     def __init__(self):
         self.env = Environment()
         self.libraries = []
+        
+        # FIXME: use a better method for environment functions.
+        self.env.__dict__['get'] = self.get
 
     def import_script(self, script_path):
         exec compile(open(script_path).read(), "error", "exec") in self.env.__dict__
