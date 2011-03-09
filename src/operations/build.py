@@ -142,7 +142,7 @@ class Build(internals.InternalFuncs):
                     out.notify("%s seems already unpacked." % os.path.basename(archive_path))
                     continue
             archive.extract(str(archive_path), str(target))
-            shelltools.touch(unpack_file)
+        shelltools.touch(unpack_file)
             
     def parse_url_tag(self):
         def set_shortening(data, opt=False):
