@@ -35,7 +35,7 @@ class Info(object):
 
     def get_info(self, pkg):
         repo, category, name, version = pkg
-        out.write('%s/%s' % (category, out.color(name, 'brightgreen')+'\n'))
+        out.write('%s/%s' % (out.color(category, "white"), out.color(name, 'brightgreen')+'\n'))
         out.write('    %-20s %s' % (out.color("available versions:", 'green'), version+'\n'))
         for tag in ('summary', 'homepage', 'license', 'options'):
             data = getattr(self.repo_db, "get_"+tag)(name, repo, category)[0]
