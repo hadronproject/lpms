@@ -21,6 +21,8 @@ import lpms
 from lpms import out
 from lpms.db import dbapi
 
+help_output = (('--mark', '-m', 'use markers to highlight the matching strings'),)
+
 class Search(object):
     def __init__(self, patterns):
         self.patterns = patterns
@@ -30,6 +32,11 @@ class Search(object):
         out.normal("Search given keywords in database")
         out.green("General Usage:\n")
         out.write(" $ lpms -s <keyword>\n")
+        out.write("\nOther options:\n")
+        for h in help_output:
+            if len(h) == 3:
+                out.write("%s, %-10s: %s\n" % (out.color(h[0],"green"), 
+                    out.color(h[1], "green"), h[2]))
         lpms.terminate()
 
     def search(self):
@@ -41,7 +48,13 @@ class Search(object):
             summary = self.repo_db.get_summary(name, repo, category)[0]
             if replace.match(name) is not None or replace.search(summary) is not None:
                 versions = self.repo_db.get_version(name, repo, category)[0]
-                out.write("%s/%s (%s)\n    %s" % (category,
-                    replace.sub(out.color(r"\1", "red"), name),
-                    versions,
-                    replace.sub(out.color(r"\1", "red"), summary))+'\n')
+                if lpms.getopt("--mark"):
+                    out.write("%s/%s (%s)\n    %s" %(category, 
+                        replace.sub(out.color(r"\1", "red"), name),
+                        versions,
+                        replace.sub(out.color(r"\1", "red"), summary))+'\n')
+                else:
+                    out.write("%s/%s (%s)\n    %s" % (out.color(category, "green"),
+                        out.color(name, "green"),
+                        versions,
+                        summary+'\n'))
