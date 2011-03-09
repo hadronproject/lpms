@@ -93,12 +93,17 @@ class PackageDatabase:
         return self.cursor.fetchall()
 
     def drop(self, rname, category=None, name=None):
+        # FIXME: Use executescript
         if category is None and name is None:
-            self.cursor.execute('''delete from metadata where %s=(?)''' % "repo", (rname,))
+            self.cursor.execute('''delete from metadata where repo=(?)''', (rname,))
+            self.cursor.execute('''delete from depends where repo=(?)''', (rname,))
         else:
+            self.cursor.execute('''delete from depends where %s=(?) and %s=(?) and %=(?)'''
+                    % ("repo", "category", "name"), (rname, category, name,))
             self.cursor.execute('''delete from metadata where %s=(?) and %s=(?) and %s=(?)''' 
                     % ("repo", "category", "name"), (rname, category, name,))
         self.commit()
+        #print self.get_all_names(rname)
 
     def add_depends(self, data, commit=True):
         repo_name, category, name, version, build, runtime = data
@@ -119,6 +124,6 @@ class PackageDatabase:
                     repo_name, category, name, version,))
 
         for deps in data:
-            result = {'runtime': pickle.loads(str(deps[4])),
-                    'build': pickle.loads(str(deps[5]))}
+            result = {'build': pickle.loads(str(deps[4])),
+                    'runtime': pickle.loads(str(deps[5]))}
             return result
