@@ -19,6 +19,7 @@ import re
 import os
 import sys
 import stat
+import string
 import hashlib
 
 import lpms
@@ -39,25 +40,33 @@ def confirm(text):
         out.write(out.color("Sorry, response " + answer + " not understood! yes/y or no/n\n", "red"))
 
 def parse_pkgname(script_name):
-    pkgname = []; version = []
-    parsed=script_name.split(".py")[0].split("-")
-    for i in parsed:
-        if "." in list(i) or i.isdigit():
-            version.append(i)
-            continue
-        elif "r" in list(i) and i == parsed[-1]:
-            version.append(i)
-            continue
-        elif "p" in list(i) and i == parsed[-1]:
-            version.append(i)
-            continue
-        for x in list(i):
-            if x.isalnum() or x == "+" or x == "_":
-                pkgname.append(x)
-        pkgname.append("-")
-    version = ["-".join(version)]
-    version.insert(0, "".join(pkgname)[0:-1])
-    return version
+    #pkgname = []; version = []
+    #parsed=script_name.split(".py")[0].split("-")
+    #for i in parsed:
+    #    if "." in list(i) or i.isdigit():
+    #        version.append(i)
+    #        continue
+    #    elif "r" in list(i) and i == parsed[-1]:
+    #        version.append(i)
+    #        continue
+    #    elif "p" in list(i) and i == parsed[-1]:
+    #        version.append(i)
+    #        continue
+    #    for x in list(i):
+    #        if x.isalnum() or x == "+" or x == "_":
+    #            pkgname.append(x)
+    #    pkgname.append("-")
+    #version = ["-".join(version)]
+    #version.insert(0, "".join(pkgname)[0:-1])
+    #return version
+    ############################################################################
+    #
+    # my parse_pkgparse code is crappy. So I am using drobbin's historical codes.
+    # I have found the codes in portage-1.6.5
+    # Thanks Daniel :=P
+    #
+    ############################################################################
+    return pkgsplit(script_name)
 
 def check_path(binary):
     if not binary.startswith("/"):
@@ -397,6 +406,137 @@ def vercmp(ver1, ver2, silent=1):
 	rval = (r1 > r2) - (r1 < r2)
 	vercmp_cache[mykey] = rval
 	return rval
+
+
+##########################################################
+#
+#
+# The following lines were borrowed from Portage-1.6.5.
+# I modified the code for lpms. Thanks Gentoo team.
+#
+#
+##########################################################
+
+endversion={"pre":-2,"p":0,"alpha":-4,"beta":-3,"rc":-1}
+
+def revverify(myrev):
+    if len(myrev) == 0:
+        return False
+    if myrev[0] ==  'r':
+        try:
+            string.atoi(myrev[1:])
+            return True
+        except:
+            pass
+    return False
+
+def ververify(myorigval, silent = 1):
+    if len(myorigval) == 0:
+        if not silient:
+            out.error("package contains \'-\' part.")
+        return False
+
+    myval = string.split(myorigval, '.')
+    if len(myval) == 0:
+        if not silent:
+            out.error("empty version string.")
+        return False
+
+    for x in myval[:-1]:
+        if not len(x):
+            if not silient:
+                out.error("error in %s: two decimal points in a row" % myorigval)
+            return False
+        try:
+            foo = string.atoi(x)
+        except:
+            if not silent:
+                out.error("name error in %s : %s is not a valid version component" % (myorigval, x))
+            return False
+
+    if not len(myval[-1]):
+        if not silent:
+            out.error("name error in %s: two decimal points in a row" % myorigval)
+        return False
+
+    try:
+        foo = string.atoi(myval[-1])
+        return True
+    except:
+        pass
+
+    if myval[-1][-1] in string.lowercase:
+        try:
+            foo = string.atoi(myval[-1][:-1])
+            return True
+        except:
+            pass
+
+    ep = string.split(myval[-1], '_')
+    if len(ep) != 2:
+        if not silent:
+            out.error("name error in %s" % myorigval)
+        return False
+    try:
+        foo = string.atoi(ep[0])
+    except:
+        if not silent:
+            out.error("name error in %s: characters before _ must be numeric" % myorigval)
+        return False
+
+    for mye in endversion.keys():
+        if ep[1][0:len(mye)] == mye:
+            if len(mye) == len(ep[1]):
+                return True
+            else:
+                try:
+                    foo = string.atoi(ep[1][len(mye):1])
+                    return True
+                except:
+                    pass
+    if not silent:
+        out.error("name error in %s" % myorigval)
+    return False
+
+def pkgsplit(mypkg, silent = 1):
+    myparts = string.split(mypkg, '-')
+    if len(myparts) < 2:
+        if not silent:
+            out.error("name error in %s: missing a version or name part." % mypkg)
+        return None
+    
+    for x in myparts:
+        if len(x) == 0:
+            if not silent:
+                out.error("name error in %s: empty \'-\' part." % mypkg)
+            return None
+
+    if revverify(myparts[-1]):
+        if ververify(myparts[-2]):
+            if len(myparts) == 2:
+                return None
+            else:
+                for x in myparts[:-2]:
+                    if ververify(x):
+                        return None
+                return "-".join(myparts[:-2]), myparts[-2]+"-"+myparts[-1]
+        else:
+            return None
+
+    elif ververify(myparts[-1], silent):
+        if len(myparts) == 1:
+            if not silent:
+                out.error("name error in %s: missing name part." % mypkg)
+            return None
+        else:
+            for x in myparts[:-1]:
+                if ververify(x):
+                    if not silent:
+                        out.error("name error in %s: multiple version parts." % mypkg)
+                    return None
+            return "-".join(myparts[:-1]), myparts[-1]
+    else:
+        return None
 
 def best_version(data):
     versions = data[3].split(' ')
