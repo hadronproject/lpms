@@ -59,11 +59,12 @@ def parse_pkgname(script_name):
     #version = ["-".join(version)]
     #version.insert(0, "".join(pkgname)[0:-1])
     #return version
+
     ############################################################################
     #
-    # my parse_pkgparse code is crappy. So I am using drobbin's historical codes.
-    # I have found the codes in portage-1.6.5
-    # Thanks Daniel :=P
+    # my parse_pkgparse code is crappy. So I am using drobbins' historical code.
+    # I have found the code in portage-1.6.5
+    # Thanks to Daniel Robbins :=P
     #
     ############################################################################
     return pkgsplit(script_name)
@@ -490,7 +491,7 @@ def ververify(myorigval, silent = 1):
                 return True
             else:
                 try:
-                    foo = string.atoi(ep[1][len(mye):1])
+                    foo = string.atoi(ep[1][len(mye):])
                     return True
                 except:
                     pass
