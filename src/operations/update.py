@@ -51,7 +51,7 @@ class Update(internals.InternalFuncs):
                     script_path = os.path.join(repo_path, category, my_pkg, pkg)
                     self.import_script(script_path)
                     metadata = utils.metadata_parser(self.env.metadata)
-                    name, version = utils.parse_pkgname(pkg)
+                    name, version = utils.parse_pkgname(pkg.split(cst.spec_suffix)[0])
                     metadata.update({"name": name, "version": version})
                     if not "options" in metadata.keys():
                         metadata.update({"options": None})
