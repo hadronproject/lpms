@@ -16,6 +16,10 @@ But 2.7 series is recommended.
 
 * Python must be compiled with sqlite support. So lpms depends on sqlite.
 
+* lpms uses 'catbox' as sandboxing application. You can find catbox in Hadron's main
+repository.
+
+
 Installation
 -------------
 lpms runs as a standard Python module. So you copy 'src' directory to Python's 
