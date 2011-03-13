@@ -179,4 +179,6 @@ def run(script, env):
             traceback.print_exc(err)
             out.error("an error occurred when running the %s function." % out.color(opr, "red"))
             lpms.terminate()
+    utils.xterm_title("lpms: %s/%s finished" % (ipr.env.category, ipr.env.pkgname))
+    utils.xterm_title_reset()
     ipr.env.__dict__.clear()
