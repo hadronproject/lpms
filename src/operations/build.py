@@ -239,10 +239,11 @@ def main(pkgnames, instruct):
         for key in plan.keys():
             opr.env.__dict__[key] = plan[key]
         opr.prepare_environment()
+        utils.xterm_title("(%s/%s) lpms: building %s/%s-%s from %s" % (i, count, opr.env.category, 
+            opr.env.pkgname, opr.env.version, opr.env.repo))
         out.normal("(%s/%s) building %s/%s from %s" % (i, count,
             out.color(opr.env.category, "green"),
             out.color(opr.env.pkgname+"-"+opr.env.version, "green"), opr.env.repo)); i += 1
-        
         # warn the user
         if opr.env.sandbox:
             out.notify("sandbox is enabled")
@@ -266,7 +267,6 @@ def main(pkgnames, instruct):
         
         os.chdir(opr.env.build_dir)
         interpreter.run(opr.env.spec_file, opr.env)
-        opr.env.__dict__.clear()
 
 def show(repo, category, pkgname, version, applied, options, download_plan):
     out.write(" %s/%s/%s-%s " % (repo, out.color(category, "brightwhite"), 
