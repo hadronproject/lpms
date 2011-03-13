@@ -217,6 +217,21 @@ def sandbox_dirs():
             dirs.append(line)
     return dirs
 
+# xterm_title and xterm_title_reset were borrowed from PiSi
+def xterm_title(message):
+    if "TERM" in os.environ and sys.stderr.isatty():
+        terminal_type = os.environ["TERM"]
+        for term in ["xterm", "Eterm", "aterm", 
+                "rxvt", "screen", "kterm", "rxvt-unicode"]:
+            if terminal_type.startswith(term):
+                sys.stderr.write("\x1b]2;"+str(message)+"\x07")
+                sys.stderr.flush()
+                break
+
+def xterm_title_reset():
+    if "TERM" in os.environ:
+        xterm_title("")
+
 ###############################################################################
 #
 # 'vercmp' function is borrowed from Portage. I will fixed up it in the future.
