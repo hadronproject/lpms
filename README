@@ -7,3 +7,24 @@ About
 lpms is a package manager which was designed to provide advanced control and 
 optimization over packages. It is written in Python entirely and uses custom 
 Python scripts to build packages.
+
+Dependencies
+-------------
+
+* lpms is written in Python-2.7.1. So you should use Python-2.7.x or Python-2.6.x. 
+But 2.7 series is recommended.
+
+* Python must be compiled with sqlite support. So lpms depends on sqlite.
+
+Installation
+-------------
+lpms runs as a standard Python module. So you copy 'src' directory to Python's 
+site-packages directory. Note that, src directory is named as 'lpms'. For details, 
+see lpms' build script.
+
+Contact
+--------
+
+Web site: http://hadronproject.org
+E-mail: purak__at__hadronproject.org
+IRC Channel: #lpms on Freenode
