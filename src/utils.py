@@ -123,6 +123,29 @@ def check_metadata(metadata):
             lpms.terminate("%s must be defined in metadata" % tag)
     return True
 
+def get_gid(path):
+    return os.stat(path)[stat.ST_GID]
+
+def get_uid(path):
+    return os.stat(path)[stat.ST_UID]
+
+def get_mod(path):
+    return stat.S_IMODE(os.stat(path)[stat.ST_MODE])
+
+def get_size(path):
+    if os.path.isfile(path):
+        return os.path.getsize(path)/(1024*1024.0)
+    else:
+        foldersize = 0
+        for path, dirs, files in os.walk(path):
+            for f in files:
+                filename = os.path.join(path, f)
+                try:
+                    foldersize += os.path.getsize(filename)
+                except:
+                    out.warn("file size not calculated: %s" % filename)
+        return foldersize/(1024*1024.0)
+
 def get_mtime(path):
     return os.stat(path)[stat.ST_MTIME]
 
