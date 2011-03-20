@@ -92,18 +92,45 @@ class PackageDatabase:
             self.cursor.execute('''select repo, category, name from metadata''')
         return self.cursor.fetchall()
 
-    def drop(self, rname, category=None, name=None):
+    def drop(self, rname, category=None, name=None, version=None):
         # FIXME: Use executescript
-        if category is None and name is None:
+        def drop_others():
+            self.cursor.execute('''delete from build_info where repo=(?) and category=(?) and name=(?) and version=(?)''', 
+                    (rname, category, name, version,))
+            #self.cursor.execute('''delete from depends where repo=(?) and category=(?) and name=(?) and version=(?)''', 
+            ##        (rname, category, name, version,))
+
+        if category is None and name is None and version is None:
             self.cursor.execute('''delete from metadata where repo=(?)''', (rname,))
             self.cursor.execute('''delete from depends where repo=(?)''', (rname,))
         else:
-            self.cursor.execute('''delete from depends where %s=(?) and %s=(?) and %=(?)'''
-                    % ("repo", "category", "name"), (rname, category, name,))
-            self.cursor.execute('''delete from metadata where %s=(?) and %s=(?) and %s=(?)''' 
-                    % ("repo", "category", "name"), (rname, category, name,))
+            for pkg in self.find_pkg(name):
+                irepo, icategory, iname, iversion = pkg
+                if (irepo, icategory, iname) == (rname, category, name):
+                    if len(iversion.split(" ")) > 1:
+                        if version in iversion.split(" "):
+                            result = iversion.split(" ")
+                            result.remove(version); new_version = " ".join(result)
+                            self.cursor.execute('''update metadata set version=(?) where repo=(?) and category=(?) and name=(?)''', (
+                                (new_version, rname, category, name)))
+                            drop_others()
+                            break
+                    elif len(iversion.split(" ")) == 1 and version == iversion:
+                        self.cursor.execute('''delete from metadata where %s=(?) and %s=(?) and %s=(?) and %s=(?)''' 
+                                % ("repo", "category", "name", "version"), (rname, category, name, version,))
+                        drop_others()
         self.commit()
-        #print self.get_all_names(rname)
+
+    def add_buildinfo(self, data):
+        repo, category, name, version, build_time, hosts, cflags, cxxflags, ldflags, applied, size = data
+        self.cursor.execute('''insert into build_info values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', (
+                repo, category, name, version, build_time, hosts, cflags, cxxflags, ldflags, applied, size))
+        self.commit()
+
+    def drop_buildinfo(self, repo, category, name, version):
+        self.cursor.execute('''delete from build_info where repo=(?) and category=(?) and name=(?) and version=(?)''', 
+                (repo, category, name, version,))
+        self.commit()
 
     def add_depends(self, data, commit=True):
         repo_name, category, name, version, build, runtime = data
@@ -115,6 +142,11 @@ class PackageDatabase:
                     ))
         if commit:
             self.commit()
+
+    def get_buildinfo(self, repo, category, name):
+        self.cursor.execute('''select * from build_info where repo=(?) and category=(?) and name=(?)''', 
+                (repo, category, name,))
+        return self.cursor.fetchall()
 
     def get_depends(self, repo_name, category, name, version=None):
         data = self.cursor.execute('''select * from depends where repo=(?) and category=(?) and name=(?)''', 
