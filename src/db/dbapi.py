@@ -48,17 +48,26 @@ class API(object):
     def get_all_names(self, repo = None):
         return self.db.get_all_names(repo)
 
+    def get_buildinfo(self, repo, category, name):
+        return self.db.get_buildinfo(repo, category, name)
+
     def get_repos(self):
         return self.db.get_repos()
 
     def add_pkg(self, data, commit=False):
         return self.db.add_pkg(data, commit)
 
+    def add_buildinfo(self, data):
+        return self.db.add_buildinfo(data)
+
+    def drop_buildinfo(self, repo, category, name, version):
+        return self.db.drop_buildinfo(repo, category, name, version)
+
     def drop_repo(self, repo_name):
         return self.db.drop(repo_name)
 
-    def remove_pkg(self, repo_name, category, pkgname):
-        return self.db.drop(repo_name, category, pkgname)
+    def remove_pkg(self, repo_name, category, pkgname, version):
+        return self.db.drop(repo_name, category, pkgname, version)
 
     def get_category(self, pkgname, repo_name = None):
         result = self.db.find_pkg(pkgname)

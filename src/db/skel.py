@@ -22,24 +22,27 @@ def installed_schema():
         create table metadata(
             repo text,
             category text,
+            name text,
             version text,
             summary text,
             homepage text,
             license text,
-            options text,
-            applied text,
-            size text
+            src_url text,
+            options text
         );
 
         create table build_info(
             repo text,
             category text,
             name text,
+            version text,
             build_time text,
             host text,
             cflags text,
             cxxflags text,
-            ldflags text
+            ldflags text,
+            applied text,
+            size integer
         );
 
         create table depends(
@@ -49,7 +52,7 @@ def installed_schema():
             build blob,
             runtime blob
         );
-        """ % repo_schema()
+        """
 
 def repo_schema():
     return """

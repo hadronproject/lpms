@@ -115,6 +115,7 @@ def copytree(source, target, sym=True):
     if is_dir(source):
         if os.path.exists(target):
             if is_dir(target):
+                print os.path.join(target, os.path.basename(source.strip('/')))
                 copytree(source, os.path.join(target, os.path.basename(source.strip('/'))))
                 return
             else:
@@ -164,7 +165,7 @@ def copy(source, target, sym = True):
             if is_dir(path):
                 copytree(path, target)
             else:
-                shutil.copy(path, target)
+                shutil.copy2(path, target)
         elif is_dir(path):
             copytree(path, target, sym)
         else:
@@ -260,4 +261,10 @@ def install_library(source, target):
     else:
         if not system('install -m0%o %s %s' % (permission, source, target)):
             lpms.catch_error("%s could not installed to %s." % (src, target))
+
+def set_id(path, uid, gid):
+    os.chown(path, uid, gid)
+
+def set_mod(path, mod):
+    os.chmod(path, mod)
 
