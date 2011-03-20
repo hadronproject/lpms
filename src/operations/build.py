@@ -31,6 +31,7 @@ from lpms import interpreter
 from lpms import constants as cst
 
 from lpms.db import dbapi
+from lpms.operations import merge
 
 # FIXME: This module is very ugly. I will re-write it.
 
@@ -52,7 +53,7 @@ class Build(internals.InternalFuncs):
         """ Select the package version and return spec's path """
         result = []
         if self.pkgname.startswith("="):
-            name, version = utils.parse_pkgname(self.pkgname[1:]+cst.spec_suffix)
+            name, version = utils.parse_pkgname(self.pkgname[1:])
             # FIXME: if there are the same packages in different categories, 
             # warn user.
             for pkg in self.repo_db.find_pkg(name):
@@ -191,10 +192,11 @@ def prepare_plan(pkgnames, instruct):
         opr.env.__dict__.update(instruct)
 
         opr.env.fullname = opr.env.name+"-"+opr.env.version
-        opr.env.options = metadata["options"]
+        for attr in ('options', 'summary', 'license', 'homepage'):
+            setattr(opr.env, attr, metadata[attr])
         opr.env.default_options = opr.config.options.split(" ")
         opr.env.applied = opr.options_info()
-
+        
         if "srcdir" in opr.env.__dict__.keys():
             opr.env.srcdir = opr.env.__dict__["srcdir"]
         else:
@@ -240,10 +242,10 @@ def main(pkgnames, instruct):
             opr.env.__dict__[key] = plan[key]
         opr.prepare_environment()
         utils.xterm_title("(%s/%s) lpms: building %s/%s-%s from %s" % (i, count, opr.env.category, 
-            opr.env.pkgname, opr.env.version, opr.env.repo))
+            opr.env.name, opr.env.version, opr.env.repo))
         out.normal("(%s/%s) building %s/%s from %s" % (i, count,
             out.color(opr.env.category, "green"),
-            out.color(opr.env.pkgname+"-"+opr.env.version, "green"), opr.env.repo)); i += 1
+            out.color(opr.env.name+"-"+opr.env.version, "green"), opr.env.repo)); i += 1
         # warn the user
         if opr.env.sandbox:
             out.notify("sandbox is enabled")
@@ -267,6 +269,10 @@ def main(pkgnames, instruct):
         
         os.chdir(opr.env.build_dir)
         interpreter.run(opr.env.spec_file, opr.env)
+        utils.xterm_title("lpms: %s/%s finished" % (opr.env.category, opr.env.pkgname))
+        merge.main(opr.env)
+        opr.env.__dict__.clear()
+        utils.xterm_title_reset()
 
 def show(repo, category, pkgname, version, applied, options, download_plan):
     out.write(" %s/%s/%s-%s " % (repo, out.color(category, "brightwhite"), 
