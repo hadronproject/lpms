@@ -15,6 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with lpms.  If not, see <http://www.gnu.org/licenses/>.
 
+root = "/"
+contents_file = "contents.xml"
 lpms_path = "/usr/lib/python2.7/site-packages/lpms"
 repo_file = "info/repo.conf"
 repo_info = "info"
@@ -23,7 +25,10 @@ files_dir = "files"
 patch_suffix = ".patch"
 repos = "/var/lib/lpms"
 config_dir = "/etc/lpms"
+db_path = "/var/db/lpms"
+filesdb = "filesdb"
 repositorydb_path = "/var/db/lpms/repositorydb.db"
+installdb_path = "/var/db/lpms/installdb.db"
 spec_suffix = ".py"
 sandbox_file = "sandbox.conf"
 spec_dir = "/usr/lpms"
