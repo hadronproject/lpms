@@ -38,13 +38,14 @@ build_help = (
         ('--pretend', '-p', 'Shows operation steps'),
         ('--ask', '-a', 'Asks to the user before operation.(not yet)'),
         ('--fetch-only', '-F', 'Only fetches packages, do not install.(not yet)'),
-        ('--search', '-s', 'Searches given keyword in database'),
-        ('--add-repo', 'Adds new repository(not yet)'),
-        ('--ignore-sandbox', 'Disables sandbox facility'),
-        ('--enable-sandbox', 'Enables sandbox facilitiy'),
+        ('--search', '-s', 'Searches given keyword in database.'),
+        ('--add-repo', 'Adds new repository(not yet).'),
+        ('--ignore-sandbox', 'Disables sandbox facility.'),
+        ('--enable-sandbox', 'Enables sandbox facilitiy.'),
         ('--resume-build', 'Resumes the most recent build operation.'),
+        ('--change-root', 'Changes installation target.'),
         ('--show-opts', 'Shows available options for given packages'),
-        ('--opts', 'Determines the package\'s options.'))
+        ('--opts', 'Determines options of the package.'))
 
 def version():
     out.write("lpms %s\n" % lpms_version)
@@ -71,7 +72,7 @@ def main():
     options = command_line[1:]
     pkgnames = []; ecoms = ('--resume-build')
     instruct = {"cmd_options": [], "sandbox": None, "show_opts": None, "ask": False,
-            "pretend": False, "stage": None, "force": None}
+            "pretend": False, "stage": None, "force": None, "real_root": None}
     for opt in options:
         if opt in ecoms:
             continue
@@ -106,6 +107,8 @@ def main():
             from lpms.cli import search
             search.Search(options[options.index(opt)+1:]).search()
             return
+        elif opt.startswith("--change-root"):
+            instruct["real_root"] = opt.split("=")[1].strip()
         elif opt == "--info" or opt == "-i":
             from lpms.cli import info
             info.Info(options[options.index(opt)+1:]).run()
