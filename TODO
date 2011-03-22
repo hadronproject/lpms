@@ -1,3 +1,4 @@
-(-) exceptions module will be improved. So more exception will be defined.
-(-) operations/build.py will be re-written. More flow control will be provied.
-(-) database modules will be reviewed.
+(-) post_install, post_remove, pre_install, pre_remove functions are added to interpreter.
+(-) dependency resolution and related features will be implemented.
+(-) upgrade feature?
+(-) search and info modules will be imporoved.
