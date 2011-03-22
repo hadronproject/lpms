@@ -143,10 +143,10 @@ class PackageDatabase:
         if commit:
             self.commit()
 
-    def get_buildinfo(self, repo, category, name):
-        self.cursor.execute('''select * from build_info where repo=(?) and category=(?) and name=(?)''', 
-                (repo, category, name,))
-        return self.cursor.fetchall()
+    def get_buildinfo(self, repo, category, name, version):
+        self.cursor.execute('''select * from build_info where repo=(?) and category=(?) and name=(?) and version=(?)''', 
+                (repo, category, name, version,))
+        return self.cursor.fetchone()
 
     def get_depends(self, repo_name, category, name, version=None):
         data = self.cursor.execute('''select * from depends where repo=(?) and category=(?) and name=(?)''', 

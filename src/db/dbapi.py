@@ -48,8 +48,8 @@ class API(object):
     def get_all_names(self, repo = None):
         return self.db.get_all_names(repo)
 
-    def get_buildinfo(self, repo, category, name):
-        return self.db.get_buildinfo(repo, category, name)
+    def get_buildinfo(self, repo, category, name, version):
+        return self.db.get_buildinfo(repo, category, name, version)
 
     def get_repos(self):
         return self.db.get_repos()
