@@ -16,6 +16,7 @@
 # along with lpms.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+import lpms 
 
 from lpms import out
 from lpms import utils
