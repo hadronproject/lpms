@@ -16,7 +16,7 @@
 # along with lpms.  If not, see <http://www.gnu.org/licenses/>.
 
 root = "/"
-contents_file = "contents.xml"
+xmlfile_suffix = ".xml"
 lpms_path = "/usr/lib/python2.7/site-packages/lpms"
 repo_file = "info/repo.conf"
 repo_info = "info"
