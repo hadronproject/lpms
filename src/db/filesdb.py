@@ -22,23 +22,23 @@ import xml.etree.cElementTree as iks
 
 from lpms import constants as cst
 
-from lpms.db import dbapi
+#from lpms.db import dbapi
 
 class FilesDB:
-    def __init__(self, repo, category, name, version):
+    def __init__(self, repo, category, name, version, real_root=None):
         self.content = {"dirs":[], "file": []}
         self.repo = repo
         self.category = category
         self.name = name
         self.version = version
-        self.xml_file = os.path.join(cst.db_path, cst.filesdb, 
-                self.category, self.name, self.name)+"-"+self.version+".xml"
+        if real_root is None:
+            real_root = cst.root
+        self.xml_file = os.path.join(real_root, cst.db_path[1:], cst.filesdb, 
+                self.category, self.name, self.name)+"-"+self.version+cst.xmlfile_suffix
         
-        self.instdb = dbapi.InstallDB()
-        
-    def is_installed(self, ):
-        return (self.repo, self.category, 
-                self.name) in self.instdb.get_all_names()
+    #def is_installed(self, ):
+    #    return (self.repo, self.category, 
+    #            self.name) in self.instdb.get_all_names()
         
     def import_xml(self):
         if not os.path.isfile(self.xml_file):
@@ -54,7 +54,7 @@ class FilesDB:
 
     def has_path(self, path):
         if not os.path.exists(path):
-            print("%s could not found." %s path)
+            print("%s could not found." % path)
             return False
         
         if os.path.isdir(path):
