@@ -19,6 +19,7 @@ import sys
 import lpms
 
 from lpms.operations import build
+from lpms.operations import remove
 from lpms.operations import update
 from lpms import utils
 from lpms import conf
@@ -87,6 +88,8 @@ def main():
             except IndexError:
                 update.main()
                 return
+        elif opt == "--remove" or opt == "-r":
+            continue
         elif opt == "--force" or opt == "-f":
             instruct["force"] = True
         elif opt == "--show-opts":
@@ -119,6 +122,10 @@ def main():
     # abort lpms if the user do not give package name
     if len(pkgnames) == 0:
         lpms.catch_error("please give a package name!")
+
+    if "--remove" in options or "-r" in options:
+        remove.main(pkgnames, instruct)
+        return
     # build given packages
     utils.check_root()
     build.main(pkgnames, instruct)
