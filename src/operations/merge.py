@@ -180,9 +180,15 @@ class Merge(internals.InternalFuncs):
     def write_db(self):
         # write metadata
         # FIXME: do we need a function called update_db or like this?
-        self.instdb.remove_pkg(self.env.repo, self.env.category,
-                self.env.name, self.env.version)
-        
+        installed = self.instdb.find_pkg(self.env.name, self.env.repo,
+                self.env.category)
+        if not isinstance(installed, bool):
+            for key in installed[-1].keys():
+                if key == self.env.slot:
+                    for ver in installed[-1][key]:
+                        self.instdb.remove_pkg(self.env.repo, self.env.category, 
+                            self.env.name, ver)
+
         data =(self.env.repo, self.env.category, 
             self.env.name, self.env.version, 
             self.env.summary, self.env.homepage, 
@@ -200,15 +206,11 @@ class Merge(internals.InternalFuncs):
 
     def clean_previous(self):
         def obsolete_content():
-            versions = self.instdb.get_version(self.env.name, 
-                    self.env.repo, self.env.category)[0].split(" ")
-            current_slot = self.instdb.get_slot(self.env.repo, self.env.category, 
-                    self.env.name, self.env.version)
-            
-            for ver in versions:
-                slot = self.instdb.get_slot(self.env.repo, self.env.category, self.env.name, ver)
-                if slot == current_slot:
-                    return self.comparison(self.env.version, ver)
+            version_data = self.instdb.get_version(self.env.name, 
+                    self.env.repo, self.env.category)
+            for slot in version_data.keys():
+                if slot == self.env.slot:
+                    return self.comparison(self.env.version, version_data[slot][0])
 
         if not self.is_fresh():
             if self.is_different() or self.is_reinstall():
