@@ -188,4 +188,7 @@ class PackageDatabase:
     def get_version(self, repo, name, category):
         self.cursor.execute('''select version from metadata where repo=(?) and category=(?) and name=(?)''', 
                 (repo, category, name,))
-        return pickle.loads(str(self.cursor.fetchone()[0]))
+        result = self.cursor.fetchall()
+        if not result:
+            return None
+        return pickle.loads(str(result[0][0]))
