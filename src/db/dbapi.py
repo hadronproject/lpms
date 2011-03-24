@@ -119,6 +119,9 @@ class API(object):
     def get_options(self, pkgname, repo_name = None, pkg_category = None):
         return self.get_from_metadata("options", pkgname, repo_name, pkg_category)
 
+    def get_slot(self, repo_name, pkgname, pkg_category, pkg_version):
+        return self.db.get_slot(repo_name, pkgname, pkg_category, pkg_version)
+
     def add_depends(self, data, commit=False):
         return self.db.add_depends(data, commit)
 

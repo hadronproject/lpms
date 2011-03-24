@@ -58,15 +58,25 @@ class PackageDatabase:
         return set(self.connection.fetchall())
 
     def add_pkg(self, data, commit=True):
-        repo, category, name, version, summary, homepage, _license, src_url, options = data
+        def get_slot():
+            data = self.cursor.execute('''select version from metadata where repo=(?) and category=(?) and name=(?)''', 
+                    (repo, category, name,))
+            return pickle.loads(str(self.cursor.fetchone()[0]))
+
+        repo, category, name, version, summary, homepage, _license, src_url, options, slot = data
         if not self.pkg_is_exists(repo, category, name):
+            version_data = sqlite3.Binary(pickle.dumps({slot: [version]}, 1))
             self.cursor.execute('''insert into metadata values (?, ?, ?, ?, ?, ?, ?, ?, ?)''', (
-                repo, category, name, version, summary, homepage, _license, src_url, options))
+                repo, category, name, version_data, summary, homepage, _license, src_url, options))
         else:
-            current_version = self.get_metadata('version', repo, category, name)
-            version += " "+current_version[0]
+            current_versions = get_slot()
+            if slot in current_versions.keys():
+                current_versions[slot].append(version)
+            else:
+                current_versions.update({slot: [version]})
             self.cursor.execute('''update metadata set version=(?) where repo=(?) and category=(?) and name=(?)''', (
-                (version, repo, category, name)))
+                (sqlite3.Binary(pickle.dumps(current_versions, 1)), repo, category, name)))
+
         if commit:
             self.commit()
 
@@ -78,8 +88,11 @@ class PackageDatabase:
 
     def find_pkg(self, name):
         self.cursor.execute('''select repo, category, name, version from metadata where name=(?)''', (name,))
-        return self.cursor.fetchall()
-
+        result = self.cursor.fetchall()
+        if not result:
+            return result
+        return [(repo, category, name, pickle.loads(str(version))) for repo, category, name, version in result]
+    
     def get_metadata(self, keyword, repo, category, name):
         self.cursor.execute('''select %s from metadata where repo=(?) and category=(?) and name=(?)''' 
                 % keyword, (repo, category, name,))
@@ -106,16 +119,19 @@ class PackageDatabase:
         else:
             for pkg in self.find_pkg(name):
                 irepo, icategory, iname, iversion = pkg
+                # FIXME: This is no good!
+                versions = []
+                map(lambda x: versions.extend(x), iversion.values())
                 if (irepo, icategory, iname) == (rname, category, name):
-                    if len(iversion.split(" ")) > 1:
-                        if version in iversion.split(" "):
-                            result = iversion.split(" ")
+                    if len(versions) > 1:
+                        if version in versions:
+                            result = versions
                             result.remove(version); new_version = " ".join(result)
                             self.cursor.execute('''update metadata set version=(?) where repo=(?) and category=(?) and name=(?)''', (
                                 (new_version, rname, category, name)))
                             drop_others()
                             break
-                    elif len(iversion.split(" ")) == 1 and version == iversion:
+                    elif len(versions) == 1 and version == versions[0]:
                         self.cursor.execute('''delete from metadata where %s=(?) and %s=(?) and %s=(?) and %s=(?)''' 
                                 % ("repo", "category", "name", "version"), (rname, category, name, version,))
                         drop_others()
@@ -159,3 +175,8 @@ class PackageDatabase:
             result = {'build': pickle.loads(str(deps[4])),
                     'runtime': pickle.loads(str(deps[5]))}
             return result
+
+    def get_slot(self, repo, name, category, version):
+        self.cursor.execute('''select slot from metadata where repo=(?) and category=(?) and name=(?) and version=(?)''', 
+                (repo, category, name, version,))
+        return pickle.loads(str(self.cursor.fetchone()[0]))

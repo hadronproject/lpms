@@ -50,6 +50,7 @@ class Build(internals.InternalFuncs):
         utils.set_environment_variables()
 
     def best_pkg(self):
+        # TODO: This method will be re-written.
         """ Select the package version and return spec's path """
         result = []
         if self.pkgname.startswith("="):
@@ -57,8 +58,9 @@ class Build(internals.InternalFuncs):
             # FIXME: if there are the same packages in different categories, 
             # warn user.
             for pkg in self.repo_db.find_pkg(name):
-                repo_ver = pkg[3].split(' ')
-                if version in repo_ver:
+                versions = []
+                map(lambda x: versions.extend(x), pkg[-1].values())
+                if version in versions:
                     repo, category, name = pkg[:-1]
                     result = (repo, category, name, version)
             if len(result) == 0:
@@ -69,12 +71,15 @@ class Build(internals.InternalFuncs):
                 lpms.catch_error("%s not found!" % out.color(self.pkgname, "brightred"))
             
             data = data[0]
-            repo_ver = data[3].split(' ')
-            if len(repo_ver) != 1:
-                result = utils.best_version(data)
+            versions = []
+            map(lambda x: versions.extend(x), data[-1].values())
+            if len(versions) != 1:
+                repo, category, name = data[:-1]
+                result = (repo, category, name, utils.best_version(versions))
             else:
-                result = data
-        
+                repo, category, name = data[:-1]
+                result = (repo, category, name, data[-1].values()[0][0])
+                #result = (repo, category, name, 
         repo = result[0]; category = result[1]
         version = result[3]; pkgname = result[2]
         spec_file = os.path.join(cst.repos, repo, category,
@@ -192,8 +197,13 @@ def prepare_plan(pkgnames, instruct):
         opr.env.__dict__.update(instruct)
 
         opr.env.fullname = opr.env.name+"-"+opr.env.version
-        for attr in ('options', 'summary', 'license', 'homepage'):
-            setattr(opr.env, attr, metadata[attr])
+        for attr in ('options', 'summary', 'license', 'homepage', 'slot'):
+            try:
+                setattr(opr.env, attr, metadata[attr])
+            except KeyError:
+                # slot?
+                setattr(opr.env, attr, "0")
+
         opr.env.default_options = opr.config.options.split(" ")
         opr.env.applied = opr.options_info()
         
