@@ -120,20 +120,24 @@ class PackageDatabase:
             for pkg in self.find_pkg(name):
                 irepo, icategory, iname, iversion = pkg
                 # FIXME: This is no good!
-                versions = []
-                map(lambda x: versions.extend(x), iversion.values())
                 if (irepo, icategory, iname) == (rname, category, name):
-                    if len(versions) > 1:
-                        if version in versions:
-                            result = versions
-                            result.remove(version); new_version = " ".join(result)
-                            self.cursor.execute('''update metadata set version=(?) where repo=(?) and category=(?) and name=(?)''', (
-                                (new_version, rname, category, name)))
-                            drop_others()
-                            break
-                    elif len(versions) == 1 and version == versions[0]:
-                        self.cursor.execute('''delete from metadata where %s=(?) and %s=(?) and %s=(?) and %s=(?)''' 
-                                % ("repo", "category", "name", "version"), (rname, category, name, version,))
+                    for key in iversion.keys():
+                        if version in iversion[key]:
+                            iversion[key].remove(version)
+                    
+                    versions = []
+                    map(lambda x: versions.extend(x), iversion.values())
+                    
+                    if len(versions) >= 1:
+                        #result = versions
+                        #result.remove(version); new_version = " ".join(result)
+                        self.cursor.execute('''update metadata set version=(?) where repo=(?) and category=(?) and name=(?)''', 
+                                ((sqlite.Binary(pickle.dumps(iversion, 1), rname, category, name))))
+                        drop_others()
+                        break
+                    elif not versions:
+                        self.cursor.execute('''delete from metadata where repo=(?) and category=(?) and name=(?)''', 
+                            (rname, category, name,))
                         drop_others()
         self.commit()
 
@@ -176,7 +180,12 @@ class PackageDatabase:
                     'runtime': pickle.loads(str(deps[5]))}
             return result
 
-    def get_slot(self, repo, name, category, version):
-        self.cursor.execute('''select slot from metadata where repo=(?) and category=(?) and name=(?) and version=(?)''', 
-                (repo, category, name, version,))
+    #def get_slot(self, repo, name, category, version):
+    #    self.cursor.execute('''select slot from metadata where repo=(?) and category=(?) and name=(?) and version=(?)''', 
+    #            (repo, category, name, version,))
+    #    return pickle.loads(str(self.cursor.fetchone()[0]))
+    
+    def get_version(self, repo, name, category):
+        self.cursor.execute('''select version from metadata where repo=(?) and category=(?) and name=(?)''', 
+                (repo, category, name,))
         return pickle.loads(str(self.cursor.fetchone()[0]))
