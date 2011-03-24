@@ -47,14 +47,15 @@ class Search(object):
         for repo, category, name in self.repo_db.get_all_names():
             summary = self.repo_db.get_summary(name, repo, category)[0]
             if replace.match(name) is not None or replace.search(summary) is not None:
-                versions = self.repo_db.get_version(name, repo, category)[0]
+                versions = []
+                map(lambda x: versions.extend(x), self.repo_db.get_version(name, repo, category).values())
                 if lpms.getopt("--mark"):
                     out.write("%s/%s (%s)\n    %s" %(category, 
                         replace.sub(out.color(r"\1", "red"), name),
-                        versions,
+                        " ".join(versions),
                         replace.sub(out.color(r"\1", "red"), summary))+'\n')
                 else:
                     out.write("%s/%s (%s)\n    %s" % (out.color(category, "green"),
                         out.color(name, "green"),
-                        versions,
+                        " ".join(versions),
                         summary+'\n'))
