@@ -23,8 +23,13 @@ from lpms.db import dbapi
 
 class Info(object):
     def __init__(self, params):
+        self.instdb = dbapi.InstallDB()
         self.repo_db = dbapi.RepositoryDB()
         self.params = params
+        self.repo = None
+        self.category = None
+        self.name = None
+        self.version = None
 
     def usage(self):
         out.normal("Get information about given package")
@@ -34,14 +39,24 @@ class Info(object):
         lpms.terminate()
 
     def get_info(self, pkg):
-        repo, category, name, version = pkg
-        out.write('%s/%s' % (out.color(category, "white"), out.color(name, 'brightgreen')+'\n'))
-        out.write('    %-20s %s' % (out.color("available versions:", 'green'), version+'\n'))
+        def show_installed_versions():
+            ivers = [atom[3] for atom in buildinfo]
+            out.write('    %-20s %s' % (out.color("installed versions:", 'green'), " ".join(ivers)+'\n'))
+
+        self.repo, self.category, self.name, self.version = pkg
+        repo_versions = []
+        map(lambda x: repo_versions.extend(x), self.version.values())
+        #buildinfo = self.instdb.get_buildinfo(self.repo, self.category, self.name)
+        out.write('%s/%s' % (out.color(self.category, "white"), out.color(self.name, 'brightgreen')+'\n'))
+        out.write('    %-20s %s' % (out.color("available versions:", 'green'), " ".join(repo_versions)+'\n'))
+        #if len(buildinfo) != 0:
+        #    show_installed_versions()
+
         for tag in ('summary', 'homepage', 'license', 'options'):
-            data = getattr(self.repo_db, "get_"+tag)(name, repo, category)[0]
+            data = getattr(self.repo_db, "get_"+tag)(self.name, self.repo, self.category)[0]
             if data is not None:
                 out.write('    %s %s' % (out.color(tag+":", 'green'), data+'\n'))
-        out.write('    %s %s' % (out.color("repo:", 'green'), repo+'\n'))
+        out.write('    %s %s' % (out.color("repo:", 'green'), self.repo+'\n'))
 
 
     def run(self):
@@ -69,3 +84,5 @@ class Info(object):
             else:
                 for pkg in data:
                     self.get_info(pkg)
+
+
