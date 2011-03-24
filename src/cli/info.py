@@ -49,9 +49,16 @@ class Info(object):
         #buildinfo = self.instdb.get_buildinfo(self.repo, self.category, self.name)
         out.write('%s/%s' % (out.color(self.category, "white"), out.color(self.name, 'brightgreen')+'\n'))
         out.write('    %-20s %s' % (out.color("available versions:", 'green'), " ".join(repo_versions)+'\n'))
-        #if len(buildinfo) != 0:
-        #    show_installed_versions()
-
+        instvers = self.instdb.get_version(self.name, self.repo, self.category); inst_versions = []
+        if not isinstance(instvers, bool) and instvers:
+            out.write('    %-20s ' % (out.color('installed versions:', 'green')))
+            if len(instvers) > 1:
+                for iver in instvers.items():
+                    out.write("%s(%s) " % (out.color(iver[0], "backgroundwhite"), " ".join(iver[1])))
+                out.write('\n')
+            else:
+                map(lambda x: inst_versions.extend(x), instvers.values())
+                out.write('%s' % " ".join(inst_versions)+'\n')
         for tag in ('summary', 'homepage', 'license', 'options'):
             data = getattr(self.repo_db, "get_"+tag)(self.name, self.repo, self.category)[0]
             if data is not None:
