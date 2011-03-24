@@ -114,7 +114,7 @@ class API(object):
         return self.get_from_metadata("license", pkgname, repo_name, pkg_category)
     
     def get_version(self, pkgname, repo_name = None, pkg_category = None):
-        return self.get_from_metadata("version", pkgname, repo_name, pkg_category)
+        return self.db.get_version(repo_name, pkgname, pkg_category)
 
     def get_options(self, pkgname, repo_name = None, pkg_category = None):
         return self.get_from_metadata("options", pkgname, repo_name, pkg_category)
