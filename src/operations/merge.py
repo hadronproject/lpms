@@ -27,6 +27,7 @@ from lpms import shelltools
 from lpms import constants as cst
 
 from lpms.db import dbapi
+from lpms.db import filesdb
 
 class Merge(internals.InternalFuncs):
     '''Main class for package installation'''
@@ -36,6 +37,7 @@ class Merge(internals.InternalFuncs):
         self.total = 0
         self.myfile = None
         self.filesdb_path = None
+        self.versions = []
         self.env = environment
         self.instdb = dbapi.InstallDB()
 
@@ -43,25 +45,31 @@ class Merge(internals.InternalFuncs):
     def is_fresh(self):
         status = self.instdb.find_pkg(self.env.name, 
             self.env.repo, self.env.category)
-        if status is False or len(status) == 0 or not self.env.version in status[-1].split(" "):
+        
+        if isinstance(status, bool):
             return True
+        
+        map(lambda x: self.versions.extend(x), status[-1].values())
+        if not status or not self.env.version in self.versions:
+            return True
+        
         return False
 
     def is_reinstall(self):
         result = self.instdb.find_pkg(self.env.name, self.env.repo, self.env.category)
         version = result[-1]
-        if len(version.split(" ")) == 1 and version == self.env.version:
+        if len(self.versions) == 1 and version == self.env.version:
             return True
-        elif len(version.split(" ")) != 1 and self.env.version in version.split(" "):
+        elif len(self.versions) != 1 and self.env.version in self.versions:
             return True
         return False
 
-    def is_upgrade(self):
+    def is_different(self):
         result = self.instdb.find_pkg(self.env.name, self.env.repo, self.env.category)
         version = result[-1]
-        if len(version.split(" ")) == 1 and version != self.env.version:
+        if len(self.versions) == 1 and version != self.env.version:
             return True
-        elif len(version.split(" ")) != 1 and not self.env.version in version.split(" "):
+        elif len(self.versions) != 1 and not self.env.version in self.versions:
             return True
         return False
 
@@ -171,13 +179,16 @@ class Merge(internals.InternalFuncs):
 
     def write_db(self):
         # write metadata
-        # FIXME: do we need a function called update_dbor like this?
+        # FIXME: do we need a function called update_db or like this?
         self.instdb.remove_pkg(self.env.repo, self.env.category,
                 self.env.name, self.env.version)
+        
         data =(self.env.repo, self.env.category, 
             self.env.name, self.env.version, 
             self.env.summary, self.env.homepage, 
-            self.env.license, self.env.src_url, " ".join(self.env.options))
+            self.env.license, self.env.src_url, 
+            " ".join(self.env.options), self.env.slot)
+
         self.instdb.add_pkg(data, commit=True)
 
         # write build info. flags, build time and etc.
@@ -187,11 +198,70 @@ class Merge(internals.InternalFuncs):
                 os.environ["LDFLAGS"], " ".join(self.env.applied), self.total)
         self.instdb.add_buildinfo(data)
 
+    def clean_previous(self):
+        def obsolete_content():
+            versions = self.instdb.get_version(self.env.name, 
+                    self.env.repo, self.env.category)[0].split(" ")
+            current_slot = self.instdb.get_slot(self.env.repo, self.env.category, 
+                    self.env.name, self.env.version)
+            
+            for ver in versions:
+                slot = self.instdb.get_slot(self.env.repo, self.env.category, self.env.name, ver)
+                if slot == current_slot:
+                    return self.comparison(self.env.version, ver)
+
+        if not self.is_fresh():
+            if self.is_different() or self.is_reinstall():
+                obsolete_dirs, obsolete_files = obsolete_content()
+
+                if len(obsolete_dirs) != 0 or len(obsolete_files) !=0:
+                    out.normal("cleaning obsolete content...")
+                
+                for _file in obsolete_files:
+                    target = os.path.join(self.env.real_root, _file[1:])
+                    if os.path.islink(target):
+                        os.unlink(target)
+                    else:
+                        shelltools.remove_file(target)
+
+                dirs = obsolete_dirs
+                dirs.reverse()
+                for _dir in dirs:
+                    target = os.path.join(self.env.real_root, _dir[1:])
+                    if len(os.listdir(target)) == 0:
+                        shelltools.remove_dir(target)
+
+    def comparison(self, new_ver, old_ver):
+        obsolete_dirs = []; obsolete_files = []
+        new = filesdb.FilesDB(self.env.repo, self.env.category, 
+                self.env.name, new_ver, self.env.real_root)
+        new.import_xml()
+
+        old = filesdb.FilesDB(self.env.repo, self.env.category,
+                self.env.name, old_ver, self.env.real_root)
+        old.import_xml()
+
+        # for directories
+        for _dir in old.content['dirs']:
+            if not _dir in new.content['dirs']:
+                obsolete_dirs.append(_dir)
+
+        # for regular files
+        for _file in old.content['file']:
+            if not _file in new.content['file']:
+                obsolete_files.append(_file)
+
+        return obsolete_dirs, obsolete_files
+
+
 def main(environment):
     opr = Merge(environment)
 
     # merge
     opr.merge_pkg()
+
+    # clean previous version if it is exists
+    opr.clean_previous()
 
     # write to database
     opr.write_db()

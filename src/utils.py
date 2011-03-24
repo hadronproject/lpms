@@ -594,13 +594,11 @@ def pkgsplit(mypkg, silent = 1):
     else:
         return None
 
-def best_version(data):
-    versions = data[3].split(' ')
+def best_version(versions):
     for ver in versions:
         i = 0
         for __ver in versions:
             if ver !=  __ver:
                 i += vercmp(ver, __ver)
-        if len(versions)-1 == i:
-            repo, category, name = data[:-1]
-            return repo, category, name, ver
+        if len(versions) - 1 == i:
+            return ver

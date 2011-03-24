@@ -55,10 +55,13 @@ class Update(internals.InternalFuncs):
                     metadata.update({"name": name, "version": version})
                     if not "options" in metadata.keys():
                         metadata.update({"options": None})
+                    if not "slot" in metadata.keys():
+                        metadata.update({"slot": "0"})
+
                     out.write("    %s-%s\n" % (name, version))
                     data = (repo_name, category, metadata["name"], metadata["version"], metadata["summary"], 
-                            metadata["homepage"], metadata["license"], metadata["src_url"], metadata["options"])
-                    repo, category, name, version, summary, homepage, _license, src_url, options = data
+                            metadata["homepage"], metadata["license"], metadata["src_url"], metadata["options"], metadata['slot'])
+                    repo, category, name, version, summary, homepage, _license, src_url, options, slot = data
                     self.repo_db.add_pkg(data, commit=False)
                     # add dependency mumbo-jumbo
                     runtime = []; build = []
