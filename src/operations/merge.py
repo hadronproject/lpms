@@ -133,15 +133,17 @@ class Merge(internals.InternalFuncs):
                 source = os.path.join(self.env.install_dir, root_path[1:], f)
                 target = os.path.join(self.env.real_root, root_path[1:], f)
 
+                perms = get_perms(source)
+
                 if os.path.islink(source):
                     realpath = os.readlink(source)
                     if os.path.islink(target):
                         shelltools.remove_file(target)
                     shelltools.make_symlink(realpath, target)
                 else:
-                    shelltools.copy(source, target)
+                    shelltools.move(source, target)
 
-                perms = get_perms(source)
+                #perms = get_perms(source)
 
                 if not os.path.islink(source):
                     shelltools.set_id(target, perms["uid"], perms["gid"])
