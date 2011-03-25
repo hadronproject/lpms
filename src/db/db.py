@@ -132,7 +132,7 @@ class PackageDatabase:
                         #result = versions
                         #result.remove(version); new_version = " ".join(result)
                         self.cursor.execute('''update metadata set version=(?) where repo=(?) and category=(?) and name=(?)''', 
-                                ((sqlite.Binary(pickle.dumps(iversion, 1), rname, category, name))))
+                                (sqlite3.Binary(pickle.dumps(iversion, 1)), rname, category, name,))
                         drop_others()
                         break
                     elif not versions:
