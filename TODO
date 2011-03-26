@@ -1,4 +1,15 @@
-(-) post_install, post_remove, pre_install, pre_remove functions are added to interpreter.
+# TODO list for lpms-1.0 #
+==========================
+
+(-) more documentation
+(-) post_install, post_remove, pre_install, pre_remove functions will be added to interpreter.
+(-) database locking
 (-) dependency resolution and related features will be implemented.
 (-) upgrade feature?
-(-) search and info modules will be imporoved.
+(-) database must be upgraded for single package or a package group.
+(-) search and info modules will be imporoved.(partially)
+(-) unit tests will be written
+(-) we need more exception and error messages will be improved.
+(-) file collisions
+(-) config protect
+(-) an 'environment update' script
