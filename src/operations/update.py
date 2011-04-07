@@ -49,6 +49,7 @@ class Update(internals.InternalFuncs):
                 os.chdir(os.path.join(repo_path, category, my_pkg))
                 for pkg in glob.glob("*"+cst.spec_suffix):
                     script_path = os.path.join(repo_path, category, my_pkg, pkg)
+                    self.env.name, self.env.version = utils.parse_pkgname(pkg.split(cst.spec_suffix)[0])
                     self.import_script(script_path)
                     metadata = utils.metadata_parser(self.env.metadata)
                     name, version = utils.parse_pkgname(pkg.split(cst.spec_suffix)[0])

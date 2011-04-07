@@ -16,7 +16,7 @@
 # along with lpms.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
-import lpms 
+import lpms
 
 from lpms import out
 from lpms import utils
@@ -50,7 +50,8 @@ class Remove:
             if os.path.islink(target):
                 os.unlink(target)
             else:
-                shelltools.remove_file(target)
+                if os.path.exists(target):
+                    shelltools.remove_file(target)
 
 
     def remove_dirs(self):
@@ -58,7 +59,7 @@ class Remove:
         dirs.reverse()
         for _dir in dirs:
             target = os.path.join(self.real_root, _dir[1:])
-            if len(os.listdir(target)) == 0:
+            if os.path.isdir(target) and len(os.listdir(target)) == 0:
                 shelltools.remove_dir(target)
 
 def main(pkgnames, instruct):
@@ -80,13 +81,18 @@ def main(pkgnames, instruct):
             data = instdb.find_pkg(pkgname)
             if not data:
                 lpms.catch_error("%s not found!" % out.color(pkgname, "brightred"))
-            
+
             data = data[0]
-            instver= data[3].split(' ')
-            if len(instver) != 1:
-                result = utils.best_version(data)
+            instvers = []
+            map(lambda x: instvers.extend(x), data[-1].values())
+            if len(instvers) != 1:
+                version = utils.best_version(instver)
             else:
-                result = data
+                version = instvers[-1]
+
+            result = list(data); result.remove(data[-1])
+            result.insert(3, version)
+
         return result
 
     instdb = dbapi.InstallDB()
@@ -94,15 +100,22 @@ def main(pkgnames, instruct):
     # start remove operation
     for pkgname in pkgnames:
         repo, category, name, version = select(pkgname)
-        out.normal("removing %s/%s/%s-%s" % (repo, category, name, version))
         # initialize remove class
         rmpkg = Remove(repo, category, name, version, instruct)
+        out.normal("removing %s/%s/%s-%s from %s" % (repo, category, name, version, rmpkg.real_root))
         # remove files
         rmpkg.remove_files()
         # remove empty dirs
         rmpkg.remove_dirs()
         # remove entries from metadata table
         instdb.remove_pkg(repo, category, name, version)
-        # remove entries from build_info table
-        #instdb.drop_buildinfo(repo, category, name, version)
-    
+        xmlfile = os.path.join(rmpkg.real_root, cst.db_path[1:], 
+                cst.filesdb, category, name, name)+"-"+version+cst.xmlfile_suffix
+        if os.path.isfile(xmlfile):
+            shelltools.remove_file(xmlfile)
+            if not os.listdir(os.path.dirname(xmlfile)):
+                # remove package dir, if it is empty
+                shelltools.remove_dir(os.path.dirname(xmlfile))
+                if not os.listdir(os.path.dirname(os.path.dirname(xmlfile))):
+                    # remove category dir, if it is empty
+                    shelltools.remove_dir(os.path.dirname(os.path.dirname(xmlfile)))
