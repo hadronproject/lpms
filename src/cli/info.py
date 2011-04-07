@@ -39,9 +39,9 @@ class Info(object):
         lpms.terminate()
 
     def get_info(self, pkg):
-        def show_installed_versions():
-            ivers = [atom[3] for atom in buildinfo]
-            out.write('    %-20s %s' % (out.color("installed versions:", 'green'), " ".join(ivers)+'\n'))
+        def show_options(iver):
+            options = self.repo_db.get_options(self.repo, self.category, self.name, iver)
+            valid_opts = self.instdb.get_options(self.repo, self.category, self.name, iver)
 
         self.repo, self.category, self.name, self.version = pkg
         repo_versions = []
@@ -55,11 +55,14 @@ class Info(object):
             if len(instvers) > 1:
                 for iver in instvers.items():
                     out.write("%s(%s) " % (out.color(iver[0], "backgroundwhite"), " ".join(iver[1])))
+                    #show_options(iver)
                 out.write('\n')
             else:
                 map(lambda x: inst_versions.extend(x), instvers.values())
                 out.write('%s' % " ".join(inst_versions)+'\n')
-        for tag in ('summary', 'homepage', 'license', 'options'):
+                #for iver in inst_versions:
+                #    show_options(iver)
+        for tag in ('summary', 'homepage', 'license'):
             data = getattr(self.repo_db, "get_"+tag)(self.name, self.repo, self.category)[0]
             if data is not None:
                 out.write('    %s %s' % (out.color(tag+":", 'green'), data+'\n'))
