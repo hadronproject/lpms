@@ -36,10 +36,10 @@ from lpms.operations import merge
 # FIXME: This module is very ugly. I will re-write it.
 
 class Build(internals.InternalFuncs):
-    def __init__(self, pkgname):
+    def __init__(self):
         super(Build, self).__init__()
-        self.pkgname = pkgname
-        self.env.pkgname = pkgname
+        #self.pkgname = pkgname
+        #self.env.pkgname = pkgname
         self.repo_db = dbapi.RepositoryDB()
         self.download_plan = []
         self.extract_plan = []
@@ -48,45 +48,6 @@ class Build(internals.InternalFuncs):
         self.spec_file = None
         self.config = conf.LPMSConfig()
         utils.set_environment_variables()
-
-    def best_pkg(self):
-        # TODO: This method will be re-written.
-        """ Select the package version and return spec's path """
-        result = []
-        if self.pkgname.startswith("="):
-            name, version = utils.parse_pkgname(self.pkgname[1:])
-            # FIXME: if there are the same packages in different categories, 
-            # warn user.
-            for pkg in self.repo_db.find_pkg(name):
-                versions = []
-                map(lambda x: versions.extend(x), pkg[-1].values())
-                if version in versions:
-                    repo, category, name = pkg[:-1]
-                    result = (repo, category, name, version)
-            if len(result) == 0:
-                lpms.catch_error("%s not found!" % out.color(self.pkgname[1:], "brightred"))
-        else:
-            data = self.repo_db.find_pkg(self.pkgname)
-            if not data:
-                lpms.catch_error("%s not found!" % out.color(self.pkgname, "brightred"))
-            
-            data = data[0]
-            versions = []
-            map(lambda x: versions.extend(x), data[-1].values())
-            if len(versions) != 1:
-                repo, category, name = data[:-1]
-                result = (repo, category, name, utils.best_version(versions))
-            else:
-                repo, category, name = data[:-1]
-                result = (repo, category, name, data[-1].values()[0][0])
-                #result = (repo, category, name, 
-        repo = result[0]; category = result[1]
-        version = result[3]; pkgname = result[2]
-        spec_file = os.path.join(cst.repos, repo, category,
-                pkgname, pkgname+"-"+version)
-        spec_file += cst.spec_suffix
-
-        return spec_file, repo, pkgname, category, version
 
     def options_info(self):
         # FIXME: This is no good.
@@ -116,7 +77,6 @@ class Build(internals.InternalFuncs):
         self.env.extract_plan = self.extract_plan
 
     def prepare_environment(self):
-        """ Prepares self.environment """ 
         if self.env.sandbox is None:
             if self.config.sandbox:
                 self.env.__setattr__("sandbox", True)
@@ -149,7 +109,7 @@ class Build(internals.InternalFuncs):
                     continue
             archive.extract(str(archive_path), str(target))
         shelltools.touch(unpack_file)
-            
+
     def parse_url_tag(self):
         def set_shortening(data, opt=False):
             for short in ('$name', '$version', '$fullname', '$my_fullname', '$my_name', '$my_version'):
@@ -169,34 +129,47 @@ class Build(internals.InternalFuncs):
             elif len(result) == 2:
                 set_shortening(result[1], opt=True)
 
-def prepare_plan(pkgnames, instruct):
-    # dependency resolotion will be here as well.
-    plan =[]
-    for pkgname in pkgnames:
-        opr = Build(pkgname)
+    def compile_script(self):
+        if not os.path.isfile(self.env.spec_file):
+            lpms.catch_error("%s not found!" % self.env.spec_file)
+        self.import_script(self.env.spec_file)
 
-        if not pkgname.endswith(cst.spec_suffix):
-            best = opr.best_pkg()
-            mytags = ('spec_file', 'repo', 'name', 'category', 'version')
-            for tag in mytags:
-                opr.env.__dict__[tag] = best[mytags.index(tag)]
-            opr.import_script(opr.env.spec_file)
-        else:
-            opr.env.spec_file = os.path.join(os.getcwd(), pkgname)
-            if not os.path.isfile(opr.env.spec_file):
-                lpms.terminate("%s not found!" % opr.env.spec_file)
+def main(operation_plan, instruct):
+    count = len(operation_plan); i = 1
+    if instruct["pretend"] or instruct["ask"]:
+        out.write("\n")
+        out.normal("these packages will be merged, respectively:\n")
+        for atom in operation_plan:
+            repo, category, name, version, valid_options = atom[:-1]
+            options = dbapi.RepositoryDB().get_options(repo, category, name, version)[version]
+            show_plan(repo, category, name, version, valid_options, options)
 
-            opr.import_script(opr.env.spec_file)
+        if instruct["pretend"]:
+            lpms.terminate()
 
-            opr.env.name, opr.env.version = utils.parse_pkgname(os.path.basename(opr.env.spec_file))
-            # set category and repository value for local packages.
-            opr.env.category = "local"
-            opr.env.repo = "local"
+        out.write("\nTotal %s package will be merged.\n\n" % out.color(str(count), "green"))
+        if not utils.confirm("do you want to continue?"):
+            out.write("quitting...\n")
+            lpms.terminate()
 
-        metadata = utils.metadata_parser(opr.env.metadata)
+    for plan in operation_plan:
+        opr = Build()
+
+        keys = {'repo':0, 'category':1, 'pkgname':2, 'version':3, 'valid_opts':4, 'todb': 5}
+        for key in keys:
+            setattr(opr.env, key, plan[keys[key]])
+
+        # FIXME:
+        opr.env.name = opr.env.pkgname
+        opr.env.fullname = opr.env.pkgname+"-"+opr.env.version
+        opr.env.spec_file = os.path.join(cst.repos, opr.env.repo, 
+                opr.env.category, opr.env.pkgname, opr.env.pkgname)+"-"+opr.env.version+cst.spec_suffix
         opr.env.__dict__.update(instruct)
+        opr.env.default_options = opr.config.options.split(" ")
 
-        opr.env.fullname = opr.env.name+"-"+opr.env.version
+        opr.compile_script()
+        
+        metadata = utils.metadata_parser(opr.env.metadata)
         for attr in ('options', 'summary', 'license', 'homepage', 'slot'):
             try:
                 setattr(opr.env, attr, metadata[attr])
@@ -204,59 +177,31 @@ def prepare_plan(pkgnames, instruct):
                 # slot?
                 setattr(opr.env, attr, "0")
 
-        opr.env.default_options = opr.config.options.split(" ")
-        opr.env.applied = opr.options_info()
-        
-        if "srcdir" in opr.env.__dict__.keys():
-            opr.env.srcdir = opr.env.__dict__["srcdir"]
-        else:
-            opr.env.srcdir = opr.env.fullname
+        # FIXME: This is no good!
+        ####################################
+        if opr.env.options is None:
+            opr.env.options = []
 
-        if instruct["pretend"]:
-            show(opr.env.repo, opr.env.category,
-                    opr.env.name, opr.env.version,
-                    opr.env.applied, opr.env.options,
-                    [])
-            continue
+        if opr.env.valid_opts is None:
+            opr.env.valid_opts = []
+        ####################################
 
-        if "src_url" in metadata.keys():
+        if "src_url" in metadata:
             opr.env.src_url = metadata["src_url"]
         else:
             if "src_url" in local_env.keys():
                 opr.env.src_url = local_env["src_url"]
 
-        #for short in ('my_fullname', 'my_name', 'my_version', 'srcdir'):
-        #    if short in opr.env.__dict__.keys():
-        #        opr.env.__dict__[short] = local_env[short]
-        plan.append(opr.env.__dict__)
-        
-    return plan
-
-def main(pkgnames, instruct):
-    #pkgnames = resolve_dependencies(pkgnames)
-    operation_plan = prepare_plan(pkgnames, instruct)
-    count = len(operation_plan); i = 1
-    if instruct["ask"]:
-        out.normal("these packages will be merged, respectively:\n")
-        for x in operation_plan:
-            show(x["repo"], x["category"], x["name"], x["version"],
-                    x["applied"], x["options"], [])
-        out.write("\nTotal %s package will be merged.\n\n" % out.color(str(count), "green"))
-        if not utils.confirm("do you want to continue?"):
-            out.write("quitting...\n")
-            lpms.terminate()
-
-    for plan in operation_plan:
-        opr = Build(plan["pkgname"])
-        for key in plan.keys():
-            opr.env.__dict__[key] = plan[key]
+        if not "srcdir" in opr.env.__dict__:
+            setattr(opr.env, "srcdir", opr.env.fullname)
         opr.prepare_environment()
+
         utils.xterm_title("(%s/%s) lpms: building %s/%s-%s from %s" % (i, count, opr.env.category, 
-            opr.env.name, opr.env.version, opr.env.repo))
+            opr.env.pkgname, opr.env.version, opr.env.repo))
         out.normal("(%s/%s) building %s/%s from %s" % (i, count,
             out.color(opr.env.category, "green"),
-            out.color(opr.env.name+"-"+opr.env.version, "green"), opr.env.repo)); i += 1
-        # warn the user
+            out.color(opr.env.pkgname+"-"+opr.env.version, "green"), opr.env.repo)); i += 1
+
         if opr.env.sandbox:
             out.notify("sandbox is enabled")
         else:
@@ -264,7 +209,7 @@ def main(pkgnames, instruct):
 
         # fetch packages which are in download_plan list
         opr.parse_url_tag()
-        opr.prepare_download_plan(opr.env.applied)
+        opr.prepare_download_plan(opr.env.valid_opts)
         if not fetcher.URLFetcher().run(opr.download_plan):
             lpms.catch_error("\nplease check the spec")
 
@@ -273,39 +218,37 @@ def main(pkgnames, instruct):
         if opr.env.stage == "unpack":
             lpms.terminate()
 
-        if len(opr.env.applied) != 0:
+        if opr.env.valid_opts is not None and len(opr.env.valid_opts) != 0:
             out.notify("applied options: %s" % 
-                    " ".join(opr.env.applied))
+                    " ".join(opr.env.valid_opts))
         
         os.chdir(opr.env.build_dir)
         interpreter.run(opr.env.spec_file, opr.env)
         utils.xterm_title("lpms: %s/%s finished" % (opr.env.category, opr.env.pkgname))
-        merge.main(opr.env)
+        #merge.main(opr.env)
+        out.notify("cleaning build directory...\n")
+        shelltools.remove_dir(os.path.dirname(opr.env.install_dir))
+        catdir = os.path.dirname(os.path.dirname(opr.env.install_dir))
+        if catdir:
+            shelltools.remove_file(catdir)
+
         opr.env.__dict__.clear()
         utils.xterm_title_reset()
 
-def show(repo, category, pkgname, version, applied, options, download_plan):
-    out.write(" %s/%s/%s-%s " % (repo, out.color(category, "brightwhite"), 
-        out.color(pkgname, "brightgreen"), version))
-    
-    if options is not None:
-        no_applied = []
+def show_plan(repo, category, name, version, valid_options, options):
+    out.write("  %s/%s/%s-%s " % (repo, out.color(category, "brightwhite"), 
+        out.color(name, "brightgreen"), version))
+    if valid_options is None and options is not None:
         out.write("(")
-        for o in options:
-            if o in applied:
-                out.write(out.color(o, "brightred"))
-                if options[-1] != o:
-                    out.write(" ")
-            else:
-                no_applied.append("-"+o)
-            
-        for no in no_applied:
-            out.write(no)
-            if no_applied[-1] != no:
-                out.write(" ")
+        out.write(options)
         out.write(")")
-
-    if len(download_plan) == 0:
-        out.write(" 0 kb")
+    elif valid_options is not None and options is not None:
+        out.write("( ")
+        for vo in valid_options:
+            out.write(out.color(vo, "brightred")+" ")
+        for o in options.split(" "):
+            if not o in valid_options:
+                out.write(o+" ")
+        out.write(")")
     out.write("\n")
 

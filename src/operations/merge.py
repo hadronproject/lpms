@@ -46,30 +46,30 @@ class Merge(internals.InternalFuncs):
         status = self.instdb.find_pkg(self.env.name, 
             self.env.repo, self.env.category)
         
-        if isinstance(status, bool):
+        if isinstance(status, bool) or not status:
             return True
         
-        map(lambda x: self.versions.extend(x), status[-1].values())
-        if not status or not self.env.version in self.versions:
-            return True
+        #map(lambda x: self.versions.extend(x), status[-1].values())
+        #if not status or not self.env.version in self.versions:
+        #    return True
         
         return False
 
     def is_reinstall(self):
         result = self.instdb.find_pkg(self.env.name, self.env.repo, self.env.category)
         version = result[-1]
-        if len(self.versions) == 1 and version == self.env.version:
+        if len(version) == 1 and self.env.version in version:
             return True
-        elif len(self.versions) != 1 and self.env.version in self.versions:
+        elif len(version) != 1 and self.env.version in version:
             return True
         return False
 
     def is_different(self):
         result = self.instdb.find_pkg(self.env.name, self.env.repo, self.env.category)
         version = result[-1]
-        if len(self.versions) == 1 and version != self.env.version:
+        if len(self.versions) == 1 and not self.env.version in version:
             return True
-        elif len(self.versions) != 1 and not self.env.version in self.versions:
+        elif len(self.versions) != 1 and not self.env.version in version:
             return True
         return False
 
@@ -106,13 +106,15 @@ class Merge(internals.InternalFuncs):
                 target = os.path.join(self.env.real_root, root_path[1:], d)
 
                 if os.path.islink(source):
-                    realpath = os.readlink(source)
+                    realpath = os.path.realpath(source)
                     if os.path.islink(target):
                         shelltools.remove_file(target)
                     # create real directory
-                    shelltools.makedirs(realpath)
+                    print realpath.split(self.env.install_dir)[1]
+                    shelltools.makedirs(os.path.join(self.env.real_root, 
+                        realpath.split(self.env.install_dir)[1][1:]))
                     # make symlink
-                    shelltools.make_symlink(realpath, target)
+                    shelltools.make_symlink(os.readlink(source), target)
                 else:
                     shelltools.makedirs(target)
 
@@ -133,14 +135,13 @@ class Merge(internals.InternalFuncs):
                 source = os.path.join(self.env.install_dir, root_path[1:], f)
                 target = os.path.join(self.env.real_root, root_path[1:], f)
 
-                perms = get_perms(source)
-
                 if os.path.islink(source):
                     realpath = os.readlink(source)
                     if os.path.islink(target):
                         shelltools.remove_file(target)
                     shelltools.make_symlink(realpath, target)
                 else:
+                    perms = get_perms(source)
                     shelltools.move(source, target)
 
                 #perms = get_perms(source)
@@ -171,7 +172,7 @@ class Merge(internals.InternalFuncs):
         self.filesdb_path = os.path.join(self.env.real_root, cst.db_path[1:], 
                 cst.filesdb, self.env.category, self.env.name)
         shelltools.makedirs(self.filesdb_path)
-        self.myfile = self.filesdb_path+"/"+self.env.fullname+".xml"
+        self.myfile = self.filesdb_path+"/"+self.env.fullname+".xml.new"
         if os.path.isfile(self.myfile):
             shelltools.remove_file(self.myfile)
         shelltools.echo(self.myfile, iks.tostring(xml_root))
@@ -195,15 +196,22 @@ class Merge(internals.InternalFuncs):
             self.env.name, self.env.version, 
             self.env.summary, self.env.homepage, 
             self.env.license, self.env.src_url, 
-            " ".join(self.env.options), self.env.slot)
+            " ".join(self.env.valid_opts), self.env.slot)
+
+        try:
+            builddeps, runtimedeps = self.env.todb["build"], self.env.todb["runtime"]
+        except KeyError:
+            builddeps, runtimedeps = [], []
 
         self.instdb.add_pkg(data, commit=True)
+        self.instdb.add_depends((self.env.repo, self.env.category, self.env.name, 
+                self.env.version, builddeps, runtimedeps))
 
         # write build info. flags, build time and etc.
         #self.instdb.drop_buildinfo(self.env.repo, self.env.category, self.env.name, self.env.version)
         data = (self.env.repo, self.env.category, self.env.name, self.env.version, time.time(), 
                 os.environ["HOST"], os.environ["CFLAGS"], os.environ["CXXFLAGS"], 
-                os.environ["LDFLAGS"], " ".join(self.env.applied), self.total)
+                os.environ["LDFLAGS"], " ".join(self.env.valid_opts), self.total)
         self.instdb.add_buildinfo(data)
 
     def clean_previous(self):
@@ -234,11 +242,13 @@ class Merge(internals.InternalFuncs):
                     target = os.path.join(self.env.real_root, _dir[1:])
                     if len(os.listdir(target)) == 0:
                         shelltools.remove_dir(target)
+                        
+        shelltools.rename(self.myfile, self.myfile.split(".new")[0])
 
     def comparison(self, new_ver, old_ver):
         obsolete_dirs = []; obsolete_files = []
         new = filesdb.FilesDB(self.env.repo, self.env.category, 
-                self.env.name, new_ver, self.env.real_root)
+                self.env.name, new_ver, self.env.real_root, suffix=".xml.new")
         new.import_xml()
 
         old = filesdb.FilesDB(self.env.repo, self.env.category,
@@ -255,8 +265,8 @@ class Merge(internals.InternalFuncs):
             if not _file in new.content['file']:
                 obsolete_files.append(_file)
 
+        shelltools.remove_file(os.path.join(self.filesdb_path, self.env.name)+"-"+old_ver+".xml")
         return obsolete_dirs, obsolete_files
-
 
 def main(environment):
     opr = Merge(environment)
@@ -269,3 +279,4 @@ def main(environment):
 
     # write to database
     opr.write_db()
+
