@@ -119,7 +119,7 @@ class URLFetcher:
     def external_fetcher(self, command, download_plan, location):
         # run command
         def fetch(command, download_plan, location):
-            current = os.getcwd()
+            #current = os.getcwd()
             if location is not None:
                 os.chdir(location)
             else:
@@ -133,7 +133,7 @@ class URLFetcher:
                     return False
                 else:
                     shelltools.move(partfile, localfile)
-            os.chdir(current)
+            #os.chdir(current)
             return True
 
         # parse fetch command
