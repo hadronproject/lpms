@@ -27,6 +27,13 @@ from lpms import out
 from lpms import conf
 from lpms import constants as cst
 
+
+def set_valid_options(options, cmd_options, default_options):
+    if options is None:
+        return 
+    return [o for o in options.split(' ') if opt(o, cmd_options, 
+        default_options)]
+
 def confirm(text):
     turns = 5
     while turns:
