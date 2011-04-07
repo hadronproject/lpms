@@ -24,12 +24,14 @@ from lpms.operations import update
 from lpms import utils
 from lpms import conf
 from lpms import out
+from lpms import api
 
 lpms_version = "0.9_alpha1"
 
 help_output = (
         ('--help', '-h', 'Shows this message.'),
         ('--version', '-v', 'Shows version.'),
+        ('--remove', '-r', 'Removes given package.'),
         ('--update', '-u', 'Updates all repositories or given repository.'),
         ('--search', '-s', 'Searches given package in database.'),
         ('--no-color', '-n', 'Disables color output.')
@@ -43,8 +45,10 @@ build_help = (
         ('--add-repo', 'Adds new repository(not yet).'),
         ('--ignore-sandbox', 'Disables sandbox facility.'),
         ('--enable-sandbox', 'Enables sandbox facilitiy.'),
+        ('--no-configure', 'Does not run configuration functions.'),
         ('--resume-build', 'Resumes the most recent build operation.'),
         ('--change-root', 'Changes installation target.'),
+        ('--no-merge', 'Does not merge the package'),
         ('--show-opts', 'Shows available options for given packages'),
         ('--opts', 'Determines options of the package.'))
 
@@ -95,7 +99,7 @@ def main():
         elif opt == "--show-opts":
             instruct["show_opts"] = True
         elif opt.startswith("--opts"):
-            instruct["cmd_options"] = opt.split("=")[1].split(" ")
+            instruct["cmd_options"] = opt.split("=")[1].strip().split(" ")
         elif opt.startswith("--stage"):
             instruct["stage"] = opt.split("=")[1]
         elif opt == "--disable-sandbox":
@@ -128,4 +132,4 @@ def main():
         return
     # build given packages
     utils.check_root()
-    build.main(pkgnames, instruct)
+    api.pkgbuild(pkgnames, instruct)
