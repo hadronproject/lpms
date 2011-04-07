@@ -27,7 +27,7 @@ class PackageDatabase:
         try:
             self.connection = sqlite3.connect(self.db_path)
         except sqlite3.OperationalError:
-            lpms.terminate("lpms could not connected to the database(%s)" % self.db_path)
+            lpms.terminate("lpms could not connected to the database (%s)" % self.db_path)
 
         self.cursor = self.connection.cursor()
         table = self.cursor.execute('select * from sqlite_master where type = "table"')
@@ -62,12 +62,18 @@ class PackageDatabase:
             data = self.cursor.execute('''select version from metadata where repo=(?) and category=(?) and name=(?)''', 
                     (repo, category, name,))
             return pickle.loads(str(self.cursor.fetchone()[0]))
+        
+        def get_options():
+            data = self.cursor.execute('''select options from metadata where repo=(?) and category=(?) and name=(?)''', 
+                    (repo, category, name,))
+            return pickle.loads(str(self.cursor.fetchone()[0]))
 
         repo, category, name, version, summary, homepage, _license, src_url, options, slot = data
         if not self.pkg_is_exists(repo, category, name):
             version_data = sqlite3.Binary(pickle.dumps({slot: [version]}, 1))
+            options_data = sqlite3.Binary(pickle.dumps({version: options}, 1))
             self.cursor.execute('''insert into metadata values (?, ?, ?, ?, ?, ?, ?, ?, ?)''', (
-                repo, category, name, version_data, summary, homepage, _license, src_url, options))
+                repo, category, name, version_data, summary, homepage, _license, src_url, options_data))
         else:
             current_versions = get_slot()
             if slot in current_versions.keys():
@@ -76,6 +82,14 @@ class PackageDatabase:
                 current_versions.update({slot: [version]})
             self.cursor.execute('''update metadata set version=(?) where repo=(?) and category=(?) and name=(?)''', (
                 (sqlite3.Binary(pickle.dumps(current_versions, 1)), repo, category, name)))
+            
+            current_options = get_options()
+            if version in current_options.keys():
+                current_options[version] = options
+            else:
+                current_options.update({version: options})
+            self.cursor.execute('''update metadata set options=(?) where repo=(?) and category=(?) and name=(?)''', (
+                (sqlite3.Binary(pickle.dumps(current_options, 1)), repo, category, name)))
 
         if commit:
             self.commit()
@@ -110,8 +124,8 @@ class PackageDatabase:
         def drop_others():
             self.cursor.execute('''delete from build_info where repo=(?) and category=(?) and name=(?) and version=(?)''', 
                     (rname, category, name, version,))
-            #self.cursor.execute('''delete from depends where repo=(?) and category=(?) and name=(?) and version=(?)''', 
-            ##        (rname, category, name, version,))
+            self.cursor.execute('''delete from depends where repo=(?) and category=(?) and name=(?) and version=(?)''', 
+                    (rname, category, name, version,))
 
         if category is None and name is None and version is None:
             self.cursor.execute('''delete from metadata where repo=(?)''', (rname,))
@@ -180,10 +194,16 @@ class PackageDatabase:
                     'runtime': pickle.loads(str(deps[5]))}
             return result
 
-    #def get_slot(self, repo, name, category, version):
-    #    self.cursor.execute('''select slot from metadata where repo=(?) and category=(?) and name=(?) and version=(?)''', 
-    #            (repo, category, name, version,))
-    #    return pickle.loads(str(self.cursor.fetchone()[0]))
+    def get_options(self, repo, category, name, version):
+        #print repo, category, name, version
+        self.cursor.execute('''select options from metadata where repo=(?) and category=(?) and name=(?)''', 
+                (repo, category, name,))
+        try:
+            return pickle.loads(str(self.cursor.fetchone()[0]))
+        except TypeError:
+            return None
+
+        #return pickle.loads(str(self.cursor.fetchone()[0]))
     
     def get_version(self, repo, name, category):
         self.cursor.execute('''select version from metadata where repo=(?) and category=(?) and name=(?)''', 

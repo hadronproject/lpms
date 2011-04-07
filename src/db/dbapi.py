@@ -15,6 +15,9 @@
 # You should have received a copy of the GNU General Public License
 # along with lpms.  If not, see <http://www.gnu.org/licenses/>.
 
+import os
+import sys
+
 from lpms import constants as const
 from lpms.db import db
 
@@ -116,8 +119,8 @@ class API(object):
     def get_version(self, pkgname, repo_name = None, pkg_category = None):
         return self.db.get_version(repo_name, pkgname, pkg_category)
 
-    def get_options(self, pkgname, repo_name = None, pkg_category = None):
-        return self.get_from_metadata("options", pkgname, repo_name, pkg_category)
+    def get_options(self, repo_name, pkgname, pkg_category, version):
+        return self.db.get_options(repo_name, pkgname, pkg_category, version)
 
     def get_slot(self, repo_name, pkgname, pkg_category, pkg_version):
         return self.db.get_slot(repo_name, pkgname, pkg_category, pkg_version)
@@ -131,10 +134,32 @@ class API(object):
     def get_runtime_depends(self, repo_name, category, pkgname):
         return self.db.get_depends("runtime", repo_name, category, pkgname)
 
+    def get_repo(self, category, pkgname, version = None):
+        result = self.db.find_pkg(pkgname)
+        for pkg in result:
+            repo, catgry, name, gversions = pkg
+            if (catgry, pkgname) is (category, pkgname):
+                versions = []
+                map(lambda v: versions.extend(v), gversions)
+                if version is not None and version in versions:
+                    return repo
+                else:
+                    return False
+                return repo
+        return False
 
     #def add_status(self, data):
     #    if self.__class__.__name__ == "InstallDB":
     #        return self.db.add_status(data)
+
+def fix_path(path):
+    for arg in sys.argv:
+        if arg.startswith("--change-root"):
+            dbpath = os.path.join(arg.split("=")[1], path[1:])
+            if not os.path.isdir(os.path.dirname(dbpath)):
+                os.makedirs(os.path.dirname(dbpath))
+            return dbpath
+    return path
 
 class RepositoryDB(API):
     def __init__(self):
@@ -142,4 +167,4 @@ class RepositoryDB(API):
 
 class InstallDB(API):
     def __init__(self):
-        super(InstallDB, self).__init__(const.installdb_path)
+        super(InstallDB, self).__init__(fix_path(const.installdb_path))

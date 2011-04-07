@@ -49,6 +49,7 @@ def installed_schema():
             repo text,
             category text,
             name text,
+            version text,
             build blob,
             runtime blob
         );
@@ -65,7 +66,7 @@ def repo_schema():
             homepage text,
             license text,
             src_url text,
-            options text
+            options blob
         );
 
         create table depends(
@@ -79,7 +80,8 @@ def repo_schema():
     """
 
 def schema(db_path):
-    if db_path == const.repositorydb_path:
+    if len(db_path.split(const.repositorydb_path)) == 2:
         return repo_schema()
-    elif db_path == const.installdb_path:
+    
+    if len(db_path.split(const.installdb_path)) == 2:
         return installed_schema()
