@@ -26,6 +26,7 @@ from lpms import utils
 from lpms import internals
 from lpms.exceptions import *
 from lpms.shelltools import touch
+from lpms.operations import merge
 from lpms import constants as cst
 
 class Interpreter(internals.InternalFuncs):
@@ -138,10 +139,25 @@ class Interpreter(internals.InternalFuncs):
             touch(installed_file)
         if self.env.stage == "install":
             lpms.terminate()
-  
+
+    def run_merge(self):
+        if lpms.getopt("--no-merge"):
+            out.write("no merging...\n")
+            return
+        merge.main(self.env)
+
     def run_post_install(self):
-        pass
-    
+        if lpms.getopt("--no-configure"):
+            out.warn_notify("post_install function skipping...")
+            return 
+        self.run_stage("post_install")
+
+    def run_post_remove(self):
+        if lpms.getopt("--no-configure"):
+            out.warn_notify("post_remove function skipping...")
+            return 
+        self.run_stage("post_remove")
+
     def run_stage(self, stage):
         # firstly, we find a configuration function in environment
         if stage in self.env.__dict__.keys():
@@ -160,11 +176,11 @@ class Interpreter(internals.InternalFuncs):
 
 def run(script, env):
     ipr = Interpreter(script, env)
-    operation_order = ['configure', 'build', 'install']
+    operation_order = ['configure', 'build', 'install', 'merge']
     if 'prepare' in env.__dict__.keys():
         operation_order.insert(0, 'prepare')
     elif 'post_install' in env.__dict__.keys():
-        operation_order.insert(-1, 'post_install')
+        operation_order.insert(len(operation_order), 'post_install')
 
     # FIXME: we need more flow control
     for opr in operation_order:
@@ -179,5 +195,3 @@ def run(script, env):
             traceback.print_exc(err)
             out.error("an error occurred when running the %s function." % out.color(opr, "red"))
             lpms.terminate()
-    #utils.xterm_title_reset()
-    #ipr.env.__dict__.clear()
