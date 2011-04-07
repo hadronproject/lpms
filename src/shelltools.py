@@ -150,7 +150,7 @@ def copy(source, target, sym = True):
     for path in src:
         if is_file(path) and not is_link(path):
             try:
-                shutil.copy(path, target)
+                shutil.copy2(path, target)
             except IOError as err:
                 lpms.catch_error(err)
 
@@ -197,7 +197,8 @@ def make_symlink(source, target):
 def remove_file(pattern):
     src = glob.glob(pattern)
     if len(src) == 0:
-        lpms.catch_error("no file matched pattern: %s" % pattern)
+        out.write("no file matched pattern: %s.\n" % pattern)
+        return False
 
     for path in src:
         if is_file(path) or is_link(path):
@@ -207,7 +208,8 @@ def remove_file(pattern):
                 lpms.catch_error(err)
 
         elif not is_dir(path):
-            lpms.catch_error("file %s doesn\'t exists." % path)
+            out.write("file %s doesn\'t exists.\n" % path)
+            return False
 
 def remove_dir(source_dir):
     if is_dir(source_dir) or is_link(source_dir):
@@ -219,7 +221,8 @@ def remove_dir(source_dir):
     elif is_file(source_dir):
         pass
     else:
-        lpms.catch_error("directory %s doesn\'t exists." % source_dir)
+        out.write("directory %s doesn\'t exists.\n" % source_dir)
+        return False
 
 def rename(source, target):
     try:
@@ -246,11 +249,13 @@ def install_readable(sources, target):
     for source in sources:
         srcs = glob.glob(source)
         if len(srcs) == 0:
-            lpms.catch_error("file not found: %s" % source)
+            out.write("file not found: %s\n" % source)
+            return False
 
         for src in srcs:
             if not system('install -m0644 "%s" %s' % (src, target)):
-                lpms.catch_error("%s could not installed to %s" % (src, target))
+                out.write("%s could not installed to %s.\n" % (src, target))
+                return False
 
 def install_library(source, target):
     if not os.path.isdir(target):
@@ -260,7 +265,8 @@ def install_library(source, target):
         os.symlink(os.path.realpath(source), os.path.join(target, source))
     else:
         if not system('install -m0%o %s %s' % (permission, source, target)):
-            lpms.catch_error("%s could not installed to %s." % (src, target))
+            out.write("%s could not installed to %s.\n" % (src, target))
+            return False
 
 def set_id(path, uid, gid):
     os.chown(path, uid, gid)
