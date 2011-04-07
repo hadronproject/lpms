@@ -25,7 +25,7 @@ from lpms import constants as cst
 #from lpms.db import dbapi
 
 class FilesDB:
-    def __init__(self, repo, category, name, version, real_root=None):
+    def __init__(self, repo, category, name, version, real_root=None, suffix=None):
         self.content = {"dirs":[], "file": []}
         self.repo = repo
         self.category = category
@@ -33,9 +33,13 @@ class FilesDB:
         self.version = version
         if real_root is None:
             real_root = cst.root
-        self.xml_file = os.path.join(real_root, cst.db_path[1:], cst.filesdb, 
-                self.category, self.name, self.name)+"-"+self.version+cst.xmlfile_suffix
-        
+
+        if suffix is None:
+            suffix = cst.xmlfile_suffix
+
+        self.xml_file = os.path.join(real_root, cst.db_path[1:], cst.filesdb,
+                self.category, self.name, self.name)+"-"+self.version+suffix
+
     #def is_installed(self, ):
     #    return (self.repo, self.category, 
     #            self.name) in self.instdb.get_all_names()
