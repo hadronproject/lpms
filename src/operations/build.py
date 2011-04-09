@@ -175,7 +175,11 @@ def main(operation_plan, instruct):
                 setattr(opr.env, attr, metadata[attr])
             except KeyError:
                 # slot?
-                setattr(opr.env, attr, "0")
+                if attr == "slot":
+                    setattr(opr.env, attr, "0")
+                # arch
+                elif attr == "arch":
+                    setattr(opr.env, attr, None)
 
         # FIXME: This is no good!
         ####################################
