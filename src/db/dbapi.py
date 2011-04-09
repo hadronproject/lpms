@@ -131,8 +131,8 @@ class API(object):
     def get_depends(self, repo_name, category, pkgname, version=None):
         return self.db.get_depends(repo_name, category, pkgname, version)
 
-    def get_runtime_depends(self, repo_name, category, pkgname):
-        return self.db.get_depends("runtime", repo_name, category, pkgname)
+    def get_arch(self, repo_name, category, pkgname, version = None):
+        return self.db.get_arch(repo_name, category, pkgname, version)
 
     def get_repo(self, category, pkgname, version = None):
         result = self.db.find_pkg(pkgname)

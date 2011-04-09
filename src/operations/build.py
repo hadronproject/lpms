@@ -170,7 +170,7 @@ def main(operation_plan, instruct):
         opr.compile_script()
         
         metadata = utils.metadata_parser(opr.env.metadata)
-        for attr in ('options', 'summary', 'license', 'homepage', 'slot'):
+        for attr in ('options', 'summary', 'license', 'homepage', 'slot', 'arch'):
             try:
                 setattr(opr.env, attr, metadata[attr])
             except KeyError:
