@@ -68,15 +68,21 @@ class PackageDatabase:
                     (repo, category, name,))
             return pickle.loads(str(self.cursor.fetchone()[0]))
 
-        repo, category, name, version, summary, homepage, _license, src_url, options, slot = data
+        def get_arch():
+            self.cursor.execute('''select arch from metadata  where repo=(?) and category=(?) and name=(?)''',
+                    (repo, category, name,))
+            return pickle.loads(str(self.cursor.fetchone()[0]))
+
+        repo, category, name, version, summary, homepage, _license, src_url, options, slot, arch = data
         if not self.pkg_is_exists(repo, category, name):
             version_data = sqlite3.Binary(pickle.dumps({slot: [version]}, 1))
             options_data = sqlite3.Binary(pickle.dumps({version: options}, 1))
-            self.cursor.execute('''insert into metadata values (?, ?, ?, ?, ?, ?, ?, ?, ?)''', (
-                repo, category, name, version_data, summary, homepage, _license, src_url, options_data))
+            arch_data = sqlite3.Binary(pickle.dumps({version: arch}, 1))
+            self.cursor.execute('''insert into metadata values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', (
+                repo, category, name, version_data, summary, homepage, _license, src_url, options_data, arch_data))
         else:
             current_versions = get_slot()
-            if slot in current_versions.keys():
+            if slot in current_versions:
                 current_versions[slot].append(version)
             else:
                 current_versions.update({slot: [version]})
@@ -84,12 +90,20 @@ class PackageDatabase:
                 (sqlite3.Binary(pickle.dumps(current_versions, 1)), repo, category, name)))
             
             current_options = get_options()
-            if version in current_options.keys():
+            if version in current_options:
                 current_options[version] = options
             else:
                 current_options.update({version: options})
             self.cursor.execute('''update metadata set options=(?) where repo=(?) and category=(?) and name=(?)''', (
                 (sqlite3.Binary(pickle.dumps(current_options, 1)), repo, category, name)))
+
+            current_arch = get_arch()
+            if arch in current_arch:
+                current_arch[version] = arch
+            else:
+                current_arch.update({version: arch})
+            self.cursor.execute('''update metadata set arch=(?) where repo=(?) and category=(?) and name=(?)''', (
+                sqlite3.Binary(pickle.dumps(current_arch, 1)), repo, category, name))
 
         if commit:
             self.commit()
@@ -203,7 +217,16 @@ class PackageDatabase:
         except TypeError:
             return None
 
-        #return pickle.loads(str(self.cursor.fetchone()[0]))
+    def get_arch(self, repo, category, name, version = None):
+        self.cursor.execute('''select arch from metadata where repo=(?) and category=(?) and name=(?)''', 
+                (repo, category, name,))
+        try:
+            data = pickle.loads(str(self.cursor.fetchone()[0]))
+            if version is not None:
+                return data[version]
+            return data
+        except TypeError:
+            return None
     
     def get_version(self, repo, name, category):
         self.cursor.execute('''select version from metadata where repo=(?) and category=(?) and name=(?)''', 

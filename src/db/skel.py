@@ -28,7 +28,8 @@ def installed_schema():
             homepage text,
             license text,
             src_url text,
-            options text
+            options text,
+            arch blob
         );
 
         create table build_info(
@@ -66,7 +67,8 @@ def repo_schema():
             homepage text,
             license text,
             src_url text,
-            options blob
+            options blob,
+            arch blob
         );
 
         create table depends(

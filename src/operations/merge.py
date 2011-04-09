@@ -110,7 +110,6 @@ class Merge(internals.InternalFuncs):
                     if os.path.islink(target):
                         shelltools.remove_file(target)
                     # create real directory
-                    print realpath.split(self.env.install_dir)[1]
                     shelltools.makedirs(os.path.join(self.env.real_root, 
                         realpath.split(self.env.install_dir)[1][1:]))
                     # make symlink
@@ -196,7 +195,7 @@ class Merge(internals.InternalFuncs):
             self.env.name, self.env.version, 
             self.env.summary, self.env.homepage, 
             self.env.license, self.env.src_url, 
-            " ".join(self.env.valid_opts), self.env.slot)
+            " ".join(self.env.valid_opts), self.env.slot, self.env.arch)
 
         try:
             builddeps, runtimedeps = self.env.todb["build"], self.env.todb["runtime"]
