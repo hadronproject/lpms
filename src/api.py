@@ -104,4 +104,10 @@ def pkgbuild(pkgnames, instruct):
     '''Starting point of build operation'''
     plan = resolve_dependencies([get_pkg(pkgname) for pkgname in pkgnames], 
             instruct['cmd_options'])
+    # FIXME: pass resolve_dependencies?
+    if instruct["ignore-deps"]:
+        out.write("\n")
+        out.warn_notify("ignoring dependencies")
+        # the last value of plan list is given package
+        plan = [plan[-1]]
     build.main(plan, instruct)

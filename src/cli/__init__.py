@@ -43,6 +43,7 @@ build_help = (
         ('--fetch-only', '-F', 'Only fetches packages, do not install.(not yet)'),
         ('--search', '-s', 'Searches given keyword in database.'),
         ('--add-repo', 'Adds new repository(not yet).'),
+        ('--ignore-deps', 'Ignores dependencies'),
         ('--ignore-sandbox', 'Disables sandbox facility.'),
         ('--enable-sandbox', 'Enables sandbox facilitiy.'),
         ('--no-configure', 'Does not run configuration functions.'),
@@ -77,7 +78,7 @@ def main():
     options = command_line[1:]
     pkgnames = []; ecoms = ('--resume-build')
     instruct = {"cmd_options": [], "sandbox": None, "show_opts": None, "ask": False,
-            "pretend": False, "stage": None, "force": None, "real_root": None}
+            "pretend": False, "stage": None, "force": None, "real_root": None, "ignore-deps": False}
     for opt in options:
         if opt in ecoms:
             continue
@@ -100,6 +101,8 @@ def main():
             instruct["show_opts"] = True
         elif opt.startswith("--opts"):
             instruct["cmd_options"] = opt.split("=")[1].strip().split(" ")
+        elif opt == "--ignore-deps":
+            instruct["ignore-deps"] = True
         elif opt.startswith("--stage"):
             instruct["stage"] = opt.split("=")[1]
         elif opt == "--disable-sandbox":
@@ -119,7 +122,7 @@ def main():
         elif opt == "--info" or opt == "-i":
             from lpms.cli import info
             info.Info(options[options.index(opt)+1:]).run()
-            return 
+            return
         else:
             pkgnames.append(opt)
 
