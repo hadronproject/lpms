@@ -38,6 +38,7 @@ def makedirs(target):
         if not os.access(target, os.F_OK):
             os.makedirs(target)
     except OSError as err:
+        out.error("[makedirs] an error occured: %s" % target)
         lpms.catch_error(err)
 
 def is_link(source):
@@ -68,6 +69,7 @@ def echo(target, content):
         f.write('%s\n' % content)
         f.close()
     except IOError as err:
+        out.error("[echo] given content was not written to %s" % target)
         lpms.catch_error(err, stage=1)
 
 def listdir(source):
@@ -83,6 +85,7 @@ def cd(target=None):
         try:
             os.chdir(trgt)
         except OSError as err:
+            out.error("[cd] directory was not changed: %s" % trgt)
             lpms.catch_error(err, stage=1)
 
     if target is None:
@@ -115,7 +118,6 @@ def copytree(source, target, sym=True):
     if is_dir(source):
         if os.path.exists(target):
             if is_dir(target):
-                print os.path.join(target, os.path.basename(source.strip('/')))
                 copytree(source, os.path.join(target, os.path.basename(source.strip('/'))))
                 return
             else:
@@ -124,34 +126,37 @@ def copytree(source, target, sym=True):
         try:
             shutil.copytree(source, target, sym)
         except OSError as err:
+            out.error("[copytree] an error occured while copying: %s -> %s" % (source, target))
             lpms.catch_error(err)
     else:
-        lpms.catch_error("%s does not exists" % source, stage=1)
+        lpms.catch_error("[copytree] %s does not exists" % source, stage=1)
 
 def move(source, target):
     src = glob.glob(source)
     if len(src) == 0:
-        lpms.catch_error("%s is empty" % source)
+        lpms.catch_error("[move] %s is empty" % source)
         
     for path in src:
         if is_file(path) or is_link(path) or is_dir(path):
             try:
                 shutil.move(path, target)
             except OSError as err:
+                out.error("[move] an error occured while moving: %s -> %s" % (source, target))
                 lpms.catch_error(err)
         else:
-            lpms.catch_error("file %s doesn\'t exists." % path)
+            lpms.catch_error("[move] file %s doesn\'t exists." % path)
 
 def copy(source, target, sym = True):
     src= glob.glob(source)
     if len(src) == 0:
-        lpms.catch_error("no file matched pattern %s." % source)
+        lpms.catch_error("[copy] no file matched pattern %s." % source)
 
     for path in src:
         if is_file(path) and not is_link(path):
             try:
                 shutil.copy2(path, target)
             except IOError as err:
+                out.error("[copy] an error occured while copying: %s -> %s" % (source, target))
                 lpms.catch_error(err)
 
         elif is_link(path) and sym:
@@ -169,7 +174,7 @@ def copy(source, target, sym = True):
         elif is_dir(path):
             copytree(path, target, sym)
         else:
-            lpms.catch_error('file %s does not exist.' % filePath)
+            lpms.catch_error('[copy] file %s does not exist.' % filePath)
 
 def insinto(source, target, install_dir=None, target_file = '', sym = True):
     if install_dir is not None:
@@ -180,7 +185,7 @@ def insinto(source, target, install_dir=None, target_file = '', sym = True):
     if not target_file:
         src = glob.glob(source)
         if len(src) == 0:
-            lpms.catch_error("no file matched pattern %s." % source)
+            lpms.catch_error("[instinto] no file matched pattern %s." % source)
 
         for path in src:
             if os.access(path, os.F_OK):
@@ -192,12 +197,13 @@ def make_symlink(source, target):
     try:
         os.symlink(source, target)
     except OSError as err:
+        out.error("[make_symlink] symlink not created: %s -> %s" % (target, source))
         lpms.catch_error(err)
 
 def remove_file(pattern):
     src = glob.glob(pattern)
     if len(src) == 0:
-        out.write("no file matched pattern: %s.\n" % pattern)
+        out.error("[remove_file] no file matched pattern: %s." % pattern)
         return False
 
     for path in src:
@@ -205,10 +211,11 @@ def remove_file(pattern):
             try:
                 os.unlink(path)
             except OSError:
+                out.error("[remove_file] an error occured: %s" % path)
                 lpms.catch_error(err)
 
         elif not is_dir(path):
-            out.write("file %s doesn\'t exists.\n" % path)
+            out.error("[remove_file] file %s doesn\'t exists." % path)
             return False
 
 def remove_dir(source_dir):
@@ -216,18 +223,20 @@ def remove_dir(source_dir):
         try:
             shutil.rmtree(source_dir)
         except OSError as err:
+            out.error("[remove_dir] an error occured while removing: %s" % source_dir)
             lpms.catch_error(err)
 
     elif is_file(source_dir):
         pass
     else:
-        out.write("directory %s doesn\'t exists.\n" % source_dir)
+        out.error("[remove_dir] directory %s doesn\'t exists." % source_dir)
         return False
 
 def rename(source, target):
     try:
         os.rename(source, target)
     except OSError as err:
+        out.error("an error occured while renaming: %s -> %s" % (source, target))
         lpms.catch_error(err)
 
 def install_executable(sources, target):
@@ -236,11 +245,11 @@ def install_executable(sources, target):
 
     srcs = glob.glob(source)
     if len(srcs) == 0:
-        lpms.catch_error("file not found: %s" % source)
+        lpms.catch_error("[install_executable] file not found: %s" % source)
 
     for src in srcs:
         if not system('install -m0755 -o root -g -root %s %s' %(src, target)):
-            lpms.catch_error("%s could not installed to %s" % (src, target))
+            lpms.catch_error("[install_executable] %s could not installed to %s" % (src, target))
 
 def install_readable(sources, target):
     if not os.path.isdir(target):
@@ -249,12 +258,12 @@ def install_readable(sources, target):
     for source in sources:
         srcs = glob.glob(source)
         if len(srcs) == 0:
-            out.write("file not found: %s\n" % source)
+            out.error("[install_readable] file not found: %s" % source)
             return False
 
         for src in srcs:
             if not system('install -m0644 "%s" %s' % (src, target)):
-                out.write("%s could not installed to %s.\n" % (src, target))
+                out.error("[install_readable] %s could not installed to %s." % (src, target))
                 return False
 
 def install_library(source, target):
@@ -265,7 +274,7 @@ def install_library(source, target):
         os.symlink(os.path.realpath(source), os.path.join(target, source))
     else:
         if not system('install -m0%o %s %s' % (permission, source, target)):
-            out.write("%s could not installed to %s.\n" % (src, target))
+            out.error("[install_library] %s could not installed to %s." % (src, target))
             return False
 
 def set_id(path, uid, gid):
