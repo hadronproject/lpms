@@ -50,7 +50,7 @@ def preprocessor(data):
             atom = line.split(')')
             optional[opt].append(atom[0])
         else:
-            deps.append(line)
+            deps.extend(line.split(' '))
     return optional, deps
 
 class DependencyResolver(object):
@@ -144,19 +144,24 @@ class DependencyResolver(object):
     def collect(self, repo, category, name, version, cmd_options):
         options = self.repodb.get_options(repo, category, name, 
                 version)[version]
+        # catpkg: $category+"/"+name
+        catpkg = category+"/"+name
 
+        # collects 'option' info
         default_options = self.config.options.split(" ")
         valid_opts = utils.set_valid_options(options, cmd_options, default_options)
+        
         depends = self.repodb.get_depends(repo, category, name, version)
 
-        if category+"/"+name in self.control:
+        if catpkg in self.control:
             if valid_opts is None:
-                valid_opts = self.control[category+"/"+name]
+                valid_opts = self.control[catpkg]
             else:
-                valid_opts.extend(self.control[category+"/"+name])
+                valid_opts.extend(self.control[catpkg])
 
         local_plan = []
         todb = {}
+
         for dep_type in depends:
             dynamic, static = preprocessor(depends[dep_type])
             if dynamic:
@@ -164,17 +169,22 @@ class DependencyResolver(object):
                     if '/' in dyn:
                         selected = self.version_selector(dyn)
                         if not selected:
+                            # package version is not specified.
                             depcat, depname = dyn.split('/')
                             found = self.instdb.find_pkg(depname, pkg_category=depcat)
-                            if found is not False:
-                                repo = found[0]; rversions = found[-1]
+                            # if 'found' is False, the package is not installed.
+                            if found:
+                                # the package is already installed.
+                                repo, rversions = found[0], found[-1]
                             else:
+                                # pkg is not installed. lpms will find out it in repository.
                                 rfound = self.repodb.find_pkg(depname, pkg_category=depcat)
-                                repo = rfound[0]; rversions = rfound[-1]
+                                repo , rversions = rfound[0], rfound[-1]
                             versions = []
                             map(lambda v: versions.extend(v), rversions.values())
                             depver = utils.best_version(versions)
                         else:
+                            # package version is specified in the spec.
                             depcat, depname, depver = selected
                             repo = self.instdb.get_repo(depcat, depname)
 
@@ -196,10 +206,10 @@ class DependencyResolver(object):
                         for opt in dynamic[dyn]:
                             if not opt in self.control[depcat+"/"+depname]:
                                 self.control[depcat+"/"+depname].append(opt)
+                        local_plan.append((depcat+"/"+depname, depver))
                     else:
                         if valid_opts is not None and dyn in valid_opts:
                             local_plan.extend(dynamic[dyn])
-                    local_plan.append((depcat+"/"+depname, depver))
 
             if static:
                 for atom in static:
@@ -215,7 +225,7 @@ class DependencyResolver(object):
             todb[dep_type] = list(set(local_plan))
 
         local_plan = list(set(local_plan))
-        self.operation_plan.update({category+"/"+name: [local_plan, valid_opts, version, repo, todb]})
+        self.operation_plan.update({catpkg: [local_plan, valid_opts, version, repo, todb]})
 
         if local_plan:
             for dep, depver in local_plan:
