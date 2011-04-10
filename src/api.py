@@ -61,9 +61,11 @@ def get_pkg(pkgname):
         category, name = parsed
     elif len(parsed) == 3:
         repo, category, name = parsed
-    
+
     if len(name.split("-")) > 1:
-        name, version = get_name(name)
+        result = get_name(name)
+        if result is not None:
+            name, version = result
 
     result = repodb.find_pkg(name, repo_name = repo, pkg_category = category)
 
