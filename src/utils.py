@@ -19,6 +19,7 @@ import re
 import os
 import sys
 import stat
+import magic
 import string
 import hashlib
 
@@ -27,6 +28,13 @@ from lpms import out
 from lpms import conf
 from lpms import constants as cst
 
+
+def get_mimetype(path):
+    if not os.access(path, os.R_OK):
+        return False
+    m = magic.open(magic.MIME_TYPE)
+    m.load()
+    return m.file(path)
 
 def set_valid_options(options, cmd_options, default_options):
     if options is None:
