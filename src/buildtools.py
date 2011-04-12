@@ -107,6 +107,10 @@ def aclocal(*parameters):
     if not shelltools.system("aclocal %s" % " ".join(parameters)):
         lpms.catch_error("aclocal failed.")
 
+def libtoolize(*parameters):
+    if not shelltools.system("libtoolize %s" % " ".join(parameters)):
+        lpms.catch_error("libtoolize failed.")
+
 def autoconf(*parameters):
     if not shelltools.system("autoconf %s" % " ".join(parameters)):
         lpms.catch_error("autoconf failed.")
