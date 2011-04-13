@@ -252,8 +252,8 @@ def install_executable(sources, target):
             lpms.catch_error("[install_executable] %s could not installed to %s" % (src, target))
 
 def install_readable(sources, target):
-    if not os.path.isdir(target):
-        makedirs(target)
+    if not os.path.isdir(os.path.dirname(target)):
+        makedirs(os.path.dirname(target))
 
     for source in sources:
         srcs = glob.glob(source)
@@ -262,7 +262,7 @@ def install_readable(sources, target):
             return False
 
         for src in srcs:
-            if not system('install -m0644 "%s" %s' % (src, target)):
+            if not system('install -m0644 %s %s' % (src, target)):
                 out.error("[install_readable] %s could not installed to %s." % (src, target))
                 return False
 
