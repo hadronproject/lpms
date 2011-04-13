@@ -181,6 +181,9 @@ def main(operation_plan, instruct):
                 elif attr == "arch":
                     setattr(opr.env, attr, None)
 
+        setattr(opr.env, "filesdir", os.path.join(cst.repos, opr.env.repo, 
+            opr.env.category, opr.env.pkgname, cst.files_dir))
+
         # FIXME: This is no good!
         ####################################
         if opr.env.options is None:
