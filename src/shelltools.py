@@ -45,8 +45,13 @@ def is_link(source):
     return os.path.islink(source)
 
 def is_file(source):
-
     return os.path.isfile(source)
+
+def is_exists(source):
+    return os.path.exists(source)
+
+def unlink(source):
+    return os.unlink(source)
 
 def is_dir(source):
     return os.path.isdir(source)

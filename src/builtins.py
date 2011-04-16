@@ -164,6 +164,12 @@ def islink(source):
 def isfile(source):
     return shelltools.is_file(source)
 
+def isexists(source):
+    return shelltools.is_exists(source)
+
+def unlink(source):
+    return shelltools.unlink(source)
+
 def cd(target=None):
     shelltools.cd(target)
 
