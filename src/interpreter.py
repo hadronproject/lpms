@@ -151,7 +151,7 @@ class Interpreter(internals.InternalFuncs):
             self.env.category, self.env.pkgname, self.env.version, self.env.repo))
         if lpms.getopt("--no-merge"):
             out.write("no merging...\n")
-            return
+            lpms.terminate()
         merge.main(self.env)
 
     def run_post_install(self):

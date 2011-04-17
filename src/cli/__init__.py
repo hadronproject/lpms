@@ -117,6 +117,8 @@ def main():
             from lpms.cli import search
             search.Search(options[options.index(opt)+1:]).search()
             return
+        elif opt == "--no-merge":
+            pass
         elif opt.startswith("--change-root"):
             instruct["real_root"] = opt.split("=")[1].strip()
         elif opt == "--info" or opt == "-i":
