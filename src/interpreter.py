@@ -99,6 +99,8 @@ class Interpreter(internals.InternalFuncs):
             lpms.terminate()
 
     def run_configure(self):
+        utils.xterm_title("(%s/%s) lpms: configuring %s/%s-%s from %s" % (self.env.i, self.env.count, 
+            self.env.category, self.env.pkgname, self.env.version, self.env.repo))
         out.normal("configuring source in %s" % self.env.build_dir)
         configured_file = os.path.join(self.env.build_dir.split("source")[0],
                 ".configured")
@@ -113,6 +115,8 @@ class Interpreter(internals.InternalFuncs):
             lpms.terminate()
 
     def run_build(self):
+        utils.xterm_title("(%s/%s) lpms: building %s/%s-%s from %s" % (self.env.i, self.env.count, 
+            self.env.category, self.env.pkgname, self.env.version, self.env.repo))
         out.normal("compiling source in %s" % self.env.build_dir)
         built_file = os.path.join(self.env.build_dir.split("source")[0],
             ".built")
@@ -127,6 +131,8 @@ class Interpreter(internals.InternalFuncs):
             lpms.terminate()
     
     def run_install(self):
+        utils.xterm_title("(%s/%s) lpms: installing %s/%s-%s from %s" % (self.env.i, self.env.count, 
+            self.env.category, self.env.pkgname, self.env.version, self.env.repo))
         out.normal("installing %s to %s" % (self.env.fullname, self.env.install_dir))
         installed_file = os.path.join(self.env.build_dir.split("source")[0],
             ".installed")
@@ -141,6 +147,8 @@ class Interpreter(internals.InternalFuncs):
             lpms.terminate()
 
     def run_merge(self):
+        utils.xterm_title("(%s/%s) lpms: merging %s/%s-%s from %s" % (self.env.i, self.env.count, 
+            self.env.category, self.env.pkgname, self.env.version, self.env.repo))
         if lpms.getopt("--no-merge"):
             out.write("no merging...\n")
             return

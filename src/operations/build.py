@@ -147,9 +147,11 @@ def main(operation_plan, instruct):
         if instruct["pretend"]:
             lpms.terminate()
 
+        utils.xterm_title("lpms: confirmation request")
         out.write("\nTotal %s package will be merged.\n\n" % out.color(str(count), "green"))
         if not utils.confirm("do you want to continue?"):
             out.write("quitting...\n")
+            utils.xterm_title_reset()
             lpms.terminate()
 
     for plan in operation_plan:
@@ -181,6 +183,8 @@ def main(operation_plan, instruct):
                 elif attr == "arch":
                     setattr(opr.env, attr, None)
 
+        setattr(opr.env, "i", i)
+        setattr(opr.env, "count", count)
         setattr(opr.env, "filesdir", os.path.join(cst.repos, opr.env.repo, 
             opr.env.category, opr.env.pkgname, cst.files_dir))
 
@@ -203,8 +207,6 @@ def main(operation_plan, instruct):
             setattr(opr.env, "srcdir", opr.env.fullname)
         opr.prepare_environment()
 
-        utils.xterm_title("(%s/%s) lpms: building %s/%s-%s from %s" % (i, count, opr.env.category, 
-            opr.env.pkgname, opr.env.version, opr.env.repo))
         out.normal("(%s/%s) building %s/%s from %s" % (i, count,
             out.color(opr.env.category, "green"),
             out.color(opr.env.pkgname+"-"+opr.env.version, "green"), opr.env.repo)); i += 1
