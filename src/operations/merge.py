@@ -73,13 +73,6 @@ class Merge(internals.InternalFuncs):
             return True
         return False
 
-    def strip_unneeded_symbols(self, path):
-        if utils.get_mimetype(path) in ('application/x-sharedlib', 
-                'application/x-archive', 'application/x-executable'):
-            if not shelltools.system("/usr/bin/strip -S %s" % path):
-                out.warn_notify("an error occured while \
-                        stripping unneeded symbols from %s" % path)
-
     def merge_pkg(self):
         '''Merge package to the system'''
         
@@ -143,15 +136,14 @@ class Merge(internals.InternalFuncs):
 
                 if os.path.islink(source):
                     realpath = os.readlink(source)
+                    if self.env.install_dir in realpath:
+                        realpath = realpath.split(self.env.install_dir)[1]
                     if os.path.islink(target):
                         shelltools.remove_file(target)
                     shelltools.make_symlink(realpath, target)
                 else:
                     perms = get_perms(source)
                     shelltools.move(source, target)
-
-                # remove unneeded symbols from binaries or libraries
-                self.strip_unneeded_symbols(target)
 
                 #perms = get_perms(source)
 
