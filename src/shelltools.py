@@ -50,9 +50,6 @@ def is_file(source):
 def is_exists(source):
     return os.path.exists(source)
 
-def unlink(source):
-    return os.unlink(source)
-
 def is_dir(source):
     return os.path.isdir(source)
 
@@ -140,11 +137,14 @@ def move(source, target):
     src = glob.glob(source)
     if len(src) == 0:
         lpms.catch_error("[move] %s is empty" % source)
-        
+
+    if len(target.split("/")) > 1 and not os.path.isdir(os.path.dirname(target)):
+        makedirs(os.path.dirname(target))
+
     for path in src:
         if is_file(path) or is_link(path) or is_dir(path):
             try:
-                shutil.move(path, target)
+               shutil.move(path, target)
             except OSError as err:
                 out.error("[move] an error occured while moving: %s -> %s" % (source, target))
                 lpms.catch_error(err)
@@ -155,6 +155,9 @@ def copy(source, target, sym = True):
     src= glob.glob(source)
     if len(src) == 0:
         lpms.catch_error("[copy] no file matched pattern %s." % source)
+
+    if not os.path.exists(os.path.dirname(target)):
+        makedirs(os.path.dirname(target))
 
     for path in src:
         if is_file(path) and not is_link(path):
@@ -226,7 +229,8 @@ def remove_file(pattern):
 def remove_dir(source_dir):
     if is_dir(source_dir) or is_link(source_dir):
         try:
-            shutil.rmtree(source_dir)
+            # rmtree gets string
+            shutil.rmtree(str(source_dir))
         except OSError as err:
             out.error("[remove_dir] an error occured while removing: %s" % source_dir)
             lpms.catch_error(err)

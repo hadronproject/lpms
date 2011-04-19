@@ -23,6 +23,7 @@ from lpms import utils
 from lpms import out
 from lpms import shelltools
 
+
 def addflag(fn):
     def wrapped(flag):
         name = fn.__name__.split("_")[1].upper()
@@ -134,7 +135,7 @@ def makedirs(target):
 def touch(path):
     shelltools.touch(path)
 
-def echo(target, content):
+def echo(content, target):
     shelltools.echo(target, content)
 
 def isfile(path):
@@ -167,9 +168,6 @@ def isfile(source):
 def isexists(source):
     return shelltools.is_exists(source)
 
-def unlink(source):
-    return shelltools.unlink(source)
-
 def cd(target=None):
     shelltools.cd(target)
 
@@ -177,7 +175,7 @@ def copytree(source, target, sym=True):
     shelltools.copytree(source, prepare_target(target), sym)
 
 def copy(source, target, sym=True):
-    shelltools.copytree(source, prepare_target(target), sym)
+    shelltools.copy(source, prepare_target(target), sym)
 
 def move(source, target):
     shelltools.move(source, prepare_target(target))
