@@ -200,8 +200,8 @@ def main(operation_plan, instruct):
         if "src_url" in metadata:
             opr.env.src_url = metadata["src_url"]
         else:
-            if "src_url" in local_env.keys():
-                opr.env.src_url = local_env["src_url"]
+            if not "src_url" in opr.env.__dict__.keys():
+                opr.env.src_url = None
 
         if not "srcdir" in opr.env.__dict__:
             setattr(opr.env, "srcdir", opr.env.fullname)
@@ -217,15 +217,15 @@ def main(operation_plan, instruct):
             out.warn_notify("sandbox is disabled")
 
         # fetch packages which are in download_plan list
-        opr.parse_url_tag()
-        opr.prepare_download_plan(opr.env.valid_opts)
-        if not fetcher.URLFetcher().run(opr.download_plan):
-            lpms.catch_error("\nplease check the spec")
+        if opr.env.src_url is not None:
+            opr.parse_url_tag()
+            opr.prepare_download_plan(opr.env.valid_opts)
+            if not fetcher.URLFetcher().run(opr.download_plan):
+                lpms.catch_error("\nplease check the spec")
 
-        
-        opr.extract_sources()
-        if opr.env.stage == "unpack":
-            lpms.terminate()
+            opr.extract_sources()
+            if opr.env.stage == "unpack":
+                lpms.terminate()
 
         if opr.env.valid_opts is not None and len(opr.env.valid_opts) != 0:
             out.notify("applied options: %s" % 
