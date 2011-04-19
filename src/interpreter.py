@@ -157,13 +157,21 @@ class Interpreter(internals.InternalFuncs):
     def run_post_install(self):
         if lpms.getopt("--no-configure"):
             out.warn_notify("post_install function skipping...")
-            return 
+            return
+
+        # sandbox must be disabled
+        self.env.sandbox = False
+
         self.run_stage("post_install")
 
     def run_post_remove(self):
         if lpms.getopt("--no-configure"):
             out.warn_notify("post_remove function skipping...")
             return 
+        
+        # sandbox must be disabled
+        self.env.sandbox = False
+        
         self.run_stage("post_remove")
 
     def run_stage(self, stage):
