@@ -89,10 +89,10 @@ def main():
         elif opt == "--update" or  opt == "-u":
             utils.check_root()
             try:
-                update.main(repo_name=options[options.index(opt)+1])
+                update.main(options[options.index(opt)+1:])
             except IndexError:
                 update.main()
-                return
+            return
         elif opt == "--remove" or opt == "-r":
             continue
         elif opt == "--force" or opt == "-f":
