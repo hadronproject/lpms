@@ -25,6 +25,7 @@ from lpms import resolver
 
 from lpms.db import dbapi
 from lpms.operations import build
+from lpms.operations import upgrade
 
 def get_pkg(pkgname):
     '''Parses given pkgnames:
@@ -85,6 +86,27 @@ def get_pkg(pkgname):
         if version is None:
             version = select_version(version_data)
         return repo, category, name, version
+
+def upgrade_system(instruct):
+    out.normal("scanning database for package upgrades...\n")
+    up = upgrade.UpgradeSystem()
+    # prepares lists that include package names which 
+    # are effected by upgrade operation.
+    up.select_pkgs()
+
+    if instruct["ask"]:
+        # show packages and versions
+        up.show_result()
+        utils.xterm_title("lpms: confirmation request")
+        if not utils.confirm("do you want to continue?"):
+            out.write("quitting...\n")
+            utils.xterm_title_reset()
+            lpms.terminate()
+    # resolve dependencies
+    up.upgrade_pkg.extend(up.downgrade_pkg)
+    plan = resolve_dependencies([u[:-1] for u in up.upgrade_pkg], instruct["cmd_options"])
+    # build packages
+    build.main(plan, instruct)
 
 def resolve_dependencies(data, cmd_options):
     '''Resolve dependencies using fixit object. This function 
