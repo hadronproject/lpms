@@ -128,6 +128,10 @@ def main():
         else:
             pkgnames.append(opt)
 
+    if "--upgrade" in options or "-U" in options:
+        api.upgrade_system(instruct)
+        return
+
     # abort lpms if the user do not give package name
     if len(pkgnames) == 0:
         lpms.catch_error("please give a package name!")
