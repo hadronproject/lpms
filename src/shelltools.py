@@ -227,14 +227,17 @@ def remove_file(pattern):
             return False
 
 def remove_dir(source_dir):
-    if is_dir(source_dir) or is_link(source_dir):
+    if is_link(source_dir):
+        os.unlink(source_dir)
+        return
+
+    if is_dir(source_dir):
         try:
             # rmtree gets string
             shutil.rmtree(str(source_dir))
         except OSError as err:
             out.error("[remove_dir] an error occured while removing: %s" % source_dir)
             lpms.catch_error(err)
-
     elif is_file(source_dir):
         pass
     else:
@@ -249,16 +252,18 @@ def rename(source, target):
         lpms.catch_error(err)
 
 def install_executable(sources, target):
-    if not os.path.isdir(target):
-        makedirs(target)
+    if not os.path.isdir(os.path.dirname(target)):
+        makedirs(os.path.dirname(target))
 
-    srcs = glob.glob(source)
-    if len(srcs) == 0:
-        lpms.catch_error("[install_executable] file not found: %s" % source)
+    for source in sources:
+        srcs = glob.glob(source)
+        if len(srcs) == 0:
+            lpms.catch_error("[install_executable] file not found: %s" % source)
 
-    for src in srcs:
-        if not system('install -m0755 -o root -g -root %s %s' %(src, target)):
-            lpms.catch_error("[install_executable] %s could not installed to %s" % (src, target))
+        for src in srcs:
+            if not system('install -m0755 -o root -g root %s %s' % (src, target)):
+                out.error("[install_executable] %s could not installed to %s" % (src, target))
+                return False
 
 def install_readable(sources, target):
     if not os.path.isdir(os.path.dirname(target)):
@@ -275,10 +280,10 @@ def install_readable(sources, target):
                 out.error("[install_readable] %s could not installed to %s." % (src, target))
                 return False
 
-def install_library(source, target):
-    if not os.path.isdir(target):
-        makedirs(target)
-
+def install_library(source, target, permission = 0644):
+    if not os.path.isdir(os.path.dirname(target)):
+        makedirs(os.path.dirname(target))
+    
     if os.path.islink(source):
         os.symlink(os.path.realpath(source), os.path.join(target, source))
     else:
