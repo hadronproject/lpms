@@ -1,0 +1,59 @@
+#!/usr/bin/env python
+# Copyright 2009 - 2011 Burak Sezer <burak.sezer@linux.org.tr>
+# 
+# This file is part of lpms
+#  
+# lpms is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#   
+# lpms is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#   
+# You should have received a copy of the GNU General Public License
+# along with lpms.  If not, see <http://www.gnu.org/licenses/>.
+
+import os
+import sys
+
+from lpms import out
+from lpms import utils
+from lpms import shelltools
+from lpms import constants as cst
+
+def merge():
+    i = 0
+    query = os.listdir(cst.merge_conf)
+    for q in query:
+        i += 1
+        myfile = "/".join(q.split("|"))
+        out.write(out.color("("+str(i)+"/"+str(len(query))+")", "green"))
+        out.write(" "+myfile+"\n\n")
+        os.system("diff -Naur %s %s" % (myfile, myfile+".lpms-backup"))
+        out.write("\n")
+        
+        if not utils.confirm("do you want to use the new version?"):
+            continue
+        
+        shelltools.move(myfile+".lpms-backup", myfile)
+        shelltools.remove_file(os.path.join(cst.merge_conf, q))
+
+def main():
+    for cmd in sys.argv[0:]:
+        if cmd == "--help":
+            out.write("configuration manager for lpms\n")
+            return
+        elif cmd == "--version":
+            our.write("%s-%s" % (__name__, __version__))
+            return
+        elif cmd == "--pretend" or cmd == "-p":
+            return
+
+        # run the program
+        merge()
+
+if __name__ == '__main__':
+    main()
