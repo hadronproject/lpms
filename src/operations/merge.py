@@ -42,6 +42,7 @@ class Merge(internals.InternalFuncs):
         self.env = environment
         self.instdb = dbapi.InstallDB()
 
+    # FIXME: Do I need is_X methodes? i will move it 
     def is_fresh(self):
         status = self.instdb.find_pkg(self.env.name, 
             self.env.repo, self.env.category)
@@ -134,11 +135,9 @@ class Merge(internals.InternalFuncs):
                 source = os.path.join(self.env.install_dir, root_path[1:], f)
                 target = os.path.join(self.env.real_root, root_path[1:], f)
 
-                # config protect, crappy version
-                # if a file in /etc or ends with conf or cfg suffix, lpms protects it.
                 conf_file = os.path.join(root_path, f)
                 isconf = (f.endswith("conf") or f.endswith("cfg"))
-                if os.path.exists(conf_file):
+                if os.path.exists(target):
                     if root_path[0:4] == "/etc" or isconf:
                         if utils.sha1sum(source) != utils.sha1sum(conf_file):
                             entry = os.path.join("/var/tmp/merge-conf", "|".join(conf_file.split("/")))
