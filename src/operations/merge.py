@@ -136,7 +136,7 @@ class Merge(internals.InternalFuncs):
                 target = os.path.join(self.env.real_root, root_path[1:], f)
 
                 conf_file = os.path.join(root_path, f)
-                isconf = (f.endswith("conf") or f.endswith("cfg"))
+                isconf = (f.endswith(".conf") or f.endswith(".cfg"))
                 if os.path.exists(target):
                     if root_path[0:4] == "/etc" or isconf:
                         if utils.sha1sum(source) != utils.sha1sum(conf_file):
@@ -188,7 +188,7 @@ class Merge(internals.InternalFuncs):
         self.myfile = self.filesdb_path+"/"+self.env.fullname+".xml.new"
         if os.path.isfile(self.myfile):
             shelltools.remove_file(self.myfile)
-        shelltools.echo(self.myfile, iks.tostring(xml_root))
+        shelltools.echo(iks.tostring(xml_root), self.myfile)
         
         # it may be too big
         del xml_root
