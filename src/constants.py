@@ -18,6 +18,7 @@
 root = "/"
 xmlfile_suffix = ".xml"
 lpms_path = "/usr/lib/python2.7/site-packages/lpms"
+merge_conf = "/var/tmp/merge-conf"
 repo_file = "info/repo.conf"
 repo_info = "info"
 categories = "categories.xml"
@@ -35,6 +36,7 @@ spec_dir = "/usr/lpms"
 config_file = "lpms.conf"
 distfiles = "/usr/portage/distfiles"
 extract_dir = "/var/tmp/lpms/"
+resume_file = extract_dir+"/"+"resume"
 doc = 'usr/share/doc'
 sbin = 'usr/sbin'
 man = 'usr/share/man'

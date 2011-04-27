@@ -42,6 +42,7 @@ build_help = (
         ('--ask', '-a', 'Asks to the user before operation.(not yet)'),
         ('--fetch-only', '-F', 'Only fetches packages, do not install.(not yet)'),
         ('--search', '-s', 'Searches given keyword in database.'),
+        ('--resume', "Resumes previous installation operation. Use '--skip-first' to skip the first package."),
         ('--add-repo', 'Adds new repository(not yet).'),
         ('--ignore-deps', 'Ignores dependencies'),
         ('--ignore-sandbox', 'Disables sandbox facility.'),
@@ -77,8 +78,10 @@ def main():
     command_line = sys.argv
     options = command_line[1:]
     pkgnames = []; ecoms = ('--resume-build')
-    instruct = {"cmd_options": [], "sandbox": None, "show_opts": None, "ask": False,
-            "pretend": False, "stage": None, "force": None, "real_root": None, "ignore-deps": False}
+    instruct = {"cmd_options": [], "sandbox": None, "show_opts": None, "ask": False, "resume": False,
+            "skip_first": False, "pretend": False, "stage": None, "force": None, "real_root": None, 
+            "ignore-deps": False}
+
     for opt in options:
         if opt in ecoms:
             continue
@@ -125,6 +128,8 @@ def main():
             from lpms.cli import info
             info.Info(options[options.index(opt)+1:]).run()
             return
+        elif opt == "--skip-first":
+            instruct["skip_first"] = True
         else:
             pkgnames.append(opt)
 
@@ -133,12 +138,16 @@ def main():
         return
 
     # abort lpms if the user do not give package name
-    if len(pkgnames) == 0:
+    if not "--resume" in options and not pkgnames:
         lpms.catch_error("please give a package name!")
 
     if "--remove" in options or "-r" in options:
         remove.main(pkgnames, instruct)
         return
+    
+    if "--resume" in options:
+        instruct["resume"] = True
+        pkgnames = []
     # build given packages
     utils.check_root()
     api.pkgbuild(pkgnames, instruct)
