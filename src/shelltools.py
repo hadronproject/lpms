@@ -65,7 +65,7 @@ def basename(path):
 def dirname(path):
     return os.path.dirname(path)
 
-def echo(target, content):
+def echo(content, target):
     try:
         f = open(target, 'a')
         f.write('%s\n' % content)
