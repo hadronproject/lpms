@@ -17,6 +17,7 @@
 
 import os
 import glob
+import cPickle as pickle
 
 import lpms
 
@@ -135,6 +136,22 @@ class Build(internals.InternalFuncs):
         self.import_script(self.env.spec_file)
 
 def main(operation_plan, instruct):
+    # resume previous operation_plan
+    # if skip_first returns True, skip first package 
+    if instruct["resume"]:
+        if os.path.exists(cst.resume_file):
+            with open(cst.resume_file, "rb") as _data:
+                operation_plan = pickle.load(_data)
+                if instruct["skip_first"]:
+                    operation_plan = operation_plan[1:]
+
+                if not operation_plan:
+                    out.error("resume failed! package query not found.")
+                    lpms.terminate()
+        else:
+            out.error("%s not found" % resume_file)
+            lpms.terminate()
+
     count = len(operation_plan); i = 1
     if instruct["pretend"] or instruct["ask"]:
         out.write("\n")
@@ -154,6 +171,15 @@ def main(operation_plan, instruct):
             utils.xterm_title_reset()
             lpms.terminate()
 
+    # resume feature
+    # create a resume list. write package data(repo, category, name, version) to 
+    # /var/tmp/lpms/resume file.
+    if not instruct["resume"] or instruct["skip_first"]:
+        if os.path.exists(cst.resume_file):
+            shelltools.remove_file(cst.resume_file)
+        with open(cst.resume_file, "wb") as _data:
+            pickle.dump(operation_plan, _data)
+    
     for plan in operation_plan:
         opr = Build()
 
@@ -240,6 +266,20 @@ def main(operation_plan, instruct):
         catdir = os.path.dirname(os.path.dirname(opr.env.install_dir))
         if catdir:
             shelltools.remove_file(catdir)
+
+        # resume feature
+        # delete package data, if it is installed successfully
+        with open(cst.resume_file, "rb") as _data:
+            resume_data = pickle.load(_data)
+        data = []
+        for pkg in resume_data:
+            if pkg[:4] != (opr.env.repo, opr.env.category, 
+                    opr.env.name, opr.env.version):
+                data.append(pkg)
+
+        shelltools.remove_file(cst.resume_file)
+        with open(cst.resume_file, "wb") as _data:
+            pickle.dump(data, _data)
 
         opr.env.__dict__.clear()
         utils.xterm_title_reset()
