@@ -67,9 +67,8 @@ def dirname(path):
 
 def echo(content, target):
     try:
-        f = open(target, 'a')
-        f.write('%s\n' % content)
-        f.close()
+        with open(target, 'a') as _file:
+            f.write('%s\n' % content)
     except IOError as err:
         out.error("[echo] given content was not written to %s" % target)
         lpms.catch_error(err, stage=1)
@@ -98,8 +97,7 @@ def cd(target=None):
 def touch(path):
     if os.path.isfile(path):
         out.warn("%s is already exist" % path)
-    f = open(path, 'w')
-    f.close()
+    open(path, 'w').close()
 
 def system(cmd, show=True):
     if run_cmd(cmd, show) != 0:
