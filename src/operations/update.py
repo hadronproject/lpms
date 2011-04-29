@@ -134,7 +134,7 @@ def main(params):
                     out.error("you should give a version number")
                     lpms.terminate()
             else:
-                if len(utils.parse_pkgname(name)) == 2:
+                if utils.parse_pkgname(name) is not None and len(utils.parse_pkgname(name)) == 2:
                     out.error("you must use %s" % (out.color("="+repo_name, "red")))
                     lpms.terminate()
                     
