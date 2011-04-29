@@ -68,7 +68,7 @@ def dirname(path):
 def echo(content, target):
     try:
         with open(target, 'a') as _file:
-            f.write('%s\n' % content)
+            _file.write('%s\n' % content)
     except IOError as err:
         out.error("[echo] given content was not written to %s" % target)
         lpms.catch_error(err, stage=1)
