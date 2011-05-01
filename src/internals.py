@@ -24,7 +24,8 @@ class InternalFuncs(object):
     def __init__(self):
         self.env = Environment()
         self.libraries = []
-        
+        self.env.sandbox_valid_dirs = []
+        self.env.backup = []
         # FIXME: use a better method for environment functions.
         self.env.__dict__['get'] = self.get
 
