@@ -18,6 +18,7 @@
 # Main interpreter for build scripts.
 
 import os
+import traceback
 
 import lpms
 from lpms import out
@@ -41,10 +42,23 @@ class Interpreter(internals.InternalFuncs):
             self.import_script(os.path.join(cst.lpms_path, bi))
         self.import_script(self.script)
         self.get_build_libraries()
+        self.startup_funcs()
 
     def get_build_libraries(self):
         for lib in self.libraries:
             self.import_script(os.path.join(cst.repos, self.env.repo, "libraries", lib+".py"))
+
+    def startup_funcs(self):
+        for library in [m for m in self.env.__dict__ if "_library_start" in m]:
+            for func in getattr(self.env, library):
+                try:
+                    # run given function that's defined in environment
+                    func()
+                except:
+                    traceback.print_exc()
+                    out.error("an error occured while running the %s from %s library" % 
+                            (out.color(func.__name__, "red"), out.color(library, "red")))
+                    lpms.terminate()
 
     def run_func(self, func_name):
         def run_with_sandbox(func_name):
@@ -53,13 +67,13 @@ class Interpreter(internals.InternalFuncs):
             except ImportError as err:
                 lpms.catch_error("catbox could not imported, please check it!")
 
-            valid_dirs = utils.sandbox_dirs()
-            valid_dirs.append(self.config.build_dir)
+            self.env.sandbox_valid_dirs = utils.sandbox_dirs()
+            self.env.sandbox_valid_dirs.append(self.config.build_dir)
             for i in ('build_dir', 'install_dir'):
-                valid_dirs.append(getattr(self.env, i))
+                self.env.sandbox_valid_dirs.append(getattr(self.env, i))
             # run in catbox
             ret = catbox.run(getattr(self.env, func_name),
-                    valid_dirs,
+                    self.env.sandbox_valid_dirs,
                     logger=self.sandbox_logger)
 
             if ret.code != 0:
@@ -207,7 +221,6 @@ def run(script, env):
             out.error("an error occurred when running the %s function." % out.color(opr, "red"))
             lpms.terminate()
         except (AttributeError, NameError), err: 
-            import traceback
             traceback.print_exc(err)
             out.error("an error occurred when running the %s function." % out.color(opr, "red"))
             lpms.terminate()
