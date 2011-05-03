@@ -270,7 +270,7 @@ def patch(*args, **kwarg):
         lpms.catch_error("patch failed")
 
 def insexe(source, target='/usr/bin'):
-    return install_executable(source, prepare_target(target))
+    return shelltools.install_executable([source], prepare_target(target))
 
 def system(*cmd):
     return shelltools.system(" ".join(cmd))
