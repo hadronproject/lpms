@@ -136,7 +136,7 @@ def touch(path):
     shelltools.touch(path)
 
 def echo(content, target):
-    shelltools.echo(target, content)
+    shelltools.echo(content, target)
 
 def isfile(path):
     return shelltools.is_file(path)
