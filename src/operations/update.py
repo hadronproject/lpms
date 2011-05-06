@@ -54,11 +54,13 @@ class Update(internals.InternalFuncs):
         os.chdir(os.path.join(repo_path, category, my_pkg))
         for pkg in glob.glob("*"+cst.spec_suffix):
             script_path = os.path.join(repo_path, category, my_pkg, pkg)
+
             self.env.name, self.env.version = utils.parse_pkgname(pkg.split(cst.spec_suffix)[0])
+            self.env.__dict__["fullname"] = self.env.name+"-"+self.env.version
+
             self.import_script(script_path)
             metadata = utils.metadata_parser(self.env.metadata)
-            name, version = utils.parse_pkgname(pkg.split(cst.spec_suffix)[0])
-            metadata.update({"name": name, "version": version})
+            metadata.update({"name": self.env.name, "version": self.env.version})
             if not "options" in metadata:
                 metadata.update({"options": None})
             if not "slot" in metadata:
@@ -68,15 +70,17 @@ class Update(internals.InternalFuncs):
             if not "src_url" in metadata:
                 metadata.update({"src_url": None})
 
-            out.write("    %s-%s\n" % (name, version))
+            out.write("    %s-%s\n" % (self.env.name, self.env.version))
             data = (repo_name, category, metadata["name"], metadata["version"], 
                     metadata["summary"], metadata["homepage"], metadata["license"], 
                     metadata["src_url"], metadata["options"], 
                     metadata['slot'], metadata['arch'])
-            repo, category, name, version, summary, homepage, _license, src_url, options, slot, arch = data
+            
+            (repo, category, self.env.name, self.env.version, 
+                    summary, homepage, _license, src_url, options, slot, arch) = data
             
             if update:
-                self.repo_db.remove_pkg(repo, category, name, version)
+                self.repo_db.remove_pkg(repo, category, self.env.name, self.env.version)
 
             self.repo_db.add_pkg(data, commit=False)
             # add dependency mumbo-jumbo
@@ -87,7 +91,7 @@ class Update(internals.InternalFuncs):
                         runtime = deps['runtime']
                     if 'build' in deps.keys():
                         build = deps['build']
-            dependencies = (repo, category, name, version, build, runtime)
+            dependencies = (repo, category, self.env.name, self.env.version, build, runtime)
             self.repo_db.add_depends(dependencies)
             # remove optional keys
             for key in ('depends', 'options'):
