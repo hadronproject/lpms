@@ -227,7 +227,7 @@ def pwd():
 
 def apply_patch(patches, level, reverse):
     for patch in patches:
-        out.notify("applying patch %s" % out.color(basename(patch), "brightwhite"))
+        out.notify("applying patch %s" % out.color(basename(patch), "green"))
         ret = shelltools.system("patch --remove-empty-files --no-backup-if-mismatch %s -p%d -i \"%s\"" % 
                 (reverse, level, patch), show=False)
         if not ret: return False
