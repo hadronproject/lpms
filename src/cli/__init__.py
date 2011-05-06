@@ -39,7 +39,7 @@ help_output = (
 
 build_help = (
         ('--pretend', '-p', 'Shows operation steps'),
-        ('--ask', '-a', 'Asks to the user before operation.(not yet)'),
+        ('--ask', '-a', 'Asks to the user before operation.'),
         ('--fetch-only', '-F', 'Only fetches packages, do not install.(not yet)'),
         ('--search', '-s', 'Searches given keyword in database.'),
         ('--resume', "Resumes previous installation operation. Use '--skip-first' to skip the first package."),
