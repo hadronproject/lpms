@@ -136,8 +136,11 @@ class PackageDatabase:
     def drop(self, rname, category=None, name=None, version=None):
         # FIXME: Use executescript
         def drop_others():
-            self.cursor.execute('''delete from build_info where repo=(?) and category=(?) and name=(?) and version=(?)''', 
-                    (rname, category, name, version,))
+            try:
+                self.cursor.execute('''delete from build_info where repo=(?) and category=(?) and name=(?) and version=(?)''', 
+                        (rname, category, name, version,))
+            except sqlite3.OperationalError:
+                pass
             self.cursor.execute('''delete from depends where repo=(?) and category=(?) and name=(?) and version=(?)''', 
                     (rname, category, name, version,))
 
