@@ -31,10 +31,11 @@ lpms_version = "0.9_alpha1"
 help_output = (
         ('--help', '-h', 'Shows this message.'),
         ('--version', '-v', 'Shows version.'),
+        ('--no-color', '-n', 'Disables color output.'),
         ('--remove', '-r', 'Removes given package.'),
         ('--update', '-u', 'Updates all repositories or given repository.'),
         ('--search', '-s', 'Searches given package in database.'),
-        ('--no-color', '-n', 'Disables color output.')
+        ('--list-files', '-lf', 'Lists files of given package.'),
         )
 
 build_help = (
@@ -119,6 +120,10 @@ def main():
         elif opt == "--search" or opt == "-s":
             from lpms.cli import search
             search.Search(options[options.index(opt)+1:]).search()
+            return
+        elif opt == "--list-files" or opt == "-lf":
+            from lpms.cli import list_files
+            list_files.main(options[options.index(opt)+1])
             return
         elif opt == "--no-merge":
             pass
