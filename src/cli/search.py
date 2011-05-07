@@ -46,7 +46,9 @@ class Search(object):
         replace = re.compile("(%s)" % "|".join(self.patterns), re.I)
         for repo, category, name in self.repo_db.get_all_names():
             summary = self.repo_db.get_summary(name, repo, category)[0]
-            if replace.match(name) is not None or replace.search(summary) is not None:
+            if replace.search(name) is not None or replace.match(name) is not None or \
+                replace.search(summary) is not None:
+                
                 versions = []
                 map(lambda x: versions.extend(x), self.repo_db.get_version(name, repo, category).values())
                 if lpms.getopt("--mark"):
