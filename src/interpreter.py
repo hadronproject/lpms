@@ -116,13 +116,16 @@ class Interpreter(internals.InternalFuncs):
         utils.xterm_title("(%s/%s) lpms: configuring %s/%s-%s from %s" % (self.env.i, self.env.count, 
             self.env.category, self.env.pkgname, self.env.version, self.env.repo))
         out.normal("configuring source in %s" % self.env.build_dir)
-        configured_file = os.path.join(self.env.build_dir.split("source")[0],
-                ".configured")
+        
+        configured_file = os.path.join(os.path.dirname(os.path.dirname(
+            self.env.build_dir)), ".configured")
+        
         if os.path.isfile(configured_file) and lpms.getopt("--resume-build"):
             out.warn_notify("source already configured.")
             return True
         self.run_stage("configure")
         out.notify("source configured")
+        
         if not os.path.isfile(configured_file):
             touch(configured_file)
         if self.env.stage == "configure":
