@@ -35,7 +35,8 @@ help_output = (
         ('--remove', '-r', 'Removes given package.'),
         ('--update', '-u', 'Updates all repositories or given repository.'),
         ('--search', '-s', 'Searches given package in database.'),
-        ('--list-files', '-lf', 'Lists files of given package.'),
+        ('--belong', '-b', 'Queries the package that owns given keyword.'),
+        ('--list-files', '-lf', 'Lists files of given package.')
         )
 
 build_help = (
@@ -123,7 +124,21 @@ def main():
             return
         elif opt == "--list-files" or opt == "-lf":
             from lpms.cli import list_files
-            list_files.main(options[options.index(opt)+1])
+            try: list_files.main(options[options.index(opt)+1])
+            except IndexError:
+                out.error("please give a package name.")
+                lpms.terminate()
+            return
+        elif opt == "--belong" or opt == "-b":
+            from lpms.cli import belong
+            belong.main(options[options.index(opt)+1])
+            return
+        elif opt == "--remove_repo" or opt == "-rr":
+            from lpms.cli import remove_repo
+            try: remove_repo.main(options[options.index(opt)+1:])
+            except IndexError:
+                out.error("please give a repo name.")
+                lpms.terminate()
             return
         elif opt == "--no-merge":
             pass
