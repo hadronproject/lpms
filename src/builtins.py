@@ -175,7 +175,10 @@ def copytree(source, target, sym=True):
     shelltools.copytree(source, prepare_target(target), sym)
 
 def copy(source, target, sym=True):
-    shelltools.copy(source, prepare_target(target), sym)
+    if inspect.stack()[1][3] == "install":
+        shelltools.copy(source, prepare_target(target), sym)
+    else:
+        shelltools.copy(source, target, sym)
 
 def move(source, target):
     shelltools.move(source, prepare_target(target))
