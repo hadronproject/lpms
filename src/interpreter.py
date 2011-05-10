@@ -135,8 +135,8 @@ class Interpreter(internals.InternalFuncs):
         utils.xterm_title("(%s/%s) lpms: building %s/%s-%s from %s" % (self.env.i, self.env.count, 
             self.env.category, self.env.pkgname, self.env.version, self.env.repo))
         out.normal("compiling source in %s" % self.env.build_dir)
-        built_file = os.path.join(self.env.build_dir.split("source")[0],
-            ".built")
+        built_file = os.path.join(os.path.dirname(os.path.dirname(
+            self.env.build_dir)), ".built")
         if os.path.isfile(built_file) and lpms.getopt("--resume-build"):
             out.warn_notify("source already built.")
             return True
@@ -151,8 +151,9 @@ class Interpreter(internals.InternalFuncs):
         utils.xterm_title("(%s/%s) lpms: installing %s/%s-%s from %s" % (self.env.i, self.env.count, 
             self.env.category, self.env.pkgname, self.env.version, self.env.repo))
         out.normal("installing %s to %s" % (self.env.fullname, self.env.install_dir))
-        installed_file = os.path.join(self.env.build_dir.split("source")[0],
-            ".installed")
+        installed_file = os.path.join(os.path.dirname(os.path.dirname(
+            self.env.build_dir)), ".installed")
+
         if os.path.isfile(installed_file) and lpms.getopt("--resume-build"):
             out.warn_notify("source already installed.")
             return True
