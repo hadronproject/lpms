@@ -80,11 +80,13 @@ class Interpreter(internals.InternalFuncs):
                 raise BuiltinError
 
             if len(ret.violations) != 0:
-                out.brightred("Sandbox Violations!!!\n")
+                out.brightred("sandbox violations in %s/%s/%s-%s!\n" % (self.env.repo, 
+                    self.env.category, self.env.pkgname, self.env.version))
                 out.normal("results:")
                 for result in ret.violations:
                     out.notify("%s (%s -> %s)" % (result[0], result[1], result[2]))
-                lpms.catch_error("please contact package maintainer.")
+                out.error("sandbox violations detected while running %s" % out.color(func_name, "red"))
+                lpms.terminate()
 
         def run_without_sandbox(func_name):
             getattr(self.env, func_name)()
@@ -222,9 +224,13 @@ def run(script, env):
         try:
             method()
         except (BuiltinError, MakeError):
+            out.write(out.color(">>", brightred)+"%s/%s/%s-%s\n" % (opr.env.repo, opr.env.category, 
+                opr.env.pkgname, opr.env.version))
             out.error("an error occurred when running the %s function." % out.color(opr, "red"))
             lpms.terminate()
         except (AttributeError, NameError), err: 
+            out.write(out.color(">>", brightred)+"%s/%s/%s-%s\n" % (opr.env.repo, opr.env.category, 
+                opr.env.pkgname, opr.env.version))
             traceback.print_exc(err)
             out.error("an error occurred when running the %s function." % out.color(opr, "red"))
             lpms.terminate()
