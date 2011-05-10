@@ -46,7 +46,8 @@ def extract(file_path, location):
     if not os.path.isfile(file_path):
         lpms.terminate("%s could not found!" % file_path)
     valid_types = {
-            'tar.bz2': 'extract_tar', 
+            'tar.bz2': 'extract_tar',
+            "tgz": 'extract_tar',
             "zip":'extract_zip', 
             "lzma": 'extract_lzma',
             "xz": 'extractlzma',
