@@ -224,13 +224,13 @@ def run(script, env):
         try:
             method()
         except (BuiltinError, MakeError):
-            out.write(out.color(">>", brightred)+"%s/%s/%s-%s\n" % (opr.env.repo, opr.env.category, 
-                opr.env.pkgname, opr.env.version))
+            out.write(out.color(">>", "brightred")+" %s/%s/%s-%s\n" % (ipr.env.repo, ipr.env.category, 
+                ipr.env.pkgname, ipr.env.version))
             out.error("an error occurred when running the %s function." % out.color(opr, "red"))
             lpms.terminate()
         except (AttributeError, NameError), err: 
-            out.write(out.color(">>", brightred)+"%s/%s/%s-%s\n" % (opr.env.repo, opr.env.category, 
-                opr.env.pkgname, opr.env.version))
+            out.write(out.color(">>", "brightred")+" %s/%s/%s-%s\n" % (ipr.env.repo, ipr.env.category, 
+                ipr.env.pkgname, ipr.env.version))
             traceback.print_exc(err)
             out.error("an error occurred when running the %s function." % out.color(opr, "red"))
             lpms.terminate()
