@@ -38,7 +38,7 @@ class UpgradeSystem(object):
             
             # catch packages which is from the outside
             if not self.repodb.find_pkg(name, repo, category):
-                self.notfound.append((repo, category, name))
+                self.notfound_pkg.append((repo, category, name))
 
             # get version data from repository database
             repovers = self.repodb.get_version(name, repo, category)
