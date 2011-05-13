@@ -114,7 +114,6 @@ def resolve_dependencies(data, cmd_options):
     prepares a full operation plan for the next stages'''
     out.normal("resolving dependencies")
     fixit = resolver.DependencyResolver()
-    print data
     for pkg in data:
         repo, category, name, version = pkg
         fixit.collect(repo, category, name, version, cmd_options)
