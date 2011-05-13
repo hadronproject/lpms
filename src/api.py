@@ -68,7 +68,8 @@ def get_pkg(pkgname):
         if result is not None:
             name, version = result
 
-    result = repodb.find_pkg(name, repo_name = repo, pkg_category = category)
+    result = repodb.find_pkg(name, repo_name = repo, pkg_category = category, 
+            selection = True)
 
     if not result:
         out.error("%s not found in repository database." % out.color(pkgname, "brightred"))
@@ -113,6 +114,7 @@ def resolve_dependencies(data, cmd_options):
     prepares a full operation plan for the next stages'''
     out.normal("resolving dependencies")
     fixit = resolver.DependencyResolver()
+    print data
     for pkg in data:
         repo, category, name, version = pkg
         fixit.collect(repo, category, name, version, cmd_options)
