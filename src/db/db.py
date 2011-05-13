@@ -151,7 +151,7 @@ class PackageDatabase:
             for pkg in self.find_pkg(name):
                 irepo, icategory, iname, iversion = pkg
                 # FIXME: This is no good!
-                if (irepo, icategory, iname) == (rname, category, name):
+                if (icategory, iname) == (category, name):
                     for key in iversion.keys():
                         if version in iversion[key]:
                             iversion[key].remove(version)
