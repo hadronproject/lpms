@@ -196,14 +196,23 @@ class Merge(internals.InternalFuncs):
     def write_db(self):
         # write metadata
         # FIXME: do we need a function called update_db or like this?
-        installed = self.instdb.find_pkg(self.env.name, self.env.repo,
-                self.env.category)
-        if not isinstance(installed, bool):
-            for key in installed[-1].keys():
+        
+        installed = self.instdb.find_pkg(self.env.name, pkg_category = self.env.category)
+        
+        def rmpkg(data):
+            '''removes installed versions from database'''
+            for key in data[-1].keys():
                 if key == self.env.slot:
-                    for ver in installed[-1][key]:
-                        self.instdb.remove_pkg(self.env.repo, self.env.category, 
-                            self.env.name, ver)
+                    (self.instdb.remove_pkg(data[0], self.env.category, self.env.name, ver) 
+                            for ver in data[-1][key])
+
+        if not isinstance(installed, bool) or isinstance(installed, tuple):
+            # remove the db entry if the package is installed from a single repository.
+            rmpkg(installed)
+        elif isinstance(installed, list):
+            # remove the db entry if the package is found more than one repositories.
+            for pkg in installed:
+                rmpkg(pkg)
 
         data =(self.env.repo, self.env.category, 
             self.env.name, self.env.version, 
