@@ -230,7 +230,7 @@ class DependencyResolver(object):
         if local_plan:
             for dep, depver in local_plan:
                 cat, pkgname = dep.split('/')
-                result = self.repodb.find_pkg(pkgname, pkg_category=cat)
+                result = self.repodb.find_pkg(pkgname, pkg_category=cat, selection = True)
                 if not result:
                     out.error("%s : unsatisfied dependency for %s" % (out.color(dep, "red"), 
                         out.color(category+"/"+name, "red")))
