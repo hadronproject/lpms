@@ -18,16 +18,21 @@
 import os
 import sys
 
+from lpms import utils
 from lpms import constants as const
+
 from lpms.db import db
 
 class API(object):
     def __init__(self, db_path):
         self.db = db.PackageDatabase(db_path)
 
-    def find_pkg(self, pkgname, repo_name = None, pkg_category = None):
+    def find_pkg(self, pkgname, repo_name = None, pkg_category = None, 
+            selection=False):
         result = self.db.find_pkg(pkgname)
         if repo_name is None and pkg_category is None:
+            if len(result) > 1 and selection:
+                return utils.pkg_selection_dialog(result)
             return result
         elif repo_name is not None and pkg_category is None:
             for repo, category, name, version in result:
