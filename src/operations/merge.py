@@ -205,14 +205,14 @@ class Merge(internals.InternalFuncs):
                 if key == self.env.slot:
                     (self.instdb.remove_pkg(data[0], self.env.category, self.env.name, ver) 
                             for ver in data[-1][key])
-
-        if not isinstance(installed, bool) or isinstance(installed, tuple):
-            # remove the db entry if the package is installed from a single repository.
-            rmpkg(installed)
-        elif isinstance(installed, list):
-            # remove the db entry if the package is found more than one repositories.
-            for pkg in installed:
-                rmpkg(pkg)
+        if installed:
+            if not isinstance(installed, bool) or isinstance(installed, tuple):
+                # remove the db entry if the package is installed from a single repository.
+                rmpkg(installed)
+            elif isinstance(installed, list):
+                # remove the db entry if the package is found more than one repositories.
+                for pkg in installed:
+                    rmpkg(pkg)
 
         data =(self.env.repo, self.env.category, 
             self.env.name, self.env.version, 
