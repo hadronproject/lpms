@@ -29,6 +29,7 @@ class API(object):
 
     def find_pkg(self, pkgname, repo_name = None, pkg_category = None, 
             selection=False):
+        package = []
         result = self.db.find_pkg(pkgname)
         if repo_name is None and pkg_category is None:
             if len(result) > 1 and selection:
@@ -37,18 +38,19 @@ class API(object):
         elif repo_name is not None and pkg_category is None:
             for repo, category, name, version in result:
                 if repo_name == repo:
-                    return repo, category, name, version
-            return False
+                    package.append((repo, category, name, version))
         elif repo_name is None and pkg_category is not None:
             for repo, category, name, version in result:
                 if pkg_category == category:
-                    return repo, category, name, version
-            return False
+                    package.append((repo, category, name, version))
         elif repo_name is not None and pkg_category is not None:
             for repo, category, name, version in result:
                 if repo_name == repo and pkg_category == category:
-                    return repo, category, name, version
-            return False
+                    package.append((repo, category, name, version))
+        
+        if len(package) > 1 and selection:
+            return utils.pkg_selection_dialog(package)
+        return package
 
     def commit(self):
         return self.db.commit()
