@@ -203,8 +203,10 @@ class Merge(internals.InternalFuncs):
             '''removes installed versions from database'''
             for key in data[-1].keys():
                 if key == self.env.slot:
-                    (self.instdb.remove_pkg(data[0], self.env.category, self.env.name, ver) 
-                            for ver in data[-1][key])
+                    for ver in data[-1][key]:
+                        self.instdb.remove_pkg(data[0], self.env.category, 
+                                self.env.name, ver)
+
         if installed:
             if not isinstance(installed, bool) or isinstance(installed, tuple):
                 # remove the db entry if the package is installed from a single repository.
