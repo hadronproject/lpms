@@ -50,6 +50,10 @@ class API(object):
         
         if len(package) > 1 and selection:
             return utils.pkg_selection_dialog(package)
+
+        if len(package) == 1:
+            return package[0]
+
         return package
 
     def commit(self):
