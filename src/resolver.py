@@ -240,5 +240,4 @@ class DependencyResolver(object):
                     versions = []
                     map(lambda x: versions.extend(x), result[-1].values())
                     depver = utils.best_version(versions)
-
                 self.collect(result[0], cat, pkgname, depver, cmd_options)
