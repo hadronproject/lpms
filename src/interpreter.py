@@ -36,11 +36,9 @@ class Interpreter(internals.InternalFuncs):
         self.env = env
         self.env.__setattr__("get", self.get)
         self.env.__setattr__("standart_procedure", True)
+        self.env.__setattr__("standard_procedure", True)
         self.script = script
         self.config = conf.LPMSConfig()
-        for bi in ('builtins.py', 'buildtools.py'):
-            self.import_script(os.path.join(cst.lpms_path, bi))
-        self.import_script(self.script)
         self.get_build_libraries()
         self.startup_funcs()
 
