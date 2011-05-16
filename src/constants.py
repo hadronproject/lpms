@@ -15,6 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with lpms.  If not, see <http://www.gnu.org/licenses/>.
 
+environmental_files = ('builtins.py', 'buildtools.py')
+
 root = "/"
 xmlfile_suffix = ".xml"
 lpms_path = "/usr/lib/python2.7/site-packages/lpms"
@@ -37,6 +39,7 @@ config_file = "lpms.conf"
 distfiles = "/usr/portage/distfiles"
 extract_dir = "/var/tmp/lpms/"
 resume_file = extract_dir+"/"+"resume"
+
 doc = 'usr/share/doc'
 sbin = 'usr/sbin'
 man = 'usr/share/man'
