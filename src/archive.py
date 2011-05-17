@@ -33,14 +33,17 @@ class Archive:
         f.extractall(self.location)
 
     def extract_zip(self, path):
-        current = os.getcwd()
-        os.chdir(self.location)
-        z = zipfile.ZipFile(path, 'r')
-        for __file in z.infolist():
-            file(__file.filename, 'wb').write(z.read(__file.filename))
-            t = time.mktime(i.date_time)
-            os.utime(fn, (t, t))
-        os.chdir(current)
+        f = zipfile.ZipFile(path)
+        out.notify("extracting %s to %s" % (os.path.basename(path), self.location))
+        f.extractall(self.location)
+        #current = os.getcwd()
+        #os.chdir(self.location)
+        #z = zipfile.ZipFile(path, 'r')
+        #for __file in z.infolist():
+        #    file(__file.filename, 'wb').write(z.read(__file.filename))
+        #    t = time.mktime(i.date_time)
+        #    os.utime(fn, (t, t))
+        #os.chdir(current)
 
 def extract(file_path, location):
     if not os.path.isfile(file_path):
