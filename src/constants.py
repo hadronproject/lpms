@@ -15,11 +15,13 @@
 # You should have received a copy of the GNU General Public License
 # along with lpms.  If not, see <http://www.gnu.org/licenses/>.
 
+import sys
+
 environmental_files = ('builtins.py', 'buildtools.py')
 
 root = "/"
 xmlfile_suffix = ".xml"
-lpms_path = "/usr/lib/python2.7/site-packages/lpms"
+lpms_path = "/usr/lib/python%s.%s/site-packages/lpms" % (sys.version_info[0], sys.version_info[1])
 merge_conf = "/var/tmp/merge-conf"
 repo_file = "info/repo.conf"
 repo_info = "info"
