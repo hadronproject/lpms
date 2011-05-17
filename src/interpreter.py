@@ -35,8 +35,6 @@ class Interpreter(internals.InternalFuncs):
         super(Interpreter, self).__init__()
         self.env = env
         self.env.__setattr__("get", self.get)
-        self.env.__setattr__("standart_procedure", True)
-        self.env.__setattr__("standard_procedure", True)
         self.script = script
         self.config = conf.LPMSConfig()
         self.get_build_libraries()
