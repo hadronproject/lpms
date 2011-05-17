@@ -21,6 +21,9 @@ from lpms import constants as cst
 
 class Environment(object):
     pass
+    #def __init__(self):
+    #    pass
+        #self.__dict__["pkgname"] = pkgname
 
 class InternalFuncs(object):
     def __init__(self):
@@ -28,6 +31,9 @@ class InternalFuncs(object):
         self.libraries = []
         self.env.sandbox_valid_dirs = []
         self.env.backup = []
+        self.env.__setattr__("standart_procedure", True)
+        self.env.__setattr__("standard_procedure", True)
+  
         # FIXME: use a better method for environment functions.
         self.env.__dict__['get'] = self.get
         for f in cst.environmental_files:
