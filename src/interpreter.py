@@ -211,7 +211,7 @@ def run(script, env):
     operation_order = ['configure', 'build', 'install', 'merge']
     if 'prepare' in env.__dict__.keys():
         operation_order.insert(0, 'prepare')
-    elif 'post_install' in env.__dict__.keys():
+    if 'post_install' in env.__dict__.keys():
         operation_order.insert(len(operation_order), 'post_install')
 
     # FIXME: we need more flow control
