@@ -71,8 +71,13 @@ def raw_configure(*parameters):
     if not shelltools.system("./configure %s" % " ".join(parameters)):
         lpms.terminate()
 
-def make(*parameters):
-    if not shelltools.system("make %s %s" % (cfg.LPMSConfig().MAKEOPTS, " ".join(parameters))):
+def make(*parameters, **kwargs):
+    if "j" in kwargs:
+        jobs = kwargs["j"]
+    else:
+        jobs = cfg.LPMSConfig().MAKEOPTS
+
+    if not shelltools.system("make %s %s" % (str(jobs), " ".join(parameters))):
         lpms.catch_error("make failed.")
 
 def raw_install(parameters = '', arg='install'):
