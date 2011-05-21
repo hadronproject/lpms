@@ -111,8 +111,10 @@ class Merge(internals.InternalFuncs):
                     if os.path.islink(target):
                         shelltools.remove_file(target)
                     # create real directory
-                    shelltools.makedirs(os.path.join(self.env.real_root, 
-                        realpath.split(self.env.install_dir)[1][1:]))
+                    if len(realpath.split(self.env.install_dir)) > 1:
+                        realpath = realpath.split(self.env.install_dir)[1][1:]
+
+                    shelltools.makedirs(os.path.join(self.env.real_root, realpath))
                     # make symlink
                     shelltools.make_symlink(os.readlink(source), target)
                 else:
