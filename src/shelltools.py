@@ -154,7 +154,7 @@ def copy(source, target, sym = True):
     if len(src) == 0:
         lpms.catch_error("[copy] no file matched pattern %s." % source)
 
-    if not os.path.exists(os.path.dirname(target)):
+    if len(target.split("/")) > 1 and not os.path.exists(os.path.dirname(target)):
         makedirs(os.path.dirname(target))
 
     for path in src:
