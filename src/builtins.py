@@ -190,8 +190,10 @@ def insfile(source, target):
     return shelltools.install_readable([source], prepare_target(target))
 
 def makesym(source, target):
-    target = prepare_target(target)
-    shelltools.makedirs(os.path.dirname(target))
+    if inspect.stack()[1][3] == "install":
+        target = prepare_target(target)
+    if len(target.split("/")) > 1:
+        shelltools.makedirs(os.path.dirname(target))
     shelltools.make_symlink(source, target)
 
 def rename(source, target):
@@ -199,7 +201,8 @@ def rename(source, target):
                 prepare_target(os.path.join(os.path.dirname(source), target)))
 
 def rmfile(target):
-    target = prepare_target(target)
+    if inspect.stack()[1][3] == "install":
+        target = prepare_target(target)
     src = glob.glob(target)
     if len(src) == 0:
         lpms.catch_error("no file matched pattern: %s" % target)
@@ -208,7 +211,8 @@ def rmfile(target):
         shelltools.remove_file(path)
 
 def rmdir(target):
-    target = prepare_target(target)
+    if inspect.stack()[1][3] == "install":
+        target = prepare_target(target)
     src = glob.glob(target)
     if len(src) == 0:
         lpms.catch_error("no directory matched pattern: %s" % target)
