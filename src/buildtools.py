@@ -73,7 +73,7 @@ def raw_configure(*parameters):
 
 def make(*parameters, **kwargs):
     if "j" in kwargs:
-        jobs = kwargs["j"]
+        jobs = "-j"+str(kwargs["j"])
     else:
         jobs = cfg.LPMSConfig().MAKEOPTS
 
