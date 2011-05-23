@@ -42,15 +42,15 @@ class Merge(internals.InternalFuncs):
         self.env = environment
         self.instdb = dbapi.InstallDB()
 
-    # FIXME: Do I need is_X methodes? i will move it 
     def is_fresh(self):
         status = self.instdb.find_pkg(self.env.name, 
             self.env.repo, self.env.category)
         
-        if isinstance(status, bool) or not status:
-            return True
-        
-        #map(lambda x: self.versions.extend(x), status[-1].values())
+        if isinstance(status, bool) or not status or \
+            not self.env.slot in status[-1].keys():
+                return True
+
+        #map(lambda x: slf.versions.extend(x), status[-1].values())
         #if not status or not self.env.version in self.versions:
         #    return True
         
