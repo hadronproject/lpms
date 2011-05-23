@@ -52,12 +52,13 @@ class Search(object):
                 versions = []
                 map(lambda x: versions.extend(x), self.repo_db.get_version(name, repo, category).values())
                 if lpms.getopt("--mark"):
-                    out.write("%s/%s (%s)\n    %s" %(category, 
+                    out.write("%s/%s/%s (%s)\n    %s" %(repo, category, 
                         replace.sub(out.color(r"\1", "red"), name),
                         " ".join(versions),
                         replace.sub(out.color(r"\1", "red"), summary))+'\n')
                 else:
-                    out.write("%s/%s (%s)\n    %s" % (out.color(category, "green"),
+                    out.write("%s/%s/%s (%s)\n    %s" % (out.color(repo, "green"),  
+                        out.color(category, "green"),
                         out.color(name, "green"),
                         " ".join(versions),
                         summary+'\n'))
