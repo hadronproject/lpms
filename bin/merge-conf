@@ -74,5 +74,6 @@ def main():
         # run the program
         Merge().start()
 
+
 if __name__ == '__main__':
     main()
