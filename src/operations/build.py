@@ -233,21 +233,36 @@ def main(operation_plan, instruct):
             setattr(opr.env, "srcdir", opr.env.fullname)
         opr.prepare_environment()
 
+        # start logging
+        # we want to save starting time of the build operation
+        lpms.logger.info("starting build (%s/%s) %s/%s/%s-%s" % (i, count, opr.env.repo, 
+            opr.env.category, opr.env.name, opr.env.version))
+
         out.normal("(%s/%s) building %s/%s from %s" % (i, count,
             out.color(opr.env.category, "green"),
             out.color(opr.env.pkgname+"-"+opr.env.version, "green"), opr.env.repo)); i += 1
 
         if opr.env.sandbox:
+            lpms.logger.info("sandbox enabled build")
             out.notify("sandbox is enabled")
         else:
+            lpms.logger.warning("sandbox disabled build")
             out.warn_notify("sandbox is disabled")
 
         # fetch packages which are in download_plan list
         if opr.env.src_url is not None:
             opr.parse_url_tag()
+
+            utils.xterm_title("lpms: downloading %s/%s/%s-%s" % (opr.env.repo, opr.env.category,
+                opr.env.name, opr.env.version))
+            
             opr.prepare_download_plan(opr.env.valid_opts)
+            
             if not fetcher.URLFetcher().run(opr.download_plan):
                 lpms.catch_error("\nplease check the spec")
+
+            utils.xterm_title("lpms: extracting %s/%s/%s-%s" % (opr.env.repo, opr.env.category,
+                opr.env.name, opr.env.version))
 
             opr.extract_sources()
             if opr.env.stage == "unpack":
@@ -259,6 +274,10 @@ def main(operation_plan, instruct):
         
         os.chdir(opr.env.build_dir)
         interpreter.run(opr.env.spec_file, opr.env)
+        
+        lpms.logger.info("finished %s/%s/%s-%s" % (opr.env.repo, opr.env.category, 
+            opr.env.name, opr.env.version))
+
         utils.xterm_title("lpms: %s/%s finished" % (opr.env.category, opr.env.pkgname))
         #merge.main(opr.env)
         out.notify("cleaning build directory...\n")
