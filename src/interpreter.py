@@ -179,8 +179,6 @@ class Interpreter(internals.InternalFuncs):
             out.write("no merging...\n")
             lpms.terminate()
 
-        lpms.logger.info("configuring in %s" % self.env.build_dir)
-
         merge.main(self.env)
 
     def run_post_install(self):
