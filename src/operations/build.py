@@ -304,8 +304,8 @@ def main(operation_plan, instruct):
         utils.xterm_title_reset()
 
 def show_plan(repo, category, name, version, valid_options, options):
-    out.write("  %s/%s/%s-%s " % (repo, out.color(category, "brightwhite"), 
-        out.color(name, "brightgreen"), version))
+    out.write("  %s/%s/%s-%s " % (out.color(repo, "green"), out.color(category, "green"), 
+        out.color(name, "green"), out.color(version, "green")))
     if valid_options is None and options is not None:
         out.write("(")
         out.write(options)
