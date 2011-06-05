@@ -16,9 +16,11 @@
 # along with lpms.  If not, see <http://www.gnu.org/licenses/>.
 
 import sys
+import logging
 import inspect
 
 from lpms import out
+from lpms import constants as cst
 
 def terminate(msg=None):
     if msg is not None:
@@ -43,3 +45,13 @@ def catch_error(err, stage=0):
                     terminate()
     print(err)
     terminate()
+
+
+# start logging
+
+logger = logging.getLogger(__name__)
+hdlr = logging.FileHandler(cst.logfile)
+formatter = logging.Formatter('%(created)f %(asctime)s %(levelname)s %(message)s')
+hdlr.setFormatter(formatter)
+logger.addHandler(hdlr)
+logger.setLevel(logging.INFO)

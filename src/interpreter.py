@@ -113,6 +113,7 @@ class Interpreter(internals.InternalFuncs):
     def run_configure(self):
         utils.xterm_title("(%s/%s) lpms: configuring %s/%s-%s from %s" % (self.env.i, self.env.count, 
             self.env.category, self.env.pkgname, self.env.version, self.env.repo))
+
         out.normal("configuring source in %s" % self.env.build_dir)
         
         configured_file = os.path.join(os.path.dirname(os.path.dirname(
@@ -121,9 +122,12 @@ class Interpreter(internals.InternalFuncs):
         if os.path.isfile(configured_file) and lpms.getopt("--resume-build"):
             out.warn_notify("source already configured.")
             return True
+
+        lpms.logger.info("configuring in %s" % self.env.build_dir)
+        
         self.run_stage("configure")
         out.notify("source configured")
-        
+
         if not os.path.isfile(configured_file):
             touch(configured_file)
         if self.env.stage == "configure":
@@ -138,6 +142,9 @@ class Interpreter(internals.InternalFuncs):
         if os.path.isfile(built_file) and lpms.getopt("--resume-build"):
             out.warn_notify("source already built.")
             return True
+        
+        lpms.logger.info("building in %s" % self.env.build_dir)
+
         self.run_stage("build")
         out.notify("source compiled")
         if not os.path.isfile(built_file):
@@ -155,6 +162,9 @@ class Interpreter(internals.InternalFuncs):
         if os.path.isfile(installed_file) and lpms.getopt("--resume-build"):
             out.warn_notify("source already installed.")
             return True
+        
+        lpms.logger.info("installing to %s" % self.env.build_dir)
+
         self.run_stage("install")
         out.notify("%s/%s installed." % (self.env.category, self.env.fullname))
         if not os.path.isfile(installed_file):
@@ -168,6 +178,9 @@ class Interpreter(internals.InternalFuncs):
         if lpms.getopt("--no-merge"):
             out.write("no merging...\n")
             lpms.terminate()
+
+        lpms.logger.info("configuring in %s" % self.env.build_dir)
+
         merge.main(self.env)
 
     def run_post_install(self):
@@ -211,6 +224,7 @@ def run(script, env):
     operation_order = ['configure', 'build', 'install', 'merge']
     if 'prepare' in env.__dict__.keys():
         operation_order.insert(0, 'prepare')
+    
     if 'post_install' in env.__dict__.keys():
         operation_order.insert(len(operation_order), 'post_install')
 
