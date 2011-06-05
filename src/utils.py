@@ -29,6 +29,20 @@ from lpms import conf
 from lpms import constants as cst
 
 
+def select_repo(data):
+    valid = valid_repos()
+
+    sorting = []
+    
+    for d in data:
+        if d in valid:
+            sorting.append(valid.index(d))
+    return valid[sorted(sorting)[0]]
+
+def valid_repos():
+    return [repo for repo in file(cst.repo_conf).read().split("\n") \
+            if not repo.startswith("#")]
+
 def get_mimetype(path):
     if not os.access(path, os.R_OK):
         return False
@@ -199,6 +213,12 @@ def parse_url_tag(urls, name, version):
     return download_list
 
 def pkg_selection_dialog(data):
+    if not lpms.getopt("--ask-repo"):
+        repo = select_repo([d[0] for d in data])
+        result = [pkg for pkg in data if pkg[0] == repo]
+        if len(result) == 1:
+            return result
+
     out.normal("this package is contained by more than one repositories.\n")
     def ask():
         for count, pkg in enumerate(data):
@@ -208,7 +228,7 @@ def pkg_selection_dialog(data):
         out.write("\n")
         out.normal("select one of them: ")
         out.write("\nto exit, press 'Q' or 'q'\n")
-        
+
     while True:
         # run the dialog, show packages from different repositories
         ask()
