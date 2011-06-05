@@ -20,6 +20,8 @@ import time
 import shutil
 import xml.etree.cElementTree as iks
 
+import lpms
+
 from lpms import out
 from lpms import utils
 from lpms import internals
@@ -192,6 +194,8 @@ class Merge(internals.InternalFuncs):
             shelltools.remove_file(self.myfile)
         shelltools.echo(iks.tostring(xml_root), self.myfile)
         
+        lpms.logger.info("merged to %s" % self.env.real_root)
+
         # it may be too big
         del xml_root
 
