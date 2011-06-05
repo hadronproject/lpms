@@ -141,7 +141,7 @@ class Merge(internals.InternalFuncs):
                 isconf = (f.endswith(".conf") or f.endswith(".cfg"))
                 if os.path.exists(target):
                     if root_path[0:4] == "/etc" or isconf:
-                        if utils.sha1sum(source) != utils.sha1sum(conf_file):
+                        if os.path.isfile(conf_file) and utils.sha1sum(source) != utils.sha1sum(conf_file):
                             entry = os.path.join("/var/tmp/merge-conf", "|".join(conf_file.split("/")))
                             if not os.path.exists(entry):
                                 shelltools.touch(entry)

@@ -24,22 +24,41 @@ from lpms import utils
 from lpms import shelltools
 from lpms import constants as cst
 
-def merge():
-    i = 0
-    query = os.listdir(cst.merge_conf)
-    for q in query:
-        i += 1
-        myfile = "/".join(q.split("|"))
-        out.write(out.color("("+str(i)+"/"+str(len(query))+")", "green"))
-        out.write(" "+myfile+"\n\n")
-        os.system("diff -Naur %s %s" % (myfile, myfile+".lpms-backup"))
+
+class Merge(object):
+    def __init__(self):
+        self.i = 0
+        self.query = os.listdir(cst.merge_conf)
+        self.q = ""
+        self.myfile = ""
+
+    def show(self):
+        self.i += 1
+        self.myfile = "/".join(self.q.split("|"))
+        out.write(out.color("("+str(self.i)+"/"+str(len(self.query))+")", "green"))
+        out.write(" "+self.myfile+"\n\n")
+        os.system("diff -Naur %s %s" % (self.myfile, self.myfile+".lpms-backup"))
         out.write("\n")
-        
-        if not utils.confirm("do you want to use the new version?"):
-            continue
-        
-        shelltools.move(myfile+".lpms-backup", myfile)
-        shelltools.remove_file(os.path.join(cst.merge_conf, q))
+
+        out.normal("[U]se new file, [R]emove new file, [P]ass\n")
+
+    def start(self):
+        for self.q in self.query:
+            # show diff output
+            self.show()
+
+            answer = sys.stdin.readline().strip()
+            if answer == "U" or answer == "u":
+                shelltools.move(self.myfile+".lpms-backup", self.myfile)
+                shelltools.remove_file(os.path.join(cst.merge_conf, self.q))
+            elif answer == "R" or answer == "r":
+                shelltools.remove_file(self.myfile+".lpms-backup")
+                shelltools.remove_file(os.path.join(cst.merge_conf, self.q))
+            elif answer == "P" or answer == "p":
+                continue
+            else:
+                out.warn("invalid character: %s" % answer)
+                show(i)
 
 def main():
     for cmd in sys.argv[0:]:
@@ -53,7 +72,7 @@ def main():
             return
 
         # run the program
-        merge()
+        Merge().start()
 
 if __name__ == '__main__':
     main()
