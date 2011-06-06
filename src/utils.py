@@ -37,9 +37,14 @@ def select_repo(data):
     for d in data:
         if d in valid:
             sorting.append(valid.index(d))
+    if not sorting:
+        return sorting
     return valid[sorted(sorting)[0]]
 
 def valid_repos():
+    if not os.path.isfile(cst.repo_conf):
+        out.warn("%s not found!" % cst.repo.conf)
+        return []
     return [repo for repo in file(cst.repo_conf).read().split("\n") \
             if not repo.startswith("#")]
 
