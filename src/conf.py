@@ -22,24 +22,11 @@ from lpms import constants as cst
 
 class ReadConfig(object):
     def __init__(self, conf_path):
-        for f in file(conf_path):
-            result = f.strip().split("=")
-            if len(result) >= 2:
-                member = "".join(list(result[0][0:-1]))
-                result = "=".join(result[1:])
-                if member.startswith("#"):
-                    continue
-
-                value = "".join(list(result.split('"')[1]))
-                if value == "True":
-                    value = True
-                elif value == "False":
-                    value = False
-
-                if member in self.__dict__.keys():
-                    self.__dict__[member] += " "+value
-                else:
-                    self.__dict__[member] = value
+        for atr in file(conf_path).read().strip().split('\n'):
+            if not atr.startswith("[") and not atr.startswith("#"):
+                if len(atr.split("=")) > 1:
+                    data = atr.split("=")
+                    self.__dict__[data[0].strip()] = "=".join(data[1:]).strip()
 
 class LPMSConfig(ReadConfig):
     def __init__(self):
