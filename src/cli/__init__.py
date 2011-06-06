@@ -219,5 +219,17 @@ def main():
     utils.check_root()
     #lpms.logger.info(('=== command: %s ===' % ' '.join(sys.argv)))
 
+    set_remove = []
+
+    for package in packages:
+        if package.startswith("@"):
+            packages.extend(utils.set_parser(package[1:]))
+            set_remove.append(package)
+
+    if set_remove:
+        for pkg in set_remove:
+            packages.remove(pkg)
+
+    # start building operation
     api.pkgbuild(packages, instruct)
 
