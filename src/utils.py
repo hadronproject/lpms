@@ -29,6 +29,50 @@ from lpms import conf
 from lpms import constants as cst
 
 
+def set_parser(set_name):
+    sets = []
+    for repo in valid_repos():
+        repo_set_file = os.path.join(cst.repos, repo, "info/sets", "%s.set" % set_name)
+        if os.path.isfile((repo_set_file)):
+            sets.append(repo_set_file)
+            
+    user_set_file = "%s/%s.set" % (cst.user_sets_dir, set_name)
+
+    if os.path.isfile(user_set_file):
+        sets.append(user_set_file)
+
+    if len(sets) > 1:
+        out.normal("ambiguous for %s\n" % out.color(set_name, "green"))
+        def ask():
+            for c, s in enumerate(sets):
+                out.write("	"+out.color(str(c+1), "green")+") "+s+"\n")
+            out.write("\nselect one of them:\n")
+            out.write("to exit, press Q or q.\n")
+            
+        while True:
+            ask()
+            answer = sys.stdin.readline().strip()
+            if answer == "Q" or answer == "q":
+                lpms.terminate()
+            elif answer.isalpha():
+                out.warn("please give a number.")
+                continue
+            
+            try:
+                set_file = sets[int(answer)-1]
+                break
+            except (IndexError, ValueError):
+                out.warn("invalid command.")
+                continue
+    elif len(sets) == 1:
+        set_file = sets[0]
+    else:
+        out.warn("%s not found!")
+        return []
+    
+    return [line for line in file(set_file).read().strip().split("\n") \
+            if not line.startswith("#") and line != ""]
+
 def select_repo(data):
     valid = valid_repos()
 
