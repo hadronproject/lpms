@@ -142,7 +142,7 @@ def main(operation_plan, instruct):
         if os.path.exists(cst.resume_file):
             with open(cst.resume_file, "rb") as _data:
                 operation_plan = pickle.load(_data)
-                if instruct["skip_first"]:
+                if instruct["skip-first"]:
                     operation_plan = operation_plan[1:]
 
                 if not operation_plan:
@@ -174,7 +174,7 @@ def main(operation_plan, instruct):
     # resume feature
     # create a resume list. write package data(repo, category, name, version) to 
     # /var/tmp/lpms/resume file.
-    if not instruct["resume"] or instruct["skip_first"]:
+    if not instruct["resume"] or instruct["skip-first"]:
         if os.path.exists(cst.resume_file):
             shelltools.remove_file(cst.resume_file)
         with open(cst.resume_file, "wb") as _data:
