@@ -89,8 +89,10 @@ def valid_repos():
     if not os.path.isfile(cst.repo_conf):
         out.warn("%s not found!" % cst.repo.conf)
         return []
-    return [repo for repo in file(cst.repo_conf).read().split("\n") \
-            if not repo.startswith("#")]
+
+    with open(cst.repo_conf) as repo_file:
+        return [repo for repo in repo_file.read().split("\n") \
+                if not repo.startswith("#")]
 
 def get_mimetype(path):
     if not os.access(path, os.R_OK):
