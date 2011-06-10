@@ -30,6 +30,7 @@ class Update(internals.InternalFuncs):
     def __init__(self):
         super(Update, self).__init__()
         self.repo_db = dbapi.RepositoryDB()
+        self.packages_num = 0
 
     def update_repository(self, repo_name):
         exceptions = ['info', 'libraries', '.git', '.svn']
@@ -44,7 +45,8 @@ class Update(internals.InternalFuncs):
                 packages.remove("info.xml")
             except ValueError:
                 pass
-            out.notify("%s" % out.color(category, "brightwhite"))
+            if lpms.getopt("--verbose"):
+                out.notify("%s" % out.color(category, "brightwhite"))
             for my_pkg in packages:
                 self.update_package(repo_path, category, my_pkg)
         self.repo_db.commit()
@@ -70,7 +72,9 @@ class Update(internals.InternalFuncs):
             if not "src_url" in metadata:
                 metadata.update({"src_url": None})
 
-            out.write("    %s-%s\n" % (self.env.name, self.env.version))
+            #sys.write.stdin("    %s-%s\r" % (self.env.name, self.env.version))
+            if lpms.getopt("--verbose"):
+                out.write("    %s-%s\n" % (self.env.name, self.env.version))
             data = (repo_name, category, metadata["name"], metadata["version"], 
                     metadata["summary"], metadata["homepage"], metadata["license"], 
                     metadata["src_url"], metadata["options"], 
@@ -91,14 +95,27 @@ class Update(internals.InternalFuncs):
                         runtime = deps['runtime']
                     if 'build' in deps.keys():
                         build = deps['build']
+
+            for opt in ('opt_runtime', 'opt_build'):
+                try:
+                    deps = utils.parse_opt_deps(getattr(self.env, opt))
+                    if opt.split("_")[1] == "runtime":
+                        runtime.append(deps)
+                    elif opt.split("_")[1] == "build":
+                        build.append(deps)
+                    del deps
+                except AttributeError:
+                    continue
+
             dependencies = (repo, category, self.env.name, self.env.version, build, runtime)
             self.repo_db.add_depends(dependencies)
             # remove optional keys
-            for key in ('depends', 'options'):
+            for key in ('depends', 'options', 'opt_runtime', 'opt_build'):
                 try:
                     del self.env.__dict__[key]
                 except KeyError:
                     pass
+            self.packages_num += 1
         #self.repo_db.commit()
 
 def main(params):
@@ -110,12 +127,15 @@ def main(params):
     # create operation object
     operation = Update()
 
+    repo_num = 0 
     if repo_name is None:
         out.normal("updating repository database...")
         for repo_name in os.listdir(cst.repos):
             if os.path.isfile(os.path.join(cst.repos, repo_name, "info/repo.conf")):
-                out.write(out.color("** "+repo_name+"\n", "green"))
+                out.write(out.color(" * ", "red") + repo_name+"\n")
                 operation.update_repository(repo_name)
+                repo_num += 1
+        out.normal("%s repository(ies) is/are updated." % repo_num)
     else:
         if len(repo_name.split("/")) == 2:
             out.normal("updating %s" % repo_name)
@@ -159,3 +179,5 @@ def main(params):
                     lpms.terminate("repo.conf file could not found in %s" % repo_dir+"/info")
             else:
                 lpms.terminate("repo.conf not found in %s" % os.path.join(cst.repos, repo_name))
+
+    out.normal("Total %s packages have been processed." % operation.packages_num)
