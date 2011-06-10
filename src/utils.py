@@ -248,6 +248,53 @@ def get_src_url(metadata, name, version):
             return parse_url_tag(metadata[tag], name, version)
     lpms.terminate("you must be define src_url or src_repository")
 
+def get_indent_level(data):
+    def getlspace(line):
+        i, n = 0, len(line)
+        while i < n and line[i] == " ":
+            i += 1
+        return i
+
+    sorting = []
+    for line in data:
+        if "@" in list(line):
+            indent_level = getlspace(line)
+            if indent_level != 0:
+                sorting.append(indent_level)
+    if sorting:
+        return "".join([" " for x in range(0, sorted(sorting)[0])])
+    return "\t"
+
+def parse_opt_deps(depends):
+    dependencies = {}
+    data = [dep for dep in depends.split("\n") if dep != ""]
+    indent = get_indent_level(data)
+    for line in data:
+        if line.startswith("#"):
+            continue
+        try:
+            opt, deps = line.split("@")
+        except ValueError:
+            if not opt.count(indent) and not line.strip() == "":
+                dependencies[opt].extend(line.strip().split(" "))
+                continue
+        if not opt.count(indent):
+            dependencies[opt.strip()] = [d for d in deps.strip().split(" ") if d != ""]
+            i = data.index(line) + 1
+            for x in data[i:]:
+                try:
+                    subopt, subdep = x.split("@")
+                except ValueError:
+                    if len(dependencies[opt]) > 1:
+                        if isinstance(dependencies[opt][-1][-1], list) and not x.strip() == "":
+                            dependencies[opt][-1][-1].extend(x.strip().split(" "))
+                    continue
+                if not subopt.count(indent):
+                    break
+                subopt = "\t".join(subopt.split(indent)).rstrip()
+                dependencies[opt.strip()].append((subopt, [sd for sd in subdep.strip().split(" ") if sd != ""]))
+    return dependencies
+
 # FIXME
 def parse_url_tag(urls, name, version):
     download_list = []
@@ -262,6 +309,8 @@ def parse_url_tag(urls, name, version):
             url = url.replace("$fullname", name+"-"+version)
             download_list.append((result[0], url))
     return download_list
+
+
 
 def pkg_selection_dialog(data):
     if not lpms.getopt("--ask-repo"):
