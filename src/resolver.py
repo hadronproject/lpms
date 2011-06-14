@@ -482,7 +482,7 @@ class DependencyResolver(object):
             version_data = self.repodb.find_pkg(name, pkg_category=category, selection = True)
             if not version_data:
                 out.error("unmet dependency for %s: %s" % ("/".join(self.current_package[:-1])+\
-                        "-"+self.current_package[-1], pkgname))
+                        "-"+self.current_package[-1], data))
                 lpms.terminate()
 
             if isinstance(version_data, list):
