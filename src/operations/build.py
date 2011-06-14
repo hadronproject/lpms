@@ -135,7 +135,8 @@ class Build(internals.InternalFuncs):
             lpms.catch_error("%s not found!" % self.env.spec_file)
         self.import_script(self.env.spec_file)
 
-def main(operation_plan, instruct):
+def main(plan, instruct):
+    operation_plan, operation_data = plan
     # resume previous operation_plan
     # if skip_first returns True, skip first package 
     if instruct["resume"]:
@@ -157,7 +158,8 @@ def main(operation_plan, instruct):
         out.write("\n")
         out.normal("these packages will be merged, respectively:\n")
         for atom in operation_plan:
-            repo, category, name, version, valid_options = atom[:-1]
+            valid_options = operation_data[atom][-1]
+            repo, category, name, version  = atom
             options = dbapi.RepositoryDB().get_options(repo, category, name, version)[version]
             show_plan(repo, category, name, version, valid_options, options)
 
@@ -179,11 +181,15 @@ def main(operation_plan, instruct):
             shelltools.remove_file(cst.resume_file)
         with open(cst.resume_file, "wb") as _data:
             pickle.dump(operation_plan, _data)
-    
+
     for plan in operation_plan:
         opr = Build()
 
-        keys = {'repo':0, 'category':1, 'pkgname':2, 'version':3, 'valid_opts':4, 'todb': 5}
+        setattr(opr.env, 'todb', operation_data[plan][0])
+        setattr(opr.env, 'valid_opts', operation_data[plan][1])
+
+        operation_data[plan]
+        keys = {'repo':0, 'category':1, 'pkgname':2, 'version':3}
         for key in keys:
             setattr(opr.env, key, plan[keys[key]])
 
