@@ -149,13 +149,15 @@ class API(object):
         result = self.db.find_pkg(pkgname)
         for pkg in result:
             repo, catgry, name, gversions = pkg
-            if (catgry, pkgname) is (category, pkgname):
-                versions = []
-                map(lambda v: versions.extend(v), gversions)
-                if version is not None and version in versions:
-                    return repo
-                else:
-                    return False
+            # FIXME: Unicode issues
+            if catgry == category and name == pkgname:
+                if version is not None:
+                    versions = []
+                    map(lambda v: versions.extend(v), gversions.values())
+                    if version in versions:
+                        return repo
+                    else:
+                        return False
                 return repo
         return False
 
