@@ -146,7 +146,7 @@ class API(object):
         return self.db.get_arch(repo_name, category, pkgname, version)
 
     def get_repo(self, category, pkgname, version = None):
-        result = self.db.find_pkg(pkgname)
+        result = self.find_pkg(pkgname)
         for pkg in result:
             repo, catgry, name, gversions = pkg
             # FIXME: Unicode issues
