@@ -265,6 +265,33 @@ def get_indent_level(data):
         return "".join([" " for x in range(0, sorted(sorting)[0])])
     return "\t"
 
+def internal_opts(data, global_options):
+    def check_alnum(seq):
+        for c in list(seq):
+            if not c.isalnum():
+                return False
+        return True
+
+    result = []
+
+    for opt in data:
+        if not opt.startswith("-"):
+            if opt.endswith("?") and opt[:-1] in global_options:
+                result.append(opt[:-1])
+            elif opt.endswith("!?") and not opt[:-2] in global_options:
+                result.append(opt[:-2])
+            elif not opt.endswith("?") and not opt.endswith("!?"):
+                result.append(opt)
+        else:
+            if opt.endswith("?") and not opt[1:-1] in global_options and \
+                    check_alnum(opt[1:-1]):
+                result.append(opt[1:-1])
+            elif opt.endswith("!?") and opt[1:-2] in global_options:
+                result.append(opt[1:-2])
+
+    return result
+
+
 def parse_opt_deps(depends):
     dependencies = {}
     data = [dep for dep in depends.split("\n") if dep != ""]
