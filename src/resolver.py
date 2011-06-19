@@ -1,20 +1,3 @@
-# Copyright 2009 - 2011 Burak Sezer <purak@hadronproject.org>
-# 
-# This file is part of lpms
-#  
-# lpms is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#   
-# lpms is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#   
-# You should have received a copy of the GNU General Public License
-# along with lpms.  If not, see <http://www.gnu.org/licenses/>.
-
 import lpms
 
 from lpms import out
@@ -23,19 +6,6 @@ from lpms import utils
 
 from lpms.db import dbapi
 
-#################################################################
-# 
-# Dependency resolver for lpms. Some parts from RADLogic.
-#   * http://www.radlogic.com
-#   * http://www.radlogic.com/releases/topsort.py
-#
-# I used topological sorting algorithm for resolving dependencies.
-# 
-# The piece of code that relevants with lpms, I have written it.
-#                                                       
-# purak
-#
-#################################################################
 """Provide toplogical sorting (i.e. dependency sorting) functions.
 
 The topsort function is based on code posted on Usenet by Tim Peters.
@@ -447,14 +417,14 @@ class DependencyResolver(object):
         self.repodb = dbapi.RepositoryDB()
         self.instdb = dbapi.InstallDB()
         self.operation_data = {}
-#        self.valid_opts = []
+        self.valid_opts = []
         self.plan = {} 
         self.current_package = None
         self.package_query = []
+        self.global_options = []
         self.config = conf.LPMSConfig()
         
     def package_select(self, data):
-        #print data
         slot = 0
         gte, lte, lt, gt = False, False, False, False
         slot_parsed = data.split(":")
@@ -547,12 +517,12 @@ class DependencyResolver(object):
                 lpms.terminate()
 
             opt = "".join(data[first_index+1:end_index])
-            return "".join(data[:first_index]), opt.strip().split(" ")
+            return "".join(data[:first_index]), utils.internal_opts(opt.strip().split(" "), self.global_options)
         
         return "".join(data)
 
     def fix_dynamic_deps(self, data, options):
-        depends = []
+        depends = []; opts = []; no = []
         for opt in options:
             prev_indent_level = 0
             if opt in data:
@@ -566,11 +536,21 @@ class DependencyResolver(object):
                             if subopt.strip() in options:
                                 prev_indent_level = 1
                                 depends.extend(subdep)
+                                opts.append(subopt.strip())
                         elif subopt.count("\t") - 1 == prev_indent_level:
                             if subopt.strip() in options:
                                 prev_indent_level = subopt.count("\t")
                                 depends.extend(subdep)
-        return depends
+                                opts.append(subopt.strip())
+
+        for line in data:
+            if line in options:
+                continue
+            for opt in data[line]:
+                if isinstance(opt, tuple):
+                    no.append(opt[0].strip())
+
+        return depends, opts, no 
 
     def parse_package_name(self, data):
         #try:
@@ -582,7 +562,6 @@ class DependencyResolver(object):
             return self.package_select(name), opts
         #except UnmetDependency as err:
         #    print err
-        #    print "burak"
 
     def get_repo(self, data):
         if len(data) == 2:
@@ -598,31 +577,75 @@ class DependencyResolver(object):
     def collect(self, repo, category, name, version, options):
         dependencies = self.repodb.get_depends(repo, category, name, version)
 
+
+        db_options = self.repodb.get_options(repo, category, name, version)
+        for go in self.global_options:
+            if not db_options:
+                out.error("%s/%s-%s not found." % (category, name, version))
+                lpms.terminate()
+            if db_options[version]:
+                db_option = db_options[version].split(" ")
+                if go in db_option and not go in options:
+                    options.append(go)
+
+
         # FIXME: ???
         if not dependencies:
             lpms.terminate()
 
         local_plan = {"build":[], "runtime": []}
 
+        plan = {}
+
+        def parse_depend_line(string):
+            parsed = []
+            data = string.split(" ")
+            for i in data:
+                listed = list(i)
+                if not "[" in listed and not "]" in listed:
+                    if "/" in listed:
+                        parsed.append(i)
+                elif "[" in listed:
+                    if "]" in listed:
+                        parsed.append(i)
+                    else:
+                        index = data.index(i) + 1
+                        while True:
+                            if not "]" in data[index]:
+                                if "/" in listed:
+                                    i += " "+ data[index].strip()
+                                index += 1
+                            else:
+                                i += " "+ data[index]
+                                parsed.append(i)
+                                break
+            return parsed
+
         for key in ('build', 'runtime'):
             dynamic_deps = [dep for dep in dependencies[key] if isinstance(dep, dict)]
+
             if dynamic_deps:
-                for dyn_dep in self.fix_dynamic_deps(dynamic_deps[0], options):
+                dyn_packages, dyn_options, no  = self.fix_dynamic_deps(dynamic_deps[0], options)
+                for d in no:
+                    if d in options:
+                        options.remove(d)
+                for dyn_dep in dyn_packages:
                     dyn_package_data = self.parse_package_name(dyn_dep)
                     dyn_dep_repo = self.get_repo(dyn_package_data[0])
                     (dcategory, dname, dversion), dopt = dyn_package_data
-                    local_plan[key].append((dyn_dep_repo, dcategory, dname, dversion, dopt))
-
+                    local_plan[key].append([dyn_dep_repo, dcategory, dname, dversion, dopt])
+                    
             static_deps = " ".join([dep for dep in dependencies[key] if isinstance(dep, str)])
 
             if static_deps:
-                for stc_dep in static_deps.split(" "):
+                for stc_dep in parse_depend_line(static_deps):
                     stc_package_data = self.parse_package_name(stc_dep)
                     stc_dep_repo = self.get_repo(stc_package_data[0])
                     (scategory, sname, sversion), sopt = stc_package_data
-                    local_plan[key].append((stc_dep_repo, scategory, sname, sversion, sopt))
+                    local_plan[key].append([stc_dep_repo, scategory, sname, sversion, sopt])
 
-        self.operation_data.update({(repo, category, name, version): (local_plan, options)})
+
+        self.operation_data.update({(repo, category, name, version): [local_plan, options]})
 
         def fix_opts():
             for o in lopt:
@@ -638,37 +661,66 @@ class DependencyResolver(object):
                         current_version, current_opts = self.plan[fullname]
                         if not fix_opts() or lversion != current_version:
                             continue
+                        lopt += current_opts
 
-                    self.plan.update({fullname: (lversion, lopt)})
+                    self.plan.update({fullname: (lversion, lopt)}) 
                     self.collect(lrepo, lcategory, lname, lversion, lopt)
 
-    def resolve_depends(self, packages):
+    def resolve_depends(self, packages, cmd_options):
+        for options in (self.config.options.split(" "), cmd_options):
+            for opt in options:
+                if utils.opt(opt, cmd_options, self.config.options.split(" ")):
+                    if not opt in self.global_options:
+                        self.global_options.append(opt)
+                else:
+                    if opt in self.global_options:
+                        self.global_options.remove(opt)
+
+        def fix_opts():
+            opts = []
+            if db_options:
+                for db in db_options.values():
+                    if db in self.global_options:
+                        opts.append(db)
+            return opts
+
         for pkg in packages:
             self.current_package = pkg
             given_repo, given_category, given_name, given_version = pkg
-            self.collect(given_repo, given_category, given_name, given_version, [])
+            
+            db_options = self.repodb.get_options(given_repo, given_category, given_name, given_version)
+            self.collect(given_repo, given_category, given_name, given_version, fix_opts())
 
         if not self.package_query or lpms.getopt("--ignore-depends"):
             return packages, self.operation_data
 
         plan = []
+
         try:
             for pkg in topsort(self.package_query):
+                print pkg
                 repo, category, name, version = pkg
                 
                 if (repo, category, name, version) in packages:
                     plan.append(pkg)
                     continue
 
-                data = self.instdb.find_pkg(name, pkg_category = category)
+                data = self.instdb.find_pkg(name, pkg_category = category, selection=True)
                 if data:
-                    versions = []
-                    map(lambda ver: versions.extend(ver), data[-1].values())
-                    if not version in versions:
-                        plan.append(pkg)
+                    db_options = self.instdb.get_options(repo, category, name, version)
+                    # FIXME: get_options repo bilgisi olmadan calisabilmeli
+                    if not db_options:
+                        continue
+                    if version in db_options:
+                        for opt in self.operation_data[pkg][-1]:
+                            if not opt in db_options[version].split(" ") and not pkg in plan:
+                                plan.append(pkg)
                     else:
-                        if not pkg in packages:
-                            del self.operation_data[pkg]
+                        if not version in db_options:
+                            plan.append(pkg)
+                        else:
+                            if not pkg in packages:
+                                del self.operation_data[pkg]
                 else:
                     plan.append(pkg)
 
