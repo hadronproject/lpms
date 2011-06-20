@@ -43,4 +43,4 @@ class InternalFuncs(object):
         exec compile(open(script_path).read(), "error", "exec") in self.env.__dict__
         
     def get(self, *libs):
-        self.env.libraries = libs
+        self.env.libraries = list(libs)
