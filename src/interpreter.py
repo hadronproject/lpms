@@ -41,7 +41,7 @@ class Interpreter(internals.InternalFuncs):
         self.startup_funcs()
 
     def get_build_libraries(self):
-        for lib in self.libraries:
+        for lib in self.env.libraries:
             self.import_script(os.path.join(cst.repos, self.env.repo, "libraries", lib+".py"))
 
     def startup_funcs(self):
@@ -207,10 +207,10 @@ class Interpreter(internals.InternalFuncs):
             # if it is exists, run it
             self.run_func(stage)
         else:
-            if len(self.libraries) == 0 and self.env.standart_procedure:
+            if len(self.env.libraries) == 0 and self.env.standart_procedure:
                 self.run_func("standard_"+stage)
                 # and now, search build libraries' configuration function
-            for lib in self.libraries:
+            for lib in self.env.libraries:
                 if self.env.standart_procedure and lib+"_"+stage in self.env.__dict__.keys():
                     self.run_func(lib+"_"+stage)
                 else:
