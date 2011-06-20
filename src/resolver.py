@@ -698,7 +698,6 @@ class DependencyResolver(object):
 
         try:
             for pkg in topsort(self.package_query):
-                print pkg
                 repo, category, name, version = pkg
                 
                 if (repo, category, name, version) in packages:
