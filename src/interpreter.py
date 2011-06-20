@@ -42,7 +42,19 @@ class Interpreter(internals.InternalFuncs):
 
     def get_build_libraries(self):
         for lib in self.env.libraries:
-            self.import_script(os.path.join(cst.repos, self.env.repo, "libraries", lib+".py"))
+            if len(lib.split("/")) == 2:
+                lib_source, lib_name = lib.split("/")
+                libfile = os.path.join(cst.repos, lib_source, "libraries", lib_name+".py")
+                self.env.libraries[self.env.libraries.index(lib)] = lib_name
+            else:
+                libfile = os.path.join(cst.repos, self.env.repo, "libraries", lib+".py")
+            
+            if not os.path.isfile(libfile):
+                out.error("build library not found: %s" % out.color(libfile, "red"))
+                lpms.terminate()
+
+            # import the script
+            self.import_script(libfile)
 
     def startup_funcs(self):
         for library in [m for m in self.env.__dict__ if "_library_start" in m]:
