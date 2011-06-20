@@ -70,7 +70,6 @@ def get_pkg(pkgname):
 
     result = repodb.find_pkg(name, repo_name = repo, pkg_category = category, 
             selection = True)
-
     if not result:
         out.error("%s not found in repository database." % out.color(pkgname, "brightred"))
         lpms.terminate()
@@ -114,14 +113,7 @@ def resolve_dependencies(data, cmd_options):
     prepares a full operation plan for the next stages'''
     out.normal("resolving dependencies")
     fixit = resolver.DependencyResolver()
-    for pkg in data:
-        repo, category, name, version = pkg
-        fixit.collect(repo, category, name, version, cmd_options)
-
-    fixit.fix_connections()
-    fixit.topological_sort()
-    fixit.plan.reverse()
-    return fixit.plan
+    return fixit.resolve_depends(data, cmd_options)
 
 def pkgbuild(pkgnames, instruct):
     '''Starting point of build operation'''
