@@ -16,6 +16,7 @@
 # along with lpms.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+import sys
 import lpms
 
 from lpms import out
@@ -71,24 +72,47 @@ def main(pkgnames, instruct):
             # FIXME: if there are the same packages in different categories, 
             # warn user.
             for pkg in instdb.find_pkg(name):
-                instver = pkg[3].split(' ')
-                if version in instver:
+                instvers = []
+                map(lambda ver: instvers.extend(ver), pkg[3].values())
+                if version in instvers:
                     repo, category, name = pkg[:-1]
                     result = (repo, category, name, version)
             if len(result) == 0:
                 lpms.catch_error("%s not found!" % out.color(pkgname[1:], "brightred"))
         else:
-            data = instdb.find_pkg(pkgname)
+            data = instdb.find_pkg(pkgname)[0]
+            versions = data[-1]
+            if len(versions) > 1:
+                out.warn("%s versions installed for %s:" % (len(versions), pkgname))
+                def ask():
+                    for count, ver in enumerate(versions):
+                        out.write("\t%s) %s: %s\n" % (out.color(str(count+1), "green"), ver, versions[ver][0]))
+                    out.write("\n")
+                    out.normal("select one of them: ")
+                    out.write("\nto exit, press 'Q' or 'q'\n")
+
+                while True:
+                    # run the dialog, show packages from different repositories
+                    ask()
+                    answer = sys.stdin.readline().strip()
+                    if answer == "Q" or answer == "q":
+                        lpms.terminate()
+                    elif answer.isalpha():
+                        out.warn("you must give a number.\n")
+                        continue
+
+                    try:
+                        # FIXME: we need more control
+                        version = versions.values()[int(answer)-1][0]
+                        break
+                    except:
+                        out.warn("%s seems invalid.\n" % out.color(answer, "red"))
+                        continue
+            else:
+                version = versions.values()[0][0]
+
             if not data:
                 lpms.catch_error("%s not found!" % out.color(pkgname, "brightred"))
-
-            data = data[0]
-            instvers = []
-            map(lambda x: instvers.extend(x), data[-1].values())
-            if len(instvers) != 1:
-                version = utils.best_version(instver)
-            else:
-                version = instvers[-1]
 
             result = list(data); result.remove(data[-1])
             result.insert(3, version)
