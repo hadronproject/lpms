@@ -99,7 +99,7 @@ def get_mimetype(path):
         return False
     m = magic.open(magic.MIME_TYPE)
     m.load()
-    return m.file(path)
+    return m.file(path.encode('utf-8'))
 
 def set_valid_options(options, cmd_options, default_options):
     if options is None:
