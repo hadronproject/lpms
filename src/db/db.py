@@ -155,6 +155,8 @@ class PackageDatabase:
                     for key in iversion.keys():
                         if version in iversion[key]:
                             iversion[key].remove(version)
+                            if not iversion[key]:
+                                del iversion[key]
                     
                     versions = []
                     map(lambda x: versions.extend(x), iversion.values())
