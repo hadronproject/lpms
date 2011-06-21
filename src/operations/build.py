@@ -39,8 +39,6 @@ from lpms.operations import merge
 class Build(internals.InternalFuncs):
     def __init__(self):
         super(Build, self).__init__()
-        #self.pkgname = pkgname
-        #self.env.pkgname = pkgname
         self.repo_db = dbapi.RepositoryDB()
         self.download_plan = []
         self.extract_plan = []
@@ -135,6 +133,7 @@ class Build(internals.InternalFuncs):
             lpms.catch_error("%s not found!" % self.env.spec_file)
         self.import_script(self.env.spec_file)
 
+
 def main(plan, instruct):
     operation_plan, operation_data = plan
     # resume previous operation_plan
@@ -184,7 +183,7 @@ def main(plan, instruct):
 
     for plan in operation_plan:
         opr = Build()
-
+        #opr.env.valid_opts
         setattr(opr.env, 'todb', operation_data[plan][0])
         setattr(opr.env, 'valid_opts', operation_data[plan][1])
 
@@ -309,20 +308,57 @@ def main(plan, instruct):
         opr.env.__dict__.clear()
         utils.xterm_title_reset()
 
-def show_plan(repo, category, name, version, valid_options, options):
-    out.write("  %s/%s/%s-%s " % (out.color(repo, "green"), out.color(category, "green"), 
-        out.color(name, "green"), out.color(version, "green")))
-    if valid_options is None and options is not None:
-        out.write("(")
-        out.write(options)
-        out.write(")")
-    elif valid_options is not None and options is not None:
-        out.write("( ")
-        for vo in valid_options:
-            out.write(out.color(vo, "brightred")+" ")
+def show_plan(repo, category, name, version,  valid_options, options):
+    result = []; status = [' ', '  ']; oldver= ""
+
+    instdb = dbapi.InstallDB()
+    repodb = dbapi.RepositoryDB()
+
+    pkgdata = instdb.find_pkg(name, repo_name=repo, pkg_category=category)
+    if (repo, category, name) == pkgdata[:-1]:
+        repovers = repodb.find_pkg(name, repo_name = repo, pkg_category = category)[-1]
+
+        for key in repovers:
+            if version in repovers[key]:
+                try:
+                    instver = pkgdata[-1][key][0]
+                    cmpres = utils.vercmp(version, instver)
+                    if cmpres == 1:
+                        status[0] = out.color("U", "brightgreen")
+                        oldver = "["+out.color(instver, "brightgreen")+"]"
+                    elif cmpres == 0:
+                        status[0] = out.color("R", "brightyellow")
+                    elif cmpres == -1:
+                        status[0] = out.color("D", "brightred")
+                        oldver = "["+out.color(instver, "brightred")+"]"
+                except KeyError:
+                    status[-1] = out.color("NS", "brightgreen")
+    else:
+        status[0] = out.color("N", "brightgreen")
+
+
+    out.write("[%s] %s/%s/%s-%s %s " % (" ".join(status), out.color(repo, "green"), out.color(category, "green"), 
+        out.color(name, "green"), out.color(version, "green"), oldver))
+    
+    if options:
+        try:
+            instopts = instdb.get_options(repo, category, name, version)[version].split(" ")
+        except (KeyError, TypeError):
+            instopts = None
+
         for o in options.split(" "):
-            if not o in valid_options:
-                out.write(o+" ")
-        out.write(")")
+            if valid_options and o in valid_options:
+                if instopts and not o in instopts:
+                    result.insert(0, out.color(o+"*", "brightgreen"))
+                    continue
+                result.insert(0, out.color(o, "red"))
+            else:
+                if instopts and o in instopts:
+                    result.insert(len(result)+1, "-"+out.color(o+"*", "brightyellow"))
+                    continue
+                result.insert(len(result)+1, "-"+o)
+
+        out.write("("+" ".join(result)+")")
+
     out.write("\n")
 
