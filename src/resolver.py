@@ -425,7 +425,7 @@ class DependencyResolver(object):
         self.config = conf.LPMSConfig()
         
     def package_select(self, data):
-        slot = 0
+        slot = None
         gte, lte, lt, gt = False, False, False, False
         slot_parsed = data.split(":")
         if len(slot_parsed) == 2:
@@ -458,8 +458,11 @@ class DependencyResolver(object):
             if isinstance(version_data, list):
                 version_data = version_data[-1]
 
-           # FIXME: fix db.get_version and use it
-            map(lambda ver: versions.extend(ver), version_data[-1].values())
+            # FIXME: fix db.get_version and use it
+            if slot is None:
+                map(lambda ver: versions.extend(ver), version_data[-1].values())
+            else:
+                versions = version_data[-1][slot]
             return category, name, utils.best_version(versions)
 
         name, version = utils.parse_pkgname(pkgname)
@@ -472,7 +475,7 @@ class DependencyResolver(object):
             lpms.terminate()
             #raise UnmetDependency(pkgname)
 
-        if slot == 0:
+        if slot is None:
             versions = []
             # FIXME: because of our database :'(
             if isinstance(repo, list):
