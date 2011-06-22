@@ -17,14 +17,17 @@
 
 import os
 import glob
+import traceback
 
 import lpms
-from lpms import constants as cst
-from lpms import internals
-from lpms.db import dbapi
+
+from lpms import out
 from lpms import utils
 from lpms import syncer
-from lpms import out
+from lpms import internals
+from lpms import constants as cst
+
+from lpms.db import dbapi
 
 class Update(internals.InternalFuncs):
     def __init__(self):
@@ -60,7 +63,13 @@ class Update(internals.InternalFuncs):
             self.env.name, self.env.version = utils.parse_pkgname(pkg.split(cst.spec_suffix)[0])
             self.env.__dict__["fullname"] = self.env.name+"-"+self.env.version
 
-            self.import_script(script_path)
+            try:
+                self.import_script(script_path)
+            except:
+                traceback.print_exc()
+                out.error("an error occured while processing %s" % out.color(script_path, "red"))
+                lpms.terminate()
+
             metadata = utils.metadata_parser(self.env.metadata)
             metadata.update({"name": self.env.name, "version": self.env.version})
             if not "options" in metadata:
