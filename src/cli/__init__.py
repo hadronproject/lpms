@@ -43,6 +43,7 @@ help_output = (('--help', '-h', 'Shows this message.'),
 build_help = (('--pretend', '-p', 'Shows operation steps'),
         ('--ask', '-a', 'Asks to the user before operation.'),
         ('--fetch-only', '-F', 'Only fetches packages, do not install.(not yet)'),
+        ('--search', '-s', 'Searches given keyword in database.'),
         ('--resume', "Resumes previous installation operation. Use '--skip-first' to skip the first package."),
         ('--add-repo', 'Adds new repository(not yet).'),
         ('--ignore-deps', 'Ignores dependencies'),
@@ -84,13 +85,15 @@ def usage():
     lpms.terminate()
 
 
+nevermind = ('--ignore-depends', '--quiet', '--verbose')
+
 exceptions = ('change-root', 'opts')
 
 toinstruct = ('ask', 'a', 'resume-build', 'resume', 'pretend', 'p', 'fetch-only', 'F', \
         'no-merge', 'U', 'remove', 'r', 'upgrade', 'skip-first')
 
 regular = ('help', 'h', 'version', 'v', 'belong', 'b', 'content', 'c', 'remove', 'r', \
-        'no-color', 'n', 'update', 'u', 'search', 's', 'upgrade', 'U', 'ask-repo')
+        'no-color', 'n', 'update', 'u', 'search', 's', 'upgrade', 'U', 'ask-repo', 'show-deps')
 
 instruct = {'ask': False, 'pretend': False, 'resume-build': False, 'resume': False, \
         'pretend': False, 'no-merge': False, 'fetch-only': False, 'real_root': None, \
@@ -169,12 +172,14 @@ def main():
                 from lpms.cli import search
                 search.Search(cli[(cli.index(l) + 1):]).search()
                 return
+            elif l in nevermind:
+                pass
             else:
                 if (((l[2:] not in regular) and (l[2:] not in toinstruct)) and \
                         (l[2:].split('=')[0] not in exceptions)):
                     invalid.append(l)
         else:
-            packages.append(l)
+            packages.append(unicode(l))
 
     for c in cli:
         if (c.startswith('-') and (not c.startswith('--'))):
@@ -222,7 +227,7 @@ def main():
 
     for package in packages:
         if package.startswith("@"):
-            packages.extend(utils.set_parser(package[1:]))
+            packages.extend(unicode(utils.set_parser(package[1:])))
             set_remove.append(package)
 
     if set_remove:
