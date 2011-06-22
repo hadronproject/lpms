@@ -27,7 +27,12 @@ class ReadConfig(object):
                 if not atr.startswith("[") and not atr.startswith("#"):
                     if len(atr.split("=")) > 1:
                         data = atr.split("=")
-                        self.__dict__[data[0].strip()] = "=".join(data[1:]).strip()
+                        keyword = "=".join(data[1:]).strip()
+                        booleans = {"True": True, "False": False, "None": None}
+                        if keyword in booleans:
+                            keyword = booleans[keyword]
+
+                        self.__dict__[data[0].strip()] = keyword
 
 #class ReadConfig(object):
 #    def __init__(self, conf_path):
