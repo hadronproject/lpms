@@ -66,6 +66,7 @@ def dirname(path):
     return os.path.dirname(path)
 
 def echo(content, target):
+    touch(target)
     try:
         with open(target, 'a') as _file:
             _file.write('%s\n' % content)
@@ -100,18 +101,23 @@ def touch(path):
     open(path, 'w').close()
 
 def system(cmd, show=True):
-    if run_cmd(cmd, show) != 0:
+    ret, output, err = run_cmd(cmd, show)
+    if ret != 0:
+        if not conf.LPMSConfig().print_output or lpms.getopt("--quiet"): 
+            out.brightred("\n>> error messages:\n")
+            out.write(err)
         out.warn("command failed: %s" % out.color(cmd, "red"))
         return False
     return True
 
 def run_cmd(cmd, show=True):
     stdout = None; stderr = None
-    if (not lpms.getopt("--print-output") and not conf.LPMSConfig().print_output) or not show:
+    if lpms.getopt("--quiet") or (not conf.LPMSConfig().print_output and not \
+            lpms.getopt("--verbose")):
         stdout = subprocess.PIPE; stderr=subprocess.PIPE
     result = subprocess.Popen(cmd, shell=True, stdout=stdout, stderr=stderr)
-    out, err = result.communicate()
-    return result.returncode
+    output, err = result.communicate()
+    return result.returncode, output, err
 
 
 def copytree(source, target, sym=True):
