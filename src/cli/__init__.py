@@ -227,7 +227,7 @@ def main():
 
     for package in packages:
         if package.startswith("@"):
-            packages.extend(unicode(utils.set_parser(package[1:])))
+            packages.extend(utils.set_parser(package[1:]))
             set_remove.append(package)
 
     if set_remove:
