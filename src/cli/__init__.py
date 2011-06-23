@@ -38,7 +38,10 @@ help_output = (('--help', '-h', 'Shows this message.'),
         ('--update', '-u', 'Updates all repositories or given repository.'),
         ('--search', '-s', 'Searches given package in database.'),
         ('--belong', '-b', 'Queries the package that owns given keyword.'),
-        ('--content', '-c', 'Lists files of given package.'))
+        ('--content', '-c', 'Lists files of given package.'),
+        ('--force-upgrade', 'Forces lpms to use latest versions.'),
+        ('--verbose', 'Prints more output if possible.'),
+        ('--quiet', 'Hides outputs if possible.'))
 
 build_help = (('--pretend', '-p', 'Shows operation steps'),
         ('--ask', '-a', 'Asks to the user before operation.'),
@@ -46,13 +49,13 @@ build_help = (('--pretend', '-p', 'Shows operation steps'),
         ('--search', '-s', 'Searches given keyword in database.'),
         ('--resume', "Resumes previous installation operation. Use '--skip-first' to skip the first package."),
         ('--add-repo', 'Adds new repository(not yet).'),
-        ('--ignore-deps', 'Ignores dependencies'),
+        ('--ignore-depends', 'Ignores dependencies.'),
         ('--ignore-sandbox', 'Disables sandbox facility.'),
         ('--enable-sandbox', 'Enables sandbox facilitiy.'),
         ('--no-configure', 'Does not run configuration functions.'),
         ('--resume-build', 'Resumes the most recent build operation.'),
         ('--change-root', 'Changes installation target.'),
-        ('--no-merge', 'Does not merge the package'),
+        ('--no-merge', 'Does not merge the package.'),
         ('--ask-repo', 'Shows repo selection dialog if necessary.'),
         ('--show-opts', 'Shows available options for given packages'),
         ('--opts', 'Determines options of the package.'))
@@ -78,14 +81,17 @@ def usage():
 
     out.write('\nOther Commands:\n')
     for cmd in help_output:
-        out.write(('%-27s %-10s : %s\n' % (out.color(cmd[0], 'green'),
-         out.color(cmd[1], 'green'),
-         cmd[2])))
+        if (len(cmd) == 3):
+            out.write(('%-27s %-10s : %s\n' % (out.color(cmd[0], 'green'),
+             out.color(cmd[1], 'green'),
+             cmd[2])))
+        else:
+            out.write(('%-30s : %s\n' % (out.color(cmd[0], 'green'), cmd[1])))
 
     lpms.terminate()
 
 
-nevermind = ('--ignore-depends', '--quiet', '--verbose')
+nevermind = ('--ignore-depends', '--quiet', '--verbose', '--force-upgrade')
 
 exceptions = ('change-root', 'opts')
 
