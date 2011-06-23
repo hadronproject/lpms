@@ -718,7 +718,8 @@ class DependencyResolver(object):
                             if not opt in db_options[version].split(" ") and not pkg in plan:
                                 plan.append(pkg)
                     else:
-                        if not version in db_options:
+                        if not version in db_options and (lpms.getopt("-U") or lpms.getopt("--upgrade") \
+                                or lpms.getopt("--force-upgrade")):
                             plan.append(pkg)
                         else:
                             if not pkg in packages:
