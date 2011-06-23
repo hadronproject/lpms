@@ -94,19 +94,11 @@ def upgrade_system(instruct):
     # are effected by upgrade operation.
     up.select_pkgs()
 
-    if instruct["ask"]:
-        # show packages and versions
-        up.show_result()
-        utils.xterm_title("lpms: confirmation request")
-        if not utils.confirm("do you want to continue?"):
-            out.write("quitting...\n")
-            utils.xterm_title_reset()
-            lpms.terminate()
-    # resolve dependencies
-    up.upgrade_pkg.extend(up.downgrade_pkg)
-    plan = resolve_dependencies([u[:-1] for u in up.upgrade_pkg], instruct["cmd_options"])
-    # build packages
-    build.main(plan, instruct)
+    if not up.packages:
+        out.write("no package found to upgrade.\n")
+        lpms.terminate()
+
+    pkgbuild(up.packages, instruct)
 
 def resolve_dependencies(data, cmd_options):
     '''Resolve dependencies using fixit object. This function 
@@ -119,10 +111,4 @@ def pkgbuild(pkgnames, instruct):
     '''Starting point of build operation'''
     plan = resolve_dependencies([get_pkg(pkgname) for pkgname in pkgnames], 
             instruct['cmd_options'])
-    # FIXME: pass resolve_dependencies?
-    if instruct["ignore-deps"]:
-        out.write("\n")
-        out.warn_notify("ignoring dependencies")
-        # the last value of plan list is given package
-        plan = [plan[-1]]
     build.main(plan, instruct)

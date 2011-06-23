@@ -96,7 +96,7 @@ nevermind = ('--ignore-depends', '--quiet', '--verbose', '--force-upgrade')
 exceptions = ('change-root', 'opts')
 
 toinstruct = ('ask', 'a', 'resume-build', 'resume', 'pretend', 'p', 'fetch-only', 'F', \
-        'no-merge', 'U', 'remove', 'r', 'upgrade', 'skip-first')
+        'no-merge', 'remove', 'r', 'upgrade', 'U',  'skip-first')
 
 regular = ('help', 'h', 'version', 'v', 'belong', 'b', 'content', 'c', 'remove', 'r', \
         'no-color', 'n', 'update', 'u', 'search', 's', 'upgrade', 'U', 'ask-repo', 'show-deps')
@@ -188,9 +188,9 @@ def main():
             packages.append(unicode(l))
 
     for c in cli:
-        if (c.startswith('-') and (not c.startswith('--'))):
+        if c.startswith('-') and not c.startswith('--'):
             for x in c[1:]:
-                if (x in toinstruct):
+                if x in toinstruct:
                     instruct[toinstruct[(toinstruct.index(x) - 1)]] = True
 
         else:
