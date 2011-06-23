@@ -66,9 +66,12 @@ def dirname(path):
     return os.path.dirname(path)
 
 def echo(content, target):
-    touch(target)
+    mode = "a"
+    if not os.path.isfile(target):
+        mode = "w"
+
     try:
-        with open(target, 'a') as _file:
+        with open(target, mode) as _file:
             _file.write('%s\n' % content)
     except IOError as err:
         out.error("[echo] given content was not written to %s" % target)
@@ -98,6 +101,7 @@ def cd(target=None):
 def touch(path):
     if os.path.isfile(path):
         out.warn("%s is already exist" % path)
+        return
     open(path, 'w').close()
 
 def system(cmd, show=True):
