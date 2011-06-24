@@ -26,7 +26,8 @@ help_output = (('--mark', '-m', 'use markers to highlight the matching strings')
 class Search(object):
     def __init__(self, patterns):
         self.patterns = patterns
-        self.repo_db = dbapi.RepositoryDB()
+        self.repodb = dbapi.RepositoryDB()
+        self.instdb = dbapi.InstallDB()
 
     def usage(self):
         out.normal("Search given keywords in database")
@@ -44,20 +45,26 @@ class Search(object):
             self.usage()
 
         replace = re.compile("(%s)" % "|".join(self.patterns), re.I)
-        for repo, category, name in self.repo_db.get_all_names():
-            summary = self.repo_db.get_summary(name, repo, category)[0]
+        for repo, category, name in self.repodb.get_all_names():
+            summary = self.repodb.get_summary(name, repo, category)[0]
             if replace.search(name) is not None or replace.match(name) is not None or \
                 replace.search(summary) is not None:
                 
                 versions = []
-                map(lambda x: versions.extend(x), self.repo_db.get_version(name, repo, category).values())
+                map(lambda x: versions.extend(x), self.repodb.get_version(name, repo, category).values())
+                
+                status = self.instdb.find_pkg(name, repo_name = repo, pkg_category = category)
+                pkg_status = ""
+                if status:
+                    pkg_status = "["+out.color("I", "brightgreen")+"] "
+                
                 if lpms.getopt("--mark"):
-                    out.write("%s/%s/%s (%s)\n    %s" %(repo, category, 
+                    out.write("%s%s/%s/%s (%s)\n    %s" %(pkg_status, repo, category, 
                         replace.sub(out.color(r"\1", "red"), name),
                         " ".join(versions),
                         replace.sub(out.color(r"\1", "red"), summary))+'\n')
                 else:
-                    out.write("%s/%s/%s (%s)\n    %s" % (out.color(repo, "green"),  
+                    out.write("%s%s/%s/%s (%s)\n    %s" % (pkg_status, out.color(repo, "green"),  
                         out.color(category, "green"),
                         out.color(name, "green"),
                         " ".join(versions),
