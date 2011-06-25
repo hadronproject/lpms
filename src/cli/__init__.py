@@ -221,12 +221,13 @@ def main():
 
     if instruct['upgrade']:
         api.upgrade_system(instruct)
+        return
         
     if instruct['remove']:
         remove.main(packages, instruct)
         return
 
-    for tag in ('upgrade', 'remove', 'sync'):
+    for tag in ('upgrade', 'remove', 'sync', 'update'):
         del instruct[tag]
 
     if not packages and not instruct["resume"]:
