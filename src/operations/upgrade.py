@@ -63,5 +63,5 @@ class UpgradeSystem(object):
                     % out.color("WARNING", "brightyellow"))
             for pkg in self.notfound_pkg:
                 category, name = pkg
-                out.notify("%s/%s\n" % (category, name))
+                out.notify("%s/%s" % (category, name))
             out.write("\n")

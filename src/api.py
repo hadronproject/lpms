@@ -24,8 +24,25 @@ from lpms import utils
 from lpms import resolver
 
 from lpms.db import dbapi
+from lpms.operations import sync
 from lpms.operations import build
+from lpms.operations import update
 from lpms.operations import upgrade
+
+
+def update_repository(cmdline):
+    update.main(cmdline)
+
+def syncronize(cmdline, instruct):
+    query = cmdline
+    if not cmdline:
+        query = utils.valid_repos()
+
+    for repo in query:
+        sync.SyncronizeRepo().run(repo)
+
+    if instruct["upgrade"]:
+        upgrade_system(instruct)
 
 def get_pkg(pkgname):
     '''Parses given pkgnames:
