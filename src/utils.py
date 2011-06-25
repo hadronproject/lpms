@@ -91,8 +91,8 @@ def valid_repos():
         return []
 
     with open(cst.repo_conf) as repo_file:
-        return [repo for repo in repo_file.read().split("\n") \
-                if not repo.startswith("#")]
+        return [repo[1:-1] for repo in repo_file.read().split("\n") \
+                if repo.startswith("[") and repo.endswith("]")]
 
 def get_mimetype(path):
     if not os.access(path, os.R_OK):
@@ -100,6 +100,12 @@ def get_mimetype(path):
     m = magic.open(magic.MIME_TYPE)
     m.load()
     return m.file(path.encode('utf-8'))
+
+def run_strip(path):
+    p = os.popen("/usr/bin/strip -S %s" % path)
+    ret = p.close()
+    if ret:
+        out.warn("strip command failed for %s" % path)
 
 def set_valid_options(options, cmd_options, default_options):
     if options is None:
