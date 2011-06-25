@@ -45,7 +45,7 @@ def conf(*args, **kwargs):
 
     if os.access(conf_script, os.F_OK):
         if os.access(conf_script, os.X_OK):
-            args = 'sh %s \
+            args = './%s \
                 --prefix=/%s \
                 --build=%s \
                 --mandir=/%s \
