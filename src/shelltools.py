@@ -104,9 +104,9 @@ def touch(path):
         return
     open(path, 'w').close()
 
-def system(cmd, show=True):
+def system(cmd, show=False):
     ret, output, err = run_cmd(cmd, show)
-    if ret != 0:
+    if ret != 0 and show:
         if not conf.LPMSConfig().print_output or lpms.getopt("--quiet"): 
             out.brightred("\n>> error messages:\n")
             out.write(err)
@@ -114,11 +114,12 @@ def system(cmd, show=True):
         return False
     return True
 
-def run_cmd(cmd, show=True):
+def run_cmd(cmd, show):
     stdout = None; stderr = None
-    if lpms.getopt("--quiet") or (not conf.LPMSConfig().print_output and not \
-            lpms.getopt("--verbose")):
-        stdout = subprocess.PIPE; stderr=subprocess.PIPE
+    if not show:
+        if lpms.getopt("--quiet") or (not conf.LPMSConfig().print_output and not \
+                lpms.getopt("--verbose")):
+            stdout = subprocess.PIPE; stderr=subprocess.PIPE
     result = subprocess.Popen(cmd, shell=True, stdout=stdout, stderr=stderr)
     output, err = result.communicate()
     return result.returncode, output, err
