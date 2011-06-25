@@ -39,13 +39,13 @@ def standard_build(*parameters):
     return make(*parameters)
 
 def conf(*args, **kwargs):
-    conf_script = 'configure'
+    conf_command = './configure'
     if "run_dir" in kwargs:
-        conf_script = os.path.join(kwargs["run_dir"], conf_script)
+        conf_command = os.path.join(kwargs["run_dir"], "configure")
 
-    if os.access(conf_script, os.F_OK):
-        if os.access(conf_script, os.X_OK):
-            args = './%s \
+    if os.access(conf_command, os.F_OK):
+        if os.access(conf_command, os.X_OK):
+            args = '%s \
                 --prefix=/%s \
                 --build=%s \
                 --mandir=/%s \
@@ -54,7 +54,7 @@ def conf(*args, **kwargs):
                 --sysconfdir=/%s \
                 --localstatedir=/%s \
                 --libexecdir=/%s \
-                %s' % (conf_script, cst.prefix, \
+                %s' % (conf_command, cst.prefix, \
                 cfg.LPMSConfig().CHOST, cst.man, \
                 cst.info, cst.data, \
                 cst.conf, cst.localstate, cst.libexec, " ".join(args))
