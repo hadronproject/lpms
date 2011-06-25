@@ -44,6 +44,10 @@ def append_cxxflags(flag):
 def append_ldflags(flag):
     return flag
 
+def append_config(option, param):
+    if opt(option):
+        config += param+" "
+
 def binutils_cmd(command):
     try:
         host = os.environ['HOST']
