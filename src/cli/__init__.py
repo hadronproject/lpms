@@ -91,12 +91,12 @@ def usage():
     lpms.terminate()
 
 
-nevermind = ('--ignore-depends', '--quiet', '--verbose', '--force-upgrade')
+nevermind = ('--ignore-depends', '--quiet', '--verbose', '--force-upgrade', '--reset')
 
 exceptions = ('change-root', 'opts')
 
 toinstruct = ('ask', 'a', 'resume-build', 'resume', 'pretend', 'p', 'fetch-only', 'F', \
-        'no-merge', 'remove', 'r', 'upgrade', 'U',  'skip-first')
+        'no-merge', 'remove', 'r', 'upgrade', 'U',  'skip-first', 'sync', 'S', 'update', 'u')
 
 regular = ('help', 'h', 'version', 'v', 'belong', 'b', 'content', 'c', 'remove', 'r', \
         'no-color', 'n', 'update', 'u', 'search', 's', 'upgrade', 'U', 'ask-repo', 'show-deps')
@@ -104,7 +104,8 @@ regular = ('help', 'h', 'version', 'v', 'belong', 'b', 'content', 'c', 'remove',
 instruct = {'ask': False, 'pretend': False, 'resume-build': False, 'resume': False, \
         'pretend': False, 'no-merge': False, 'fetch-only': False, 'real_root': None, \
         'cmd_options': [], 'ignore-deps': False, 'sandbox': None,'stage': None, \
-        'force': None, 'upgrade': None, 'remove': None, 'skip-first': False}
+        'force': None, 'upgrade': None, 'remove': None, 'skip-first': False, 'sync': False, \
+        'update': False}
 
 def main():
     packages = []; invalid = []
@@ -135,13 +136,14 @@ def main():
                     from lpms.cli import search
                     search.Search(cli[(cli.index(l) + 1):]).search()
                     return
-                elif (h == 'u'):
-                    utils.check_root()
-                    try:
-                        update.main(cli[(cli.index(l) + 1):])
-                    except IndexError:
-                        update.main()
-                    return
+                #elif (h == 'u'):
+                #    utils.check_root()
+                #    api.update_database()
+                #    try:
+                #        update.main(cli[(cli.index(l) + 1):])
+                #    except IndexError:
+                #        update.main()
+                #    return
                 else:
                     if ((h not in regular) and (h not in toinstruct)):
                         invalid.append(('-' + h))
@@ -151,13 +153,13 @@ def main():
                 usage()
             elif (l[2:] == 'version'):
                 version()
-            elif (l[2:] == 'update'):
-                utils.check_root()
-                try:
-                    update.main(cli[(cli.index(l) + 1):])
-                except IndexError:
-                    update.main()
-                return
+            #elif (l[2:] == 'update'):
+            #    utils.check_root()
+            #    try:
+            #        update.main(cli[(cli.index(l) + 1):])
+            #    except IndexError:
+            #        update.main()
+            #    return
             elif (l[2:] == 'info'):
                 from lpms.cli import info
                 info.Info(cli[(cli.index(l) + 1):]).run()
@@ -209,6 +211,14 @@ def main():
     if instruct['resume']:
         pkgnames = []
 
+    if instruct['sync']:
+        api.syncronize(packages, instruct)
+        return
+
+    if instruct['update']:
+        api.update_repository(packages)
+        return
+
     if instruct['upgrade']:
         api.upgrade_system(instruct)
         
@@ -216,7 +226,7 @@ def main():
         remove.main(packages, instruct)
         return
 
-    for tag in ('upgrade', 'remove'):
+    for tag in ('upgrade', 'remove', 'sync'):
         del instruct[tag]
 
     if not packages and not instruct["resume"]:
