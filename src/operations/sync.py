@@ -24,6 +24,8 @@ class SyncronizeRepo(object):
                     continue
                 if self._type is None and line.startswith("type"):
                     self._type = line.split("@")[1].strip()
+                    if self._type == 'local':
+                        return
                 elif self.remote is None and line.startswith("remote"):
                     self.remote = line.split("@")[1].strip()
 
