@@ -29,6 +29,7 @@ class InternalFuncs(object):
     def __init__(self):
         self.env = Environment()
         self.env.libraries = []
+        self.env.config = ""
         self.env.sandbox_valid_dirs = []
         self.env.backup = []
         self.env.__setattr__("standart_procedure", True)
@@ -36,11 +37,13 @@ class InternalFuncs(object):
   
         # FIXME: use a better method for environment functions.
         self.env.__dict__['get'] = self.get
+
         for f in cst.environmental_files:
             self.import_script(os.path.join(cst.lpms_path, f))
 
     def import_script(self, script_path):
         exec compile(open(script_path).read(), "error", "exec") in self.env.__dict__
-        
+
     def get(self, *libs):
         self.env.libraries = list(libs)
+
