@@ -93,7 +93,7 @@ def usage():
 
 nevermind = ('--ignore-depends', '--quiet', '--verbose', '--force-upgrade', '--reset')
 
-exceptions = ('change-root', 'opts')
+exceptions = ('change-root', 'opts', 'stage')
 
 toinstruct = ('ask', 'a', 'resume-build', 'resume', 'pretend', 'p', 'fetch-only', 'F', \
         'no-merge', 'remove', 'r', 'upgrade', 'U',  'skip-first', 'sync', 'S', 'update', 'u')
@@ -196,13 +196,13 @@ def main():
                     instruct[toinstruct[(toinstruct.index(x) - 1)]] = True
 
         else:
-            if ((c[2:] in toinstruct) or (c[2:].split('=')[0] in exceptions)):
+            if c[2:] in toinstruct or c[2:].split('=')[0] in exceptions:
                 if c[2:].startswith('change-root'):
                     instruct['real_root'] = c[2:].split('=')[1]
                 if c[2:].startswith('opts'):
                     instruct['cmd_options'] = c[2:].split('=')[1].split(' ')
                 if c[2:].startswith('stage'):
-                    instruct['stage'] = opt.split('=')[1].strip()
+                    instruct['stage'] = c[2:].split('=')[1].strip()
                 instruct[c[2:]] = True
 
     if invalid:
