@@ -23,7 +23,6 @@ import lpms
 
 from lpms import out
 from lpms import utils
-from lpms import syncer
 from lpms import internals
 from lpms import constants as cst
 
