@@ -77,7 +77,9 @@ class Build(internals.InternalFuncs):
 
     def prepare_environment(self):
         if self.env.sandbox is None:
-            if self.config.sandbox:
+            if not self.config.sandbox and lpms.getopt("--enable-sandbox"):
+                self.env.__setattr__("sandbox", True)
+            elif self.config.sandbox and not lpms.getopt("--ignore-sandbox"):
                 self.env.__setattr__("sandbox", True)
 
         self.env.build_dir = os.path.join(self.config.build_dir, 
