@@ -65,7 +65,7 @@ class Build(internals.InternalFuncs):
     def prepare_download_plan(self, applied):
         for url in self.urls:
             self.extract_plan.append(url)
-            if type(url) != tuple:
+            if not isinstance(url, tuple):
                 if self.check_cache(url):
                     continue
                 self.download_plan.append(url)
@@ -136,14 +136,14 @@ class Build(internals.InternalFuncs):
         self.import_script(self.env.spec_file)
 
 
-def main(plan, instruct):
-    operation_plan, operation_data = plan
+def main(raw_data, instruct):
+    operation_plan, operation_data = raw_data
     # resume previous operation_plan
     # if skip_first returns True, skip first package 
     if instruct["resume"]:
         if os.path.exists(cst.resume_file):
             with open(cst.resume_file, "rb") as _data:
-                operation_plan = pickle.load(_data)
+                operation_plan, operation_data = pickle.load(_data)
                 if instruct["skip-first"]:
                     operation_plan = operation_plan[1:]
 
@@ -181,11 +181,10 @@ def main(plan, instruct):
         if os.path.exists(cst.resume_file):
             shelltools.remove_file(cst.resume_file)
         with open(cst.resume_file, "wb") as _data:
-            pickle.dump(operation_plan, _data)
+            pickle.dump(raw_data, _data)
 
     for plan in operation_plan:
         opr = Build()
-        #opr.env.valid_opts
         setattr(opr.env, 'todb', operation_data[plan][0])
         setattr(opr.env, 'valid_opts', operation_data[plan][1])
 
