@@ -87,7 +87,7 @@ def select_repo(data):
 
 def valid_repos():
     if not os.path.isfile(cst.repo_conf):
-        out.warn("%s not found!" % cst.repo.conf)
+        out.warn("%s not found!" % cst.repo_conf)
         return []
 
     with open(cst.repo_conf) as repo_file:
