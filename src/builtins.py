@@ -44,9 +44,20 @@ def append_cxxflags(flag):
 def append_ldflags(flag):
     return flag
 
-def append_config(option, param):
+def append_config(option, positive, negative=None):
     if opt(option):
-        config += param+" "
+        config += positive+" "
+    else:
+        if negative is not None:
+            config += negative+" "
+            return
+
+        if positive.startswith("--enable"):
+            positive = positive.replace("--enable", "--disable")
+            config += positive+" "
+        elif positive.startswith("--with"):
+            positive = positive.replace("--with", "--without")
+            config += positive+" "
 
 def binutils_cmd(command):
     try:
