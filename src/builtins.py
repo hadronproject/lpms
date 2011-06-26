@@ -117,17 +117,32 @@ def opt(option):
     return utils.opt(option, cmd_options, default_options)
 
 def config_decide(option, secondary=None, appends=['--enable-', '--disable-']):
-    if not option in options:
-        out.warn_notify("%s is an invalid option" % option)
-        return " "
-    if opt(option):
+    result = []
+
+    option = [o for o in option.split(" ") if o.strip().isalnum()]
+    if secondary:
+        secondary = [s for s in secondary.split(" ") if s.strip().isalnum()]
+
+    #if len(option) > 1 and secondary and len(secondary) > 1:
+
+    def secondary_add(keyword):
         if secondary is None:
-            return appends[0]+option
-        return appends[0]+secondary
-    else:
-        if secondary is None:
-            return appends[1]+option
-        return appends[1]+secondary
+            result.append(keyword+single_opt)
+        else:
+            for sec in secondary:
+                result.append(keyword+sec)
+ 
+    for single_opt in option:
+        if not single_opt in options:
+            out.warn_notify("%s is an invalid option." % single_opt)
+            continue
+        
+        if opt(single_opt):
+            secondary_add(appends[0])
+        else:
+            secondary_add(appends[1])
+
+    return " ".join(result)
 
 def config_enable(option, secondary=None):
     return config_decide(option, secondary)
