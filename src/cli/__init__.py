@@ -91,7 +91,8 @@ def usage():
     lpms.terminate()
 
 
-nevermind = ('--ignore-depends', '--quiet', '--verbose', '--force-upgrade', '--reset')
+nevermind = ('--ignore-depends', '--quiet', '--verbose', '--force-upgrade', '--reset', \
+        '--ignore-sandbox', '--enable-sandbox')
 
 exceptions = ('change-root', 'opts', 'stage')
 
