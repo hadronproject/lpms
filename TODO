@@ -1,16 +1,17 @@
 # TODO list for lpms-1.0 #
 ==========================
 
-(-) build libraries support will be improved.
-(-) terminal titles?
-(-) dependency resolver will be coded again. options, version decisions and many others will be added.
+(+) build libraries support will be improved.
+(+) terminal titles?
+(+) dependency resolver will be coded again. options, version decisions and many others will be added.
 (-) more documentation
-(-) package sets(like repo components)
-(-) options definitions.
+(-) more exception
+(+) package sets(like repo components)
+(+) option definitions.
 (-) post_remove, pre_install, pre_remove functions will be added to interpreter.
 (-) database locking
 (-) unit tests will be written
 (-) we need more exception and error messages will be improved.
-(-) file collisions
-(-) config protect feature will be improved
+(+) file collisions
+(+) config protect feature will be improved
 (-) an 'environment update' script
