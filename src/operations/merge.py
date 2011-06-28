@@ -24,6 +24,7 @@ import lpms
 
 from lpms import out
 from lpms import utils
+from lpms import conf
 from lpms import internals
 from lpms import shelltools
 from lpms import constants as cst
@@ -43,6 +44,7 @@ class Merge(internals.InternalFuncs):
         self.backup = []
         self.env = environment
         self.instdb = dbapi.InstallDB()
+        self.conf = conf.LPMSConfig()
 
     def is_fresh(self):
         status = self.instdb.find_pkg(self.env.name, 
@@ -90,6 +92,14 @@ class Merge(internals.InternalFuncs):
         if self.env.real_root is None:
             self.env.real_root = cst.root
 
+        conflict_check = False
+        previous_vers = self.instdb.get_version(self.env.name, pkg_category = self.env.category)
+        if previous_vers and self.env.slot in previous_vers:
+            fdb = filesdb.FilesDB(self.env.repo, self.env.category, self.env.name, \
+                    previous_vers[self.env.slot][0])
+            fdb.import_xml()
+            conflict_check = True
+
         out.notify("merging the package to %s and creating %s.xml" % (self.env.real_root, self.env.fullname))
         
         # create an xml object
@@ -134,10 +144,26 @@ class Merge(internals.InternalFuncs):
                     dir_tag.set(key, str(perms[key]))
                 dir_tag.text = d
 
+
             # write regular files
             for f in files:
                 source = os.path.join(self.env.install_dir, root_path[1:], f)
                 target = os.path.join(self.env.real_root, root_path[1:], f)
+
+
+                if conflict_check and os.path.isfile(target) and not fdb.has_path(target):
+                    # FIXME: Use an exception to exit
+                    if self.conf.conflict_protect and not lpms.getopt("--ignore-conflicts"):
+                        out.error("file conflict: %s" % target)
+                        lpms.terminate()
+                    else:
+                        out.warn("file conflict: %s" % target)
+
+                # strip binary files
+                if utils.get_mimetype(source) in ('application/x-executable', 'application/x-archive', \
+                        'application/x-sharedlib'):
+                    utils.run_strip(source)
+
 
                 conf_file = os.path.join(root_path, f)
                 isconf = (f.endswith(".conf") or f.endswith(".cfg"))
@@ -235,7 +261,7 @@ class Merge(internals.InternalFuncs):
 
         self.instdb.add_pkg(data, commit=True)
         self.instdb.add_depends((self.env.repo, self.env.category, self.env.name, 
-                self.env.version, builddeps, runtimedeps))
+                self.env.version, builddeps, runtimedeps), commit=True)
 
         # write build info. flags, build time and etc.
         #self.instdb.drop_buildinfo(self.env.repo, self.env.category, self.env.name, self.env.version)
@@ -246,9 +272,8 @@ class Merge(internals.InternalFuncs):
 
     def clean_previous(self):
         def obsolete_content():
-            version_data = self.instdb.get_version(self.env.name, 
-                    self.env.repo, self.env.category)
-            for slot in version_data.keys():
+            version_data = self.instdb.get_version(self.env.name, pkg_category = self.env.category)
+            for slot in version_data:
                 if slot == self.env.slot:
                     return self.comparison(self.env.version, version_data[slot][0])
 
