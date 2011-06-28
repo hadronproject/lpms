@@ -462,7 +462,12 @@ class DependencyResolver(object):
             if slot is None:
                 map(lambda ver: versions.extend(ver), version_data[-1].values())
             else:
-                versions = version_data[-1][slot]
+                try:
+                    versions = version_data[-1][slot]
+                except KeyError:
+                    out.error("%s is invalid slot for %s" % (slot, data))
+                    lpms.terminate()
+
             return category, name, utils.best_version(versions)
 
         name, version = utils.parse_pkgname(pkgname)
@@ -579,7 +584,6 @@ class DependencyResolver(object):
 
     def collect(self, repo, category, name, version, options):
         dependencies = self.repodb.get_depends(repo, category, name, version)
-
 
         db_options = self.repodb.get_options(repo, category, name, version)
         for go in self.global_options:
