@@ -143,7 +143,6 @@ def main(raw_data, instruct):
     if instruct["resume"]:
         if os.path.exists(cst.resume_file):
             with open(cst.resume_file, "rb") as _data:
-                print pickle.load(_data)
                 operation_plan, operation_data = pickle.load(_data)
                 if instruct["skip-first"]:
                     operation_plan = operation_plan[1:]
