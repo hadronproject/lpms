@@ -143,6 +143,7 @@ def main(raw_data, instruct):
     if instruct["resume"]:
         if os.path.exists(cst.resume_file):
             with open(cst.resume_file, "rb") as _data:
+                print pickle.load(_data)
                 operation_plan, operation_data = pickle.load(_data)
                 if instruct["skip-first"]:
                     operation_plan = operation_plan[1:]
@@ -295,16 +296,17 @@ def main(raw_data, instruct):
         # resume feature
         # delete package data, if it is installed successfully
         with open(cst.resume_file, "rb") as _data:
-            resume_data = pickle.load(_data)
+            resume_plan, resume_data = pickle.load(_data)
         data = []
-        for pkg in resume_data:
-            if pkg[:4] != (opr.env.repo, opr.env.category, 
+
+        for pkg in resume_plan:
+            if pkg != (opr.env.repo, opr.env.category, 
                     opr.env.name, opr.env.version):
                 data.append(pkg)
 
         shelltools.remove_file(cst.resume_file)
         with open(cst.resume_file, "wb") as _data:
-            pickle.dump(data, _data)
+            pickle.dump((data, resume_data), _data)
 
         opr.env.__dict__.clear()
         utils.xterm_title_reset()
@@ -315,9 +317,9 @@ def show_plan(repo, category, name, version,  valid_options, options):
     instdb = dbapi.InstallDB()
     repodb = dbapi.RepositoryDB()
 
-    pkgdata = instdb.find_pkg(name, repo_name=repo, pkg_category=category)
-    if (repo, category, name) == pkgdata[:-1]:
-        repovers = repodb.find_pkg(name, repo_name = repo, pkg_category = category)[-1]
+    pkgdata = instdb.find_pkg(name,  pkg_category=category)
+    if (category, name) == pkgdata[1:-1]:
+        repovers = repodb.get_version(name, pkg_category = category)
 
         for key in repovers:
             if version in repovers[key]:
