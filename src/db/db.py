@@ -233,10 +233,19 @@ class PackageDatabase:
         except TypeError:
             return None
     
-    def get_version(self, repo, name, category):
-        self.cursor.execute('''select version from metadata where repo=(?) and category=(?) and name=(?)''', 
-                (repo, category, name,))
-        result = self.cursor.fetchall()
-        if not result:
+    def get_version(self, name, repo, category):
+        if repo:
+            self.cursor.execute('''select version from metadata where repo=(?) \
+                    and category=(?) and name=(?)''' ,(repo, category, name))
+        else:
+            self.cursor.execute('''select version from metadata where category=(?) \
+                    and name=(?)''', (category, name))
+        
+        results = self.cursor.fetchall()
+        if not results:
             return None
-        return pickle.loads(str(result[0][0]))
+        versions = {}
+        for result in results:
+            versions.update(pickle.loads(str(result[0])))
+
+        return versions
