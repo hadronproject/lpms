@@ -50,6 +50,7 @@ build_help = (('--pretend', '-p', 'Shows operation steps'),
         ('--resume', "Resumes previous installation operation. Use '--skip-first' to skip the first package."),
         ('--add-repo', 'Adds new repository(not yet).'),
         ('--ignore-depends', 'Ignores dependencies.'),
+        ('--ignore-conflicts', 'Ignore file conflicts if conflict protect is enabled.'),
         ('--ignore-sandbox', 'Disables sandbox facility.'),
         ('--enable-sandbox', 'Enables sandbox facilitiy.'),
         ('--no-configure', 'Does not run configuration functions.'),
@@ -57,7 +58,7 @@ build_help = (('--pretend', '-p', 'Shows operation steps'),
         ('--change-root', 'Changes installation target.'),
         ('--no-merge', 'Does not merge the package.'),
         ('--ask-repo', 'Shows repo selection dialog if necessary.'),
-        ('--show-opts', 'Shows available options for given packages'),
+        ('--show-opts', 'Shows available options for given packages.'),
         ('--opts', 'Determines options of the package.'))
 
 def version():
@@ -92,7 +93,7 @@ def usage():
 
 
 nevermind = ('--ignore-depends', '--quiet', '--verbose', '--force-upgrade', '--reset', \
-        '--ignore-sandbox', '--enable-sandbox')
+        '--ignore-sandbox', '--enable-sandbox', '--ignore-conflicts')
 
 exceptions = ('change-root', 'opts', 'stage')
 
