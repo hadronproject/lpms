@@ -27,13 +27,16 @@ from lpms.db import dbapi
 from lpms.operations import sync
 from lpms.operations import build
 from lpms.operations import update
+from lpms.operations import remove
 from lpms.operations import upgrade
 
-
 def update_repository(cmdline):
+    '''Runs repository update operation'''
     update.main(cmdline)
 
 def syncronize(cmdline, instruct):
+    '''Syncronizes package repositories via any SCM
+    and run update and upgrade operations if wanted'''
     query = cmdline
     if not cmdline:
         query = utils.valid_repos()
@@ -41,11 +44,15 @@ def syncronize(cmdline, instruct):
     for repo in query:
         sync.SyncronizeRepo().run(repo)
 
+    if instruct["update"]:
+        update_repository(cmdline)
+
     if instruct["upgrade"]:
         upgrade_system(instruct)
 
-def get_pkg(pkgname):
-    '''Parses given pkgnames:
+def get_pkg(pkgname, repositorydb=True):
+    '''Parses given pkgnames and selects suitable versions and 
+    repositories:
 
         main/sys-devel/binutils
         sys-devel/binutils
@@ -67,8 +74,12 @@ def get_pkg(pkgname):
     def get_name(data):
         return utils.parse_pkgname(data)
 
-    repodb = dbapi.RepositoryDB()
+    db = dbapi.RepositoryDB()
+    if not repositorydb:
+        db = dbapi.InstallDB()
+
     repo = None; category = None; version = None
+    # FIXME: '=' unnecessary?
     if pkgname.startswith("="):
         pkgname = pkgname[1:]
 
@@ -85,8 +96,28 @@ def get_pkg(pkgname):
         if result is not None:
             name, version = result
 
-    result = repodb.find_pkg(name, repo_name = repo, pkg_category = category, 
+    if version:
+        # check repository priority for given version
+        data = db.find_pkg(name, repo_name = repo, pkg_category = category)
+        if data:
+            repos = [r[0] for r in data]
+            found = False
+            for valid_repo in utils.valid_repos():
+                if valid_repo in repos:
+                    result = data[repos.index(valid_repo)]
+                    versions = []
+                    map(lambda ver: versions.extend(ver), result[-1].values())
+                    if version in versions:
+                        found = True
+                        break
+            if not found:
+                result = None
+        else:
+            result = None
+    else:
+        result = db.find_pkg(name, repo_name = repo, pkg_category = category, 
             selection = True)
+
     if not result:
         out.error("%s not found in repository database." % out.color(pkgname, "brightred"))
         lpms.terminate()
@@ -105,6 +136,8 @@ def get_pkg(pkgname):
         return repo, category, name, version
 
 def upgrade_system(instruct):
+    '''Runs UpgradeSystem class and triggers API's build function
+    if there are {upgrade, downgrade}able package'''
     out.normal("scanning database for package upgrades...\n")
     up = upgrade.UpgradeSystem()
     # prepares lists that include package names which 
@@ -117,6 +150,11 @@ def upgrade_system(instruct):
 
     pkgbuild(up.packages, instruct)
 
+def remove_package(pkgnames, instruct):
+    '''Triggers remove operation for given packages'''
+    remove.main([get_pkg(pkgname, repositorydb=False) for pkgname \
+            in pkgnames], instruct)
+    
 def resolve_dependencies(data, cmd_options):
     '''Resolve dependencies using fixit object. This function 
     prepares a full operation plan for the next stages'''
