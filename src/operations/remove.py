@@ -64,6 +64,7 @@ class Remove:
                 shelltools.remove_dir(target)
 
 def main(pkgnames, instruct):
+    # FIXME: Do we need the 'select' function?
     def select(pkgname):
         """ Select the package version and return spec's path """
         result = []
@@ -80,7 +81,7 @@ def main(pkgnames, instruct):
             if len(result) == 0:
                 lpms.catch_error("%s not found!" % out.color(pkgname[1:], "brightred"))
         else:
-            data = instdb.find_pkg(pkgname)[0]
+            data = instdb.find_pkg(pkgname)
             versions = data[-1]
             if len(versions) > 1:
                 out.warn("%s versions installed for %s:" % (len(versions), pkgname))
@@ -123,7 +124,7 @@ def main(pkgnames, instruct):
 
     # start remove operation
     for pkgname in pkgnames:
-        repo, category, name, version = select(pkgname)
+        repo, category, name, version = pkgname
         # initialize remove class
         rmpkg = Remove(repo, category, name, version, instruct)
         out.normal("removing %s/%s/%s-%s from %s" % (repo, category, name, version, rmpkg.real_root))
