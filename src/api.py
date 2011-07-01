@@ -17,18 +17,86 @@
 
 # Useless API imlementation for lpms
 
+import os
+import cPickle as pickle
+
 import lpms
 
 from lpms import out
 from lpms import utils
 from lpms import resolver
+from lpms import internals
+from lpms import shelltools
+from lpms import interpreter
+from lpms import constants as cst
 
 from lpms.db import dbapi
+
 from lpms.operations import sync
 from lpms.operations import build
 from lpms.operations import update
 from lpms.operations import remove
 from lpms.operations import upgrade
+
+
+class InitializeInterpreter(internals.InternalFuncs):
+    '''Base class for initialize the lpms spec interpreter
+    It can be used for any purpose'''
+    def __init__(self, script, instruct, operations):
+        super(InitializeInterpreter, self).__init__()
+        self.script = script
+        self.env.__dict__.update(instruct)
+        self.operations = operations
+        self.env.__dict__["get"] = self.get
+
+    def initialize(self):
+        '''Registers some basic environmet variables and runs the interpreter'''
+        repo, category, name, version = self.script
+        out.normal("configuring %s/%s/%s-%s" % (repo, category, name, version))
+
+        for key, data in {"repo": repo, "name": name, "version": version, \
+                "category": category, "pkgname": name}.items():
+            setattr(self.env, key, data)
+
+        spec_file = os.path.join(cst.repos, repo, category, \
+                name, name)+"-"+version+cst.spec_suffix
+
+        # compile the script
+        self.import_script(spec_file)
+
+        # remove irrelevant functions for environment.
+        # because, the following functions must be run by Build class
+        # that is defined in operations/build.py
+        for func in ('prepare', 'install', 'build', 'configure'):
+            if func in self.env.__dict__:
+                delattr(self.env, func)
+
+        return interpreter.run(spec_file, self.env, self.operations)
+
+
+def configure_pending(packages, instruct):
+    '''Configure packages that do not configured after merge operation'''
+    root = instruct["real_root"]
+    if not root:
+        root = cst.root
+        instruct["real_root"] = root
+
+    pending_file = os.path.join(root, cst.configure_pending_file)
+
+    failed = []
+
+    with open(pending_file, 'rb') as data:
+        pending_packages = pickle.load(data)
+        for package in pending_packages:
+            if not InitializeInterpreter(package, instruct, ['post_install']).initialize():
+                repo, category, name, version = package 
+                out.warn("%s/%s/%s-%s could not configured." % (repo, category, name, version))
+                failed.append(package)
+
+    shelltools.remove_file(pending_file)
+    if failed:
+        with open(pending_file, 'wb') as data:
+            pickle.dump(failed, data)
 
 def update_repository(cmdline):
     '''Runs repository update operation'''

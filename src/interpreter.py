@@ -19,12 +19,16 @@
 
 import os
 import traceback
+import cPickle as pickle
+
 
 import lpms
+
 from lpms import out
 from lpms import conf
 from lpms import utils
 from lpms import internals
+from lpms import shelltools
 from lpms.exceptions import *
 from lpms.shelltools import touch
 from lpms.operations import merge
@@ -54,6 +58,7 @@ class Interpreter(internals.InternalFuncs):
                 lpms.terminate()
 
             # import the script
+            print libfile
             self.import_script(libfile)
 
     def startup_funcs(self):
@@ -194,8 +199,26 @@ class Interpreter(internals.InternalFuncs):
         merge.main(self.env)
 
     def run_post_install(self):
-        if lpms.getopt("--no-configure"):
+        if lpms.getopt("--no-configure") or self.env.real_root != cst.root:
             out.warn_notify("post_install function skipping...")
+            pkg_data = (self.env.repo, self.env.category, \
+                    self.env.name, self.env.version)
+
+            pending_file = os.path.join(self.env.real_root, cst.configure_pending_file)
+            if not os.path.exists(pending_file):
+                with open(pending_file, "wb") as _data:
+                    pickle.dump([pkg_data], _data)
+            else:
+                data = []
+                with open(pending_file, "rb") as _data:
+                    pending_packages = pickle.load(_data)
+                    if not pkg_data in pending_packages:
+                        data.append(pkg_data)
+
+                    data.extend(pending_packages)
+                shelltools.remove_file(pending_file)
+                with open(pending_file, "wb") as _data:
+                    pickle.dump(data, _data)
             return
 
         # sandbox must be disabled
@@ -229,13 +252,15 @@ class Interpreter(internals.InternalFuncs):
                     if self.env.standart_procedure and (stage != "post_install" or stage != "post_remove"):
                         self.run_func("standard_"+stage)
 
-def run(script, env):
+def run(script, env, operation_order=None):
     ipr = Interpreter(script, env)
-    operation_order = ['configure', 'build', 'install', 'merge']
+    if not operation_order:
+        operation_order = ['configure', 'build', 'install', 'merge']
+
     if 'prepare' in env.__dict__.keys():
         operation_order.insert(0, 'prepare')
     
-    if 'post_install' in env.__dict__.keys():
+    if 'post_install' in env.__dict__.keys() and not 'post_install' in operation_order:
         operation_order.insert(len(operation_order), 'post_install')
 
     # FIXME: we need more flow control
@@ -247,10 +272,13 @@ def run(script, env):
             out.write(out.color(">>", "brightred")+" %s/%s/%s-%s\n" % (ipr.env.repo, ipr.env.category, 
                 ipr.env.pkgname, ipr.env.version))
             out.error("an error occurred when running the %s function." % out.color(opr, "red"))
-            lpms.terminate()
+            return False
+            #lpms.terminate()
         except (AttributeError, NameError), err: 
             out.write(out.color(">>", "brightred")+" %s/%s/%s-%s\n" % (ipr.env.repo, ipr.env.category, 
                 ipr.env.pkgname, ipr.env.version))
             traceback.print_exc(err)
             out.error("an error occurred when running the %s function." % out.color(opr, "red"))
-            lpms.terminate()
+            return False
+            #lpms.terminate()
+    return True

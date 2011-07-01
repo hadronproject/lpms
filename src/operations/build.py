@@ -279,8 +279,9 @@ def main(raw_data, instruct):
                     " ".join(opr.env.valid_opts))
         
         os.chdir(opr.env.build_dir)
-        interpreter.run(opr.env.spec_file, opr.env)
-        
+        if not interpreter.run(opr.env.spec_file, opr.env):
+            lpms.terminate("errors occured :(")
+            
         lpms.logger.info("finished %s/%s/%s-%s" % (opr.env.repo, opr.env.category, 
             opr.env.name, opr.env.version))
 
@@ -316,7 +317,7 @@ def show_plan(repo, category, name, version,  valid_options, options):
     instdb = dbapi.InstallDB()
     repodb = dbapi.RepositoryDB()
 
-    pkgdata = instdb.find_pkg(name,  pkg_category=category)
+    pkgdata = instdb.find_pkg(name, pkg_category=category)
     if (category, name) == pkgdata[1:-1]:
         repovers = repodb.get_version(name, pkg_category = category)
 

@@ -28,6 +28,7 @@ sets_dir = "sets"
 user_sets_dir = user_dir+"/"+sets_dir
 repo_conf = "/etc/lpms/repo.conf"
 merge_conf = "/var/tmp/merge-conf"
+configure_pending_file = "var/tmp/configure_pending.lpms"
 repo_file = "info/repo.conf"
 repo_info = "info"
 categories = "categories.xml"
