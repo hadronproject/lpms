@@ -40,6 +40,7 @@ help_output = (('--help', '-h', 'Shows this message.'),
         ('--belong', '-b', 'Queries the package that owns given keyword.'),
         ('--content', '-c', 'Lists files of given package.'),
         ('--force-upgrade', 'Forces lpms to use latest versions.'),
+        ('--configure-pending', 'Configures pending packages if they were not configured at installation time.'),
         ('--verbose', 'Prints more output if possible.'),
         ('--quiet', 'Hides outputs if possible.'))
 
@@ -93,12 +94,13 @@ def usage():
 
 
 nevermind = ('--ignore-depends', '--quiet', '--verbose', '--force-upgrade', '--reset', \
-        '--ignore-sandbox', '--enable-sandbox', '--ignore-conflicts')
+        '--ignore-sandbox', '--enable-sandbox', '--ignore-conflicts', '--no-configure')
 
 exceptions = ('change-root', 'opts', 'stage')
 
 toinstruct = ('ask', 'a', 'resume-build', 'resume', 'pretend', 'p', 'fetch-only', 'F', \
-        'no-merge', 'remove', 'r', 'upgrade', 'U',  'skip-first', 'sync', 'S', 'update', 'u')
+        'no-merge', 'remove', 'r', 'upgrade', 'U',  'skip-first', 'sync', 'S', 'update', 'u', \
+        'configure-pending')
 
 regular = ('help', 'h', 'version', 'v', 'belong', 'b', 'content', 'c', 'remove', 'r', \
         'no-color', 'n', 'update', 'u', 'search', 's', 'upgrade', 'U', 'ask-repo', 'show-deps')
@@ -107,7 +109,7 @@ instruct = {'ask': False, 'pretend': False, 'resume-build': False, 'resume': Fal
         'pretend': False, 'no-merge': False, 'fetch-only': False, 'real_root': None, \
         'cmd_options': [], 'ignore-deps': False, 'sandbox': None,'stage': None, \
         'force': None, 'upgrade': None, 'remove': None, 'skip-first': False, 'sync': False, \
-        'update': False}
+        'update': False, 'configure-pending': False}
 
 def main():
     packages = []; invalid = []
@@ -226,7 +228,11 @@ def main():
         return
         
     if instruct['remove']:
-        remove.main(packages, instruct)
+        api.remove_package(packages, instruct)
+        return
+
+    if instruct['configure-pending']:
+        api.configure_pending(packages, instruct)
         return
 
     for tag in ('upgrade', 'remove', 'sync', 'update'):
