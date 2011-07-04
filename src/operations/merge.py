@@ -18,6 +18,7 @@
 import os
 import time
 import shutil
+import cPickle as pickle
 import xml.etree.cElementTree as iks
 
 import lpms
@@ -45,6 +46,29 @@ class Merge(internals.InternalFuncs):
         self.env = environment
         self.instdb = dbapi.InstallDB()
         self.conf = conf.LPMSConfig()
+        self.merge_conf_data = []
+
+        # set installation target
+        if self.env.real_root is None:
+            self.env.real_root = cst.root
+        
+        self.merge_conf_file = os.path.join(self.env.real_root, cst.merge_conf_file)
+
+    def load_merge_conf_file(self):
+        if os.path.isfile(self.merge_conf_file):
+            with open(self.merge_conf_file, "rb") as raw_data:
+                try:
+                    self.merge_conf_data = pickle.load(raw_data)
+                except EOFError:
+                    shelltools.remove_file(self.merge_conf_file)
+
+    def save_merge_conf_file(self):
+        if self.merge_conf_data and os.path.isfile(self.merge_conf_file):
+            shelltools.remove_file(self.merge_conf_file)
+
+        if self.merge_conf_data:
+            with open(self.merge_conf_file, "wb") as raw_data:
+                pickle.dump(self.merge_conf_data, raw_data)
 
     def is_fresh(self):
         status = self.instdb.find_pkg(self.env.name, 
@@ -88,9 +112,6 @@ class Merge(internals.InternalFuncs):
                     "mod": utils.get_mod(path)
             }
 
-        # set installation target
-        if self.env.real_root is None:
-            self.env.real_root = cst.root
 
         conflict_check = False
         previous_vers = self.instdb.get_version(self.env.name, pkg_category = self.env.category)
@@ -170,9 +191,12 @@ class Merge(internals.InternalFuncs):
                 if os.path.exists(target):
                     if root_path[0:4] == "/etc" or isconf:
                         if os.path.isfile(conf_file) and utils.sha1sum(source) != utils.sha1sum(conf_file):
-                            entry = os.path.join("/var/tmp/merge-conf", "|".join(conf_file.split("/")))
-                            if not os.path.exists(entry):
-                                shelltools.touch(entry)
+                            #entry = os.path.join("/var/tmp/merge-conf", "|".join(conf_file.split("/")))
+                            if not conf_file in self.merge_conf_data:
+                                self.merge_conf_data.append(conf_file)
+
+                            #if not os.path.exists(entry):
+                            #    shelltools.touch(entry)
                             target = target+".lpms-backup" 
                             self.backup.append(target)
 
@@ -325,9 +349,13 @@ class Merge(internals.InternalFuncs):
 
 def main(environment):
     opr = Merge(environment)
-
+    
+    opr.load_merge_conf_file()
+    
     # merge
     opr.merge_pkg()
+
+    opr.save_merge_conf_file()
 
     # clean previous version if it is exists
     opr.clean_previous()

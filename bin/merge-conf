@@ -18,62 +18,102 @@
 
 import os
 import sys
+import signal
+import cPickle as pickle
+
+import lpms
 
 from lpms import out
 from lpms import utils
 from lpms import shelltools
 from lpms import constants as cst
 
+__version__ = "0.2"
 
 class Merge(object):
     def __init__(self):
         self.i = 0
-        self.query = os.listdir(cst.merge_conf)
-        self.q = ""
-        self.myfile = ""
+        self.query = []
+        self.success = []
+        self.merge_conf_file = os.path.join(cst.root, cst.merge_conf_file)
 
-    def show(self):
+    def load_merge_conf_file(self):
+        if os.path.isfile(self.merge_conf_file):
+            with open(self.merge_conf_file, "rb") as data:
+                try:
+                    self.query = pickle.load(data)
+                except EOFError:
+                    shelltools.remove_file(self.merge_conf_file)
+                    lpms.terminate()
+
+    def show(self, conf_file):
         self.i += 1
-        self.myfile = "/".join(self.q.split("|"))
         out.write(out.color("("+str(self.i)+"/"+str(len(self.query))+")", "green"))
-        out.write(" "+self.myfile+"\n\n")
-        os.system("diff -Naur %s %s" % (self.myfile, self.myfile+".lpms-backup"))
+        out.write(" "+conf_file+"\n\n")
+        os.system("diff -Naur %s %s" % (conf_file, conf_file+".lpms-backup"))
         out.write("\n")
-
         out.normal("[U]se new file, [R]emove new file, [P]ass\n")
 
     def start(self):
-        for self.q in self.query:
+        for conf_file in self.query:
+            if not os.path.isfile(conf_file+".lpms-backup"):
+                self.success.append(conf_file)
+                continue
+
             # show diff output
-            self.show()
+            self.show(conf_file)
 
             answer = sys.stdin.readline().strip()
             if answer == "U" or answer == "u":
-                shelltools.move(self.myfile+".lpms-backup", self.myfile)
-                shelltools.remove_file(os.path.join(cst.merge_conf, self.q))
+                shelltools.move(conf_file+".lpms-backup", conf_file)
+                self.success.append(conf_file)
             elif answer == "R" or answer == "r":
-                shelltools.remove_file(self.myfile+".lpms-backup")
-                shelltools.remove_file(os.path.join(cst.merge_conf, self.q))
+                shelltools.remove_file(conf_file+".lpms-backup")
+                self.success.append(conf_file)
             elif answer == "P" or answer == "p":
                 continue
             else:
                 out.warn("invalid character: %s" % answer)
                 show(i)
 
-def main():
+    def save_merge_conf_file(self):
+        new_files = []
+        for q in self.query:
+            if not q in self.success:
+                new_files.append(q)
+
+        if os.path.isfile(self.merge_conf_file) and new_files:
+            shelltools.remove_file(self.merge_conf_file)
+
+        if new_files:
+            with open(self.merge_conf_file, "wb") as data:
+                pickle.dump(new_files, data)
+
+def merge_conf():
     for cmd in sys.argv[0:]:
-        if cmd == "--help":
-            out.write("configuration manager for lpms\n")
+        if cmd == "--help" or cmd == "-h":
+            out.write("configuration file manager for lpms.\n")
+            out.write("simply, run 'merge-conf' command to see changed configuration files.\n")
             return
         elif cmd == "--version":
-            our.write("%s-%s" % (__name__, __version__))
-            return
-        elif cmd == "--pretend" or cmd == "-p":
+            out.write("merge-conf-%s\n" %  __version__)
             return
 
-        # run the program
-        Merge().start()
+    # run the program
+    obj = Merge()
+    obj.load_merge_conf_file()
+    obj.start()
+    obj.save_merge_conf_file()
 
+
+def exit_handler(signum, frame):
+    signal.signal(signal.SIGINT, signal.SIG_IGN)
+    signal.signal(signal.SIGTERM, signal.SIG_IGN)
+    lpms.terminate("merge-conf terminated by the user. So this may be harmfull!")
+
+signal.signal(signal.SIGINT, exit_handler)
+signal.signal(signal.SIGTERM, exit_handler)
+signal.signal(signal.SIGPIPE, signal.SIG_DFL)
 
 if __name__ == '__main__':
-    main()
+    merge_conf()
