@@ -309,7 +309,7 @@ def parse_opt_deps(depends):
             opt, deps = line.split("@")
         except ValueError:
             if not opt.count(indent) and not line.strip() == "":
-                dependencies[opt].extend(line.strip().split(" "))
+                dependencies[opt.strip()].extend(line.strip().split(" "))
                 continue
         if not opt.count(indent):
             dependencies[opt.strip()] = [d for d in deps.strip().split(" ") if d != ""]
@@ -318,9 +318,9 @@ def parse_opt_deps(depends):
                 try:
                     subopt, subdep = x.split("@")
                 except ValueError:
-                    if len(dependencies[opt]) > 1:
-                        if isinstance(dependencies[opt][-1][-1], list) and not x.strip() == "":
-                            dependencies[opt][-1][-1].extend(x.strip().split(" "))
+                    if len(dependencies[opt.strip()]) > 1:
+                        if isinstance(dependencies[opt.strip()][-1][-1], list) and not x.strip() == "":
+                            dependencies[opt.strip()][-1][-1].extend(x.strip().split(" "))
                     continue
                 if not subopt.count(indent):
                     break
