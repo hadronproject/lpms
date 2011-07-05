@@ -537,6 +537,8 @@ class DependencyResolver(object):
                 deps = data[opt]
                 for dep in deps:
                     if isinstance(dep, str):
+                        if dep == "||":
+                            continue
                         depends.append(dep)
                     elif isinstance(dep, tuple):
                         subopt, subdep = dep
@@ -550,10 +552,13 @@ class DependencyResolver(object):
                                 prev_indent_level = subopt.count("\t")
                                 depends.extend(subdep)
                                 opts.append(subopt.strip())
-
         for line in data:
             if line in options:
                 continue
+            else:
+                if "||" in data[line]:
+                    depends.extend(data[line][data[line].index("||")+1:])
+
             for opt in data[line]:
                 if isinstance(opt, tuple):
                     no.append(opt[0].strip())
