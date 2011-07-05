@@ -76,6 +76,10 @@ def set_parser(set_name):
 def select_repo(data):
     valid = valid_repos()
 
+    if not valid:
+        out.error("repo.conf is empty or not found. Please check it.")
+        lpms.terminate()
+
     sorting = []
     
     for d in data:
