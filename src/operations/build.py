@@ -311,14 +311,18 @@ def main(raw_data, instruct):
         opr.env.__dict__.clear()
         utils.xterm_title_reset()
 
-def show_plan(repo, category, name, version,  valid_options, options):
+def show_plan(repo, category, name, version, valid_options, options):
     result = []; status = [' ', '  ']; oldver= ""
 
     instdb = dbapi.InstallDB()
     repodb = dbapi.RepositoryDB()
 
     pkgdata = instdb.find_pkg(name, pkg_category=category)
-    if (category, name) == pkgdata[1:-1]:
+
+    ivers = []
+    map(lambda ver: ivers.extend(ver), pkgdata[-1].values())
+
+    if (category, name) == pkgdata[1:-1] and version in ivers:
         repovers = repodb.get_version(name, pkg_category = category)
 
         for key in repovers:
@@ -348,6 +352,7 @@ def show_plan(repo, category, name, version,  valid_options, options):
             instopts = instdb.get_options(repo, category, name, version)[version].split(" ")
         except (KeyError, TypeError):
             instopts = None
+
 
         for o in options.split(" "):
             if valid_options and o in valid_options:
