@@ -16,6 +16,7 @@
 # along with lpms.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+import sys
 
 from lpms import constants as cst 
 
@@ -29,6 +30,7 @@ class InternalFuncs(object):
     def __init__(self):
         self.env = Environment()
         self.env.libraries = []
+        self.env.current_stage = None
         self.env.config = ""
         self.env.sandbox_valid_dirs = []
         self.env.backup = []

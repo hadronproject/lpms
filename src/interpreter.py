@@ -58,6 +58,7 @@ class Interpreter(internals.InternalFuncs):
                 lpms.terminate()
 
             # import the script
+            print libfile
             self.import_script(libfile)
 
     def startup_funcs(self):
@@ -236,6 +237,7 @@ class Interpreter(internals.InternalFuncs):
         self.run_stage("post_remove")
 
     def run_stage(self, stage):
+        self.env.current_stage = stage
         # firstly, we find a configuration function in environment
         if stage in self.env.__dict__.keys():
             # if it is exists, run it
