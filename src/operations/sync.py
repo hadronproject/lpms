@@ -1,3 +1,5 @@
+import lpms
+
 from lpms import out
 from lpms import constants as cst
 
@@ -33,6 +35,8 @@ class SyncronizeRepo(object):
             from lpms.syncers import git as syncer
 
 
+        lpms.logger.info("synchronizing %s from %s" % (repo, self.remote))
+        
         out.notify("synchronizing %s from %s" % (out.color(repo, "green"), self.remote))
 
         syncer.run(repo, self.remote)

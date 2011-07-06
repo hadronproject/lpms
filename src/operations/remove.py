@@ -127,7 +127,12 @@ def main(pkgnames, instruct):
         repo, category, name, version = pkgname
         # initialize remove class
         rmpkg = Remove(repo, category, name, version, instruct)
-        out.normal("removing %s/%s/%s-%s from %s" % (repo, category, name, version, rmpkg.real_root))
+        
+        lpms.logger.info("removing %s/%s/%s-%s from %s" % \
+                (repo, category, name, version, rmpkg.real_root))
+        out.normal("removing %s/%s/%s-%s from %s" % \
+                (repo, category, name, version, rmpkg.real_root))
+        
         # remove files
         rmpkg.remove_files()
         # remove empty dirs
