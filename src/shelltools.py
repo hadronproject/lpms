@@ -104,7 +104,7 @@ def touch(path):
         return
     open(path, 'w').close()
 
-def system(cmd, show=False):
+def system(cmd, show=False, stage = None):
     if lpms.getopt("--verbose"):
         ret, output, err = run_cmd(cmd, True)
     elif (not conf.LPMSConfig().print_output or lpms.getopt("--quiet")) \
@@ -118,6 +118,8 @@ def system(cmd, show=False):
             out.brightred("\n>> error messages:\n")
             out.write(err)
         out.warn("command failed: %s" % out.color(cmd, "red"))
+        if stage:
+            return False, output+err
         return False
     return True
 

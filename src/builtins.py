@@ -310,7 +310,16 @@ def insexe(source, target='/usr/bin'):
     return shelltools.install_executable([source], prepare_target(target))
 
 def system(*cmd):
-    return shelltools.system(" ".join(cmd))
+    result = shelltools.system(" ".join(cmd), stage = current_stage)
+    if len(result) == 2:
+        if result[1]:
+            logfile =  "%s/build.log" % dirname(dirname(build_dir))
+            if isfile(logfile):
+                shelltools.remove_file(logfile)
+            echo(result[1],logfile)
+            out.normal("for detalied output, view %s" % logfile)
+        return result[0]
+    return result
 
 def joinpath(*args):
     return "/".join(args)
