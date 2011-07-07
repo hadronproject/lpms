@@ -311,6 +311,9 @@ def insexe(source, target='/usr/bin'):
 
 def system(*cmd):
     result = shelltools.system(" ".join(cmd), stage = current_stage)
+    if isinstance(result, bool):
+        return result
+
     if len(result) == 2:
         if result[1]:
             logfile =  "%s/build.log" % dirname(dirname(build_dir))
