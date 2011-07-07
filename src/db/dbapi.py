@@ -128,7 +128,20 @@ class API(object):
         return self.get_from_metadata("license", pkgname, repo_name, pkg_category)
     
     def get_version(self, pkgname, repo_name = None, pkg_category = None):
-        return self.db.get_version(pkgname, repo_name, pkg_category)
+        # FIXME: get_version function db.py seems buggy
+        versions = {}
+        for pkg in self.find_pkg(pkgname, repo_name = None, pkg_category = None):
+            repovers = pkg[-1]
+            for slot in repovers:
+                if not slot in versions:
+                    versions.update({slot: repovers[slot]})
+                else:
+                    for ver in repovers[slot]:
+                        if not ver in versions[slot]:
+                            versions[slot].append(ver)
+        return versions
+
+        #return self.db.get_version(pkgname, repo_name, pkg_category)
 
     def get_options(self, repo_name, pkgname, pkg_category, version):
         return self.db.get_options(repo_name, pkgname, pkg_category, version)
