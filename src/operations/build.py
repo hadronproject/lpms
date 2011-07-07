@@ -319,11 +319,11 @@ def show_plan(repo, category, name, version, valid_options, options):
 
     pkgdata = instdb.find_pkg(name, pkg_category=category)
 
-    ivers = []
-    if pkgdata:
-        map(lambda ver: ivers.extend(ver), pkgdata[-1].values())
+    #ivers = []
+    #if pkgdata:
+    #    map(lambda ver: ivers.extend(ver), pkgdata[-1].values())
 
-    if (category, name) == pkgdata[1:-1] and version in ivers:
+    if (category, name) == pkgdata[1:-1]:
         repovers = repodb.get_version(name, pkg_category = category)
 
         for key in repovers:
