@@ -118,7 +118,7 @@ def system(cmd, show=False, stage = None):
             out.brightred("\n>> error messages:\n")
             out.write(err)
         out.warn("command failed: %s" % out.color(cmd, "red"))
-        if stage:
+        if stage and output and err:
             return False, output+err
         return False
     return True
