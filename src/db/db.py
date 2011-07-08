@@ -59,9 +59,11 @@ class PackageDatabase:
 
     def add_pkg(self, data, commit=True):
         def get_slot():
-            data = self.cursor.execute('''select version from metadata where repo=(?) and category=(?) and name=(?)''', 
+            self.cursor.execute('''select version from metadata where repo=(?) and category=(?) and name=(?)''', 
                     (repo, category, name,))
-            return pickle.loads(str(self.cursor.fetchone()[0]))
+            
+            aq = self.cursor.fetchall()
+            return pickle.loads(str(aq[0][0]))
         
         def get_options():
             data = self.cursor.execute('''select options from metadata where repo=(?) and category=(?) and name=(?)''', 
@@ -81,7 +83,9 @@ class PackageDatabase:
             self.cursor.execute('''insert into metadata values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', (
                 repo, category, name, version_data, summary, homepage, _license, src_url, options_data, arch_data))
         else:
-            current_versions = get_slot()
+            current_versions = self.get_version(name, repo, category)
+            #current_versions = get_slot()
+            #print current_versions, repo, category, name, version
             if slot in current_versions:
                 current_versions[slot].append(version)
             else:
@@ -214,7 +218,6 @@ class PackageDatabase:
             return result
 
     def get_options(self, repo, category, name, version):
-        #print repo, category, name, version
         self.cursor.execute('''select options from metadata where repo=(?) and category=(?) and name=(?)''', 
                 (repo, category, name,))
         try:
@@ -234,6 +237,7 @@ class PackageDatabase:
             return None
     
     def get_version(self, name, repo, category):
+        # FIXME
         if repo:
             self.cursor.execute('''select version from metadata where repo=(?) \
                     and category=(?) and name=(?)''' ,(repo, category, name))
