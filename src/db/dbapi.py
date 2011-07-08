@@ -159,34 +159,19 @@ class API(object):
         return self.db.get_arch(repo_name, category, pkgname, version)
 
     def get_repo(self, category, pkgname, version = None):
-        result = self.find_pkg(pkgname, selection = True)
-        
-        for pkg in result:
-            repo, catgry, name, gversions = pkg
-            # FIXME: Unicode issues
-            if catgry == category and name == pkgname:
-                if version is not None:
+        for repo in utils.valid_repos():
+            raw_result = self.find_pkg(pkgname, repo_name = repo, \
+                    pkg_category = category)
+            if raw_result:
+                if version:
                     versions = []
-                    map(lambda v: versions.extend(v), gversions.values())
+                    map(lambda v: versions.extend(v), self.get_version(pkgname, \
+                            pkg_category = category).values())
                     if version in versions:
                         return repo
-                    else:
-                        return False
                 return repo
-
-        with open("/etc/lpms/repo.conf") as repo_file:
-            for repo in [repo.strip() for repo in repo_file.readlines()[1:] \
-                    if not repo.startswith("#")]:
-                raw_result = self.find_pkg(pkgname, repo_name = repo, \
-                        pkg_category = category)
-                if raw_result:
-                    return repo
-        
+    
         return False
-
-    #def add_status(self, data):
-    #    if self.__class__.__name__ == "InstallDB":
-    #        return self.db.add_status(data)
 
 def fix_path(path):
     for arg in sys.argv:
