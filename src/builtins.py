@@ -205,7 +205,7 @@ def copytree(source, target, sym=True):
     shelltools.copytree(source, prepare_target(target), sym)
 
 def copy(source, target, sym=True):
-    if inspect.stack()[1][3] == "install":
+    if current_stage == "install":
         shelltools.copy(source, prepare_target(target), sym)
     else:
         shelltools.copy(source, target, sym)
@@ -220,7 +220,8 @@ def insfile(source, target):
     return shelltools.install_readable([source], prepare_target(target))
 
 def makesym(source, target):
-    if inspect.stack()[1][3] == "install":
+    if current_stage == "install":
+    #if inspect.stack()[1][3] == "install":
         target = prepare_target(target)
     if len(target.split("/")) > 1:
         shelltools.makedirs(os.path.dirname(target))
@@ -231,7 +232,7 @@ def rename(source, target):
                 prepare_target(os.path.join(os.path.dirname(source), target)))
 
 def rmfile(target):
-    if inspect.stack()[1][3] == "install":
+    if current_stage == "install":
         target = prepare_target(target)
     src = glob.glob(target)
     if len(src) == 0:
@@ -241,7 +242,7 @@ def rmfile(target):
         shelltools.remove_file(path)
 
 def rmdir(target):
-    if inspect.stack()[1][3] == "install":
+    if current_stage == "install":
         target = prepare_target(target)
     src = glob.glob(target)
     if len(src) == 0:
