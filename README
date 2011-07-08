@@ -8,6 +8,8 @@ lpms is a package manager which was designed to provide advanced control and
 optimization over packages. It is written in Python entirely and uses custom 
 Python scripts to build packages.
 
+lpms aims to be functional, user-friendly, fast and powerful.
+
 Dependencies
 -------------
 
