@@ -55,7 +55,7 @@ class LPMSConfig(ReadConfig):
     def __init__(self):
         config_file = os.path.join(cst.config_dir, cst.config_file)
         if not os.path.isfile(config_file):
-            out.error("%s not found.")
+            out.error("%s not found." % config_file)
             lpms.terminate()
 
         with open(config_file) as data:
