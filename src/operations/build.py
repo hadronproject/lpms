@@ -88,7 +88,7 @@ class Build(internals.InternalFuncs):
             self.env.category, self.env.fullname, "install")
         
         try:
-            if len(os.listdir(self.env.install_dir)) != 0:
+            if not lpms.getopt("--resume-build") and len(os.listdir(self.env.install_dir)) != 0:
                 shelltools.remove_dir(self.env.install_dir)
         except OSError:
             pass
