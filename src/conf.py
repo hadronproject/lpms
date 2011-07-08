@@ -15,53 +15,48 @@
 # You should have received a copy of the GNU General Public License
 # along with lpms.  If not, see <http://www.gnu.org/licenses/>.
 
+
 import os
-import ConfigParser
+
+import lpms
+
+from lpms import exceptions
 
 from lpms import constants as cst
 
 class ReadConfig(object):
-    def __init__(self, conf_path):
-        with open(conf_path) as conf_file:
-            for atr in conf_file.read().strip().split('\n'):
-                if not atr.startswith("[") and not atr.startswith("#"):
-                    if len(atr.split("=")) > 1:
-                        data = atr.split("=")
-                        keyword = "=".join(data[1:]).strip()
-                        booleans = {"True": True, "False": False, "None": None}
-                        if keyword in booleans:
-                            keyword = booleans[keyword]
+    def __init__(self, data):
+        for line in data:
+            if line.startswith("#"):
+                continue
 
-                        self.__dict__[data[0].strip()] = keyword
+            parsed_line = line.split("=", 1)
+            if len(parsed_line) == 1:
+                if "".join(parsed_line) == "":
+                    continue
+                prev_key = data[data.index(line) - 1].split("=", 1)[0].strip()
+                if prev_key in self.__dict__:
+                    self.__dict__[prev_key] += " "+parsed_line[0].strip()
+            else:
+                key, val = parsed_line
+                setattr(self, key.strip(), self.convert_booleans(val.strip()))
 
-#class ReadConfig(object):
-#    def __init__(self, conf_path):
-#        for f in file(conf_path):
-#            result = f.strip().split("=")
-#            if len(result) >= 2:
-#                member = "".join(list(result[0][0:-1]))
-#                result = "=".join(result[1:])
-#                if member.startswith("#"):
-#                    continue
-#
-#                value = "".join(list(result.split('"')[1]))
-#                if value == "True":
-#                    value = True
-#                elif value == "False":
-#                    value = False
-#
-#                if member in self.__dict__.keys():
-#                    self.__dict__[member] += " "+value
-#                else:
-#                    self.__dict__[member] = value
+    def convert_booleans(self, line):
+        booleans = {'True': True, 'False': False, 'None': None}
+        if line not in booleans:
+            return line
+        return booleans[line]
+
+    def __getattr__(self, attr):
+        if attr not in self.__dict__:
+            raise exceptions.ConfKeyError("the configuration file has no keyword: '%s'" % attr)
 
 class LPMSConfig(ReadConfig):
     def __init__(self):
-        super(LPMSConfig, self).__init__(os.path.join(cst.config_dir, cst.config_file))
+        config_file = os.path.join(cst.config_dir, cst.config_file)
+        if not os.path.isfile(config_file):
+            out.error("%s not found.")
+            lpms.terminate()
 
-class RepoConfig(ReadConfig):
-    def __init__(self, repo_path):
-        #repo_config = os.path.join(cst.repos, repo_name, "info/repo.conf")
-        super(RepoConfig, self).__init__(repo_path)
-
-
+        with open(config_file) as data:
+            super(LPMSConfig, self).__init__(data.read().splitlines())
