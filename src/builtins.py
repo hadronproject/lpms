@@ -272,18 +272,18 @@ def apply_patch(patches, level, reverse):
 
 def patch(*args, **kwarg):
     level = 0; reverse = ""
-    if "level" in kwarg.keys():
+    if "level" in kwarg:
         level = kwarg["level"]
-    if "reverse" in kwarg.keys() and kwarg["reverse"]:
+    if "reverse" in kwarg and kwarg["reverse"]:
         reverse = "-R"
 
-    if len(args) == 0:
+    if not args:
         patch_dir = os.path.join(cst.repos, repo, category, pkgname, cst.files_dir)
         ptch = glob.glob(patch_dir+"/*"+cst.patch_suffix)
-        if len(ptch) == 0:
+        if not ptch:
             lpms.catch_error("no patch found in \'files\' directory.")
         if apply_patch(ptch, level, reverse) is not None:
-            lpms.catch_error("patch failed")
+            lpms.catch_error("patch failed.")
         return 
 
     patches = []
@@ -295,17 +295,18 @@ def patch(*args, **kwarg):
 
         if patch_name.endswith(cst.patch_suffix):
             ptch = glob.glob(src)
-            if len(ptch) == 0:
+            if not ptch:
                 lpms.catch_error("%s not found!" % patch_name)
-            patches += ptch
+            patches.extend(ptch)
         else:
             if os.path.isdir(src):
-                ptch = glob.glob(src+"/*"+cst.patch_suffix)
-                if len(ptch) == 0:
-                    lpms.catch_error("%s is an directory and it is not involve any patches." % patch_name)
-                patches += ptch
+                ptch = glob.glob(src+"/*")
+                if not ptch:
+                    lpms.catch_error("%s is an directory and it is not involve any files." % patch_name)
+                patches.extend(ptch)
+
     if apply_patch(patches, level, reverse) is not None:
-        lpms.catch_error("patch failed")
+        lpms.catch_error("patch failed.")
 
 def insexe(source, target='/usr/bin'):
     return shelltools.install_executable([source], prepare_target(target))
