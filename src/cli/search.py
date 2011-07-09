@@ -21,7 +21,7 @@ import lpms
 from lpms import out
 from lpms.db import dbapi
 
-help_output = (('--mark', '-m', 'use markers to highlight the matching strings'),)
+help_output = (('--mark', 'use markers to highlight the matching strings.'),)
 
 class Search(object):
     def __init__(self, patterns):
@@ -35,9 +35,8 @@ class Search(object):
         out.write(" $ lpms -s <keyword>\n")
         out.write("\nOther options:\n")
         for h in help_output:
-            if len(h) == 3:
-                out.write("%s, %-10s: %s\n" % (out.color(h[0],"green"), 
-                    out.color(h[1], "green"), h[2]))
+            if len(h) == 2:
+                out.write("%-15s: %s\n" % (out.color(h[0],"green"), h[1]))
         lpms.terminate()
 
     def search(self):
@@ -53,9 +52,8 @@ class Search(object):
                 versions = []
                 map(lambda x: versions.extend(x), self.repodb.get_version(name, repo, category).values())
                 
-                status = self.instdb.find_pkg(name, repo_name = repo, pkg_category = category)
                 pkg_status = ""
-                if status:
+                if  self.instdb.get_repo(category, name) == repo:
                     pkg_status = "["+out.color("I", "brightgreen")+"] "
                 
                 if lpms.getopt("--mark"):
