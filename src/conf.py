@@ -27,13 +27,13 @@ from lpms import constants as cst
 class ReadConfig(object):
     def __init__(self, data):
         for line in data:
-            if line.startswith("#"):
+            if not line.strip() or line.startswith("#"):
                 continue
 
             parsed_line = line.split("=", 1)
             if len(parsed_line) == 1:
-                if "".join(parsed_line) == "":
-                    continue
+                #if "".join(parsed_line) == "":
+                #    continue
                 prev_key = data[data.index(line) - 1].split("=", 1)[0].strip()
                 if prev_key in self.__dict__:
                     self.__dict__[prev_key] += " "+parsed_line[0].strip()
@@ -55,7 +55,7 @@ class LPMSConfig(ReadConfig):
     def __init__(self):
         config_file = os.path.join(cst.config_dir, cst.config_file)
         if not os.path.isfile(config_file):
-            out.error("%s not found." % config_file)
+            out.error("%s not found.")
             lpms.terminate()
 
         with open(config_file) as data:
