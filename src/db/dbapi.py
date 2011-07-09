@@ -130,7 +130,12 @@ class API(object):
     def get_version(self, pkgname, repo_name = None, pkg_category = None):
         # FIXME: get_version function db.py seems buggy
         versions = {}
-        for pkg in self.find_pkg(pkgname, repo_name = None, pkg_category = None):
+
+        result =  self.find_pkg(pkgname, repo_name, pkg_category)
+        if isinstance(result, tuple):
+            result = [result]
+
+        for pkg in result:
             repovers = pkg[-1]
             for slot in repovers:
                 if not slot in versions:
