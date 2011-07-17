@@ -39,7 +39,6 @@ help_output = (('--help', '-h', 'Shows this message.'),
         ('--search', '-s', 'Searches given package in database.'),
         ('--belong', '-b', 'Queries the package that owns given keyword.'),
         ('--content', '-c', 'Lists files of given package.'),
-        ('--sync', '-S', 'Synchronizes package repositories.'),
         ('--force-upgrade', 'Forces lpms to use latest versions.'),
         ('--configure-pending', 'Configures pending packages if they were not configured at installation time.'),
         ('--verbose', 'Prints more output if possible.'),
@@ -74,23 +73,31 @@ def usage():
     out.write('\nIn order to build a package:\n')
     out.write(' # lpms <package-name> <extra-command>\n\n')
     out.write('Build related commands:\n')
+
     for cmd in build_help:
-        if (len(cmd) == 3):
-            out.write(('%-27s %-10s : %s\n' % (out.color(cmd[0], 'green'),
-             out.color(cmd[1], 'green'),
-             cmd[2])))
+        if len(cmd) == 3:
+            if lpms.getopt("--no-color") or lpms.getopt("-n"):
+                out.write(('%-19s %-10s : %s\n' % (out.color(cmd[0], 'green'),
+                out.color(cmd[1], 'green'),
+                cmd[2])))
+            else:
+                out.write(('%-27s %-10s : %s\n' % (out.color(cmd[0], 'green'),
+                out.color(cmd[1], 'green'),
+                cmd[2])))
         else:
             out.write(('%-30s : %s\n' % (out.color(cmd[0], 'green'), cmd[1])))
 
     out.write('\nOther Commands:\n')
     for cmd in help_output:
-        if (len(cmd) == 3):
-            out.write(('%-27s %-10s : %s\n' % (out.color(cmd[0], 'green'),
-             out.color(cmd[1], 'green'),
-             cmd[2])))
-        else:
-            out.write(('%-30s : %s\n' % (out.color(cmd[0], 'green'), cmd[1])))
-
+        if len(cmd) == 3:
+            if lpms.getopt("--no-color") or lpms.getopt("-n"):
+                out.write(('%-19s %-10s : %s\n' % (out.color(cmd[0], 'green'),
+                out.color(cmd[1], 'green'),
+                cmd[2])))
+            else:
+                out.write(('%-27s %-10s : %s\n' % (out.color(cmd[0], 'green'),
+                out.color(cmd[1], 'green'),
+                cmd[2])))
     lpms.terminate()
 
 
@@ -108,7 +115,7 @@ regular = ('help', 'h', 'version', 'v', 'belong', 'b', 'content', 'c', 'remove',
 
 instruct = {'ask': False, 'pretend': False, 'resume-build': False, 'resume': False, \
         'pretend': False, 'no-merge': False, 'fetch-only': False, 'real_root': None, \
-        'cmd_options': [], 'ignore-deps': False, 'sandbox': None,'stage': None, \
+        'cmd_options': [], 'specials': {}, 'ignore-deps': False, 'sandbox': None,'stage': None, \
         'force': None, 'upgrade': None, 'remove': None, 'skip-first': False, 'sync': False, \
         'update': False, 'configure-pending': False}
 
@@ -188,8 +195,9 @@ def main():
             elif l in nevermind:
                 pass
             else:
-                if (((l[2:] not in regular) and (l[2:] not in toinstruct)) and \
-                        (l[2:].split('=')[0] not in exceptions)):
+                if l[2:] not in regular and l[2:] not in toinstruct and \
+                        l[2:].split('=')[0] not in exceptions and \
+                        not l[2:].startswith("opts"):
                     invalid.append(l)
         else:
             packages.append(unicode(l))
@@ -201,10 +209,15 @@ def main():
                     instruct[toinstruct[(toinstruct.index(x) - 1)]] = True
 
         else:
-            if c[2:] in toinstruct or c[2:].split('=')[0] in exceptions:
+            if c[2:] in toinstruct or c[2:].split('=')[0] in exceptions or \
+                    c[2:].split("=")[0].split("-")[0] in exceptions:
                 if c[2:].startswith('change-root'):
                     instruct['real_root'] = c[2:].split('=')[1]
-                if c[2:].startswith('opts'):
+                if c[2:].startswith('opts-'):
+                    data = c[2:].split("opts-", 1)[1]
+                    name, opts = data.split("=", 1)
+                    instruct["specials"].update({name: opts.split(" ")})
+                if c[2:].startswith('opts='):
                     instruct['cmd_options'] = c[2:].split('=')[1].split(' ')
                 if c[2:].startswith('stage'):
                     instruct['stage'] = c[2:].split('=')[1].strip()

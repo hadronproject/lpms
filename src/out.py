@@ -15,8 +15,10 @@
 # You should have received a copy of the GNU General Public License
 # along with lpms.  If not, see <http://www.gnu.org/licenses/>.
 
+import re
 import sys
 
+import lpms
 from lpms import conf
 
 # color codes were borrowed from PiSi
@@ -64,25 +66,32 @@ colors = {
         'default'            : "\033[0m"
 }
 
+def scrub(string):
+    p = re.compile('\033\[[0-9;]+m')
+    return p.sub('', string)
+
 def color(msg, cl):
-    if "--no-color" in sys.argv or "-n" in sys.argv or not conf.LPMSConfig().colorize:
-        cl = "default"
+    if lpms.getopt("--no-color") or lpms.getopt("-n") or not conf.LPMSConfig().colorize:
+        return msg
     return colors[cl] + msg + colors['default']
 
-def write(msg, log=False):
+def write(msg, log=True):
     sys.stdout.write(msg)
 
 def normal(msg, log=False, ch=None):
+    #lpms.logger.info(msg)
     if ch is None:
         ch = '\n'
     write(color(">> ", "brightgreen")+msg+ch)
 
 def error(msg, log=False, ch=None):
+    #lpms.logger.error(msg)
     if ch is None:
         ch = '\n'
     write(color("!! ", "brightred")+msg+ch)
 
 def warn(msg, log=False, ch=None):
+    #lpms.logger.warning(msg)
     if ch is None:
         ch = '\n'
     write(color("** ", "brightyellow")+msg+ch)
