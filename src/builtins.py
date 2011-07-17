@@ -94,7 +94,13 @@ def del_ldflags(flag):
     return flag
 
 def insdoc(*sources):
-    return shelltools.install_readable(sources, prepare_target("/usr/share/doc/%s" % pkgname))
+    if slot != "0":
+        target = prepare_target("/usr/share/doc/%s" % fullname)
+    else:
+        target = prepare_target("/usr/share/doc/%s" % name)
+
+    shelltools.makedirs(target)
+    return shelltools.install_readable(sources, target)
 
 def insinfo(*sources):
     return shelltools.install_readable(sources, prepare_target("/usr/share/info"))
