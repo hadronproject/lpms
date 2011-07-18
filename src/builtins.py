@@ -103,9 +103,13 @@ def insdoc(*sources):
     return shelltools.install_readable(sources, target)
 
 def insinfo(*sources):
-    return shelltools.install_readable(sources, prepare_target("/usr/share/info"))
+    target = prepare_target("/usr/share/info")
+    shelltools.makedirs(os.path.dirname(target))
+    return shelltools.install_readable(sources, target)
 
 def inslib(source, target='/usr/lib'):
+    target = prepare_target(target)
+    shelltools.makedirs(os.path.dirname(target))
     return shelltools.install_library(source, prepare_target(target), 0755)
 
 def prepare_target(path):
@@ -220,10 +224,14 @@ def move(source, target):
     shelltools.move(source, prepare_target(target))
 
 def insinto(source, target, target_file='', sym=True):
-    shelltools.insinto(source, prepare_target(target), install_dir, target_file, sym)
+    target = prepare_target(target)
+    shelltools.makedirs(os.path.dirname(target))
+    shelltools.insinto(source, target, install_dir, target_file, sym)
 
 def insfile(source, target):
-    return shelltools.install_readable([source], prepare_target(target))
+    target = prepare_target(target)
+    shelltools.makedirs(os.path.dirname(target))
+    return shelltools.install_readable([source], target)
 
 def makesym(source, target):
     if current_stage == "install":
@@ -320,7 +328,9 @@ def patch(*args, **kwarg):
         lpms.catch_error("patch failed.")
 
 def insexe(source, target='/usr/bin'):
-    return shelltools.install_executable([source], prepare_target(target))
+    target = prepare_target(target)
+    shelltools.makedirs(os.path.dirname(target))
+    return shelltools.install_executable([source], target)
 
 def system(*cmd):
     result = shelltools.system(" ".join(cmd), stage = current_stage)
