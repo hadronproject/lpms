@@ -151,6 +151,12 @@ def get_pkg(pkgname, repositorydb=True):
     if pkgname.startswith("="):
         pkgname = pkgname[1:]
 
+    #if pkgname.endswith(".py"):
+    #    name, version = get_name(pkgname.split(".py")[0])
+    #    return None, None, name, version
+        #print name, version
+        #utils.import_script(pkgname)
+
     parsed = pkgname.split("/")
     if len(parsed) == 1:
         name = parsed[0]
@@ -223,15 +229,15 @@ def remove_package(pkgnames, instruct):
     remove.main([get_pkg(pkgname, repositorydb=False) for pkgname \
             in pkgnames], instruct)
     
-def resolve_dependencies(data, cmd_options):
+def resolve_dependencies(data, cmd_options, specials=None):
     '''Resolve dependencies using fixit object. This function 
     prepares a full operation plan for the next stages'''
     out.normal("resolving dependencies")
     fixit = resolver.DependencyResolver()
-    return fixit.resolve_depends(data, cmd_options)
+    return fixit.resolve_depends(data, cmd_options, specials)
 
 def pkgbuild(pkgnames, instruct):
     '''Starting point of build operation'''
     plan = resolve_dependencies([get_pkg(pkgname) for pkgname in pkgnames], 
-            instruct['cmd_options'])
+            instruct['cmd_options'], instruct['specials'])
     build.main(plan, instruct)
