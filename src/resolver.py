@@ -420,6 +420,7 @@ class DependencyResolver(object):
         self.valid_opts = []
         self.plan = {} 
         self.current_package = None
+        self.special_opts = None
         self.package_query = []
         self.global_options = []
         self.config = conf.LPMSConfig()
@@ -595,11 +596,20 @@ class DependencyResolver(object):
             if not db_options:
                 out.error("%s/%s-%s not found." % (category, name, version))
                 lpms.terminate()
-            if db_options[version]:
+
+            if version in db_options and db_options[version]:
                 db_option = db_options[version].split(" ")
                 if go in db_option and not go in options:
                     options.append(go)
 
+        if self.special_opts and name in self.special_opts:
+            for opt in self.special_opts[name]:
+                if utils.opt(opt, self.special_opts[name], self.global_options):
+                    if not opt in options:
+                        options.append(opt)
+                else:
+                    if opt[1:] in options:
+                        options.remove(opt[1:])
 
         # FIXME: ???
         if not dependencies:
@@ -675,10 +685,11 @@ class DependencyResolver(object):
                             continue
                         lopt += current_opts
 
-                    self.plan.update({fullname: (lversion, lopt)}) 
+                    self.plan.update({fullname: (lversion, lopt)})
                     self.collect(lrepo, lcategory, lname, lversion, lopt)
 
-    def resolve_depends(self, packages, cmd_options):
+    def resolve_depends(self, packages, cmd_options, specials=None):
+        self.special_opts = specials
         for options in (self.config.options.split(" "), cmd_options):
             for opt in options:
                 if utils.opt(opt, cmd_options, self.config.options.split(" ")):
@@ -691,9 +702,13 @@ class DependencyResolver(object):
         def fix_opts():
             opts = []
             if db_options:
-                for db in db_options.values():
-                    if db in self.global_options:
-                        opts.append(db)
+                try:
+                    for db in db_options[given_version].split(" "):
+                        if db in self.global_options:
+                            opts.append(db)
+                        
+                except AttributeError:
+                    pass
             return opts
 
         for pkg in packages:
@@ -740,7 +755,11 @@ class DependencyResolver(object):
             return plan, self.operation_data
 
         except CycleError as err:
+            # FIXME: We need more powerful output.
             answer, num_parents, children = err
             for cycle in find_cycles(parent_children=children):
                 out.brightred("Circular Dependency:\n")
-                out.write(cycle+"\n\n")
+                for cyc in cycle:
+                    print(cyc)
+                lpms.terminate()
+                #out.write(cycle+"\n\n")
