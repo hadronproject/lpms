@@ -32,11 +32,13 @@ class ReadConfig(object):
 
             parsed_line = line.split("=", 1)
             if len(parsed_line) == 1:
-                #if "".join(parsed_line) == "":
-                #    continue
-                prev_key = data[data.index(line) - 1].split("=", 1)[0].strip()
-                if prev_key in self.__dict__:
-                    self.__dict__[prev_key] += " "+parsed_line[0].strip()
+                i = 1
+                while True:
+                    prev_key = data[data.index(line) - i].split("=", 1)[0].strip()
+                    if prev_key in self.__dict__:
+                        self.__dict__[prev_key] += " "+parsed_line[0].strip()
+                        break
+                    i += 1
             else:
                 key, val = parsed_line
                 setattr(self, key.strip(), self.convert_booleans(val.strip()))
