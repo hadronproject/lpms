@@ -310,6 +310,11 @@ def patch(*args, **kwarg):
                 if not ptch:
                     lpms.catch_error("%s is an directory and it is not involve any files." % patch_name)
                 patches.extend(ptch)
+            elif os.path.isfile(src):
+                ptch = glob.glob(src)
+                if not ptch:
+                    lpms.catch_error("%s not found." % patch_name)
+                patches.extend(ptch)
 
     if apply_patch(patches, level, reverse) is not None:
         lpms.catch_error("patch failed.")
