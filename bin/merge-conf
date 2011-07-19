@@ -57,7 +57,9 @@ class Merge(object):
     def start(self):
         for conf_file in self.query:
             if not os.path.isfile(conf_file+".lpms-backup"):
-                self.success.append(conf_file)
+                #FIXME: what if a conf file in self.query but it has not 
+                #.lpms-backup version?
+                #self.success.append(conf_file)
                 continue
 
             # show diff output
