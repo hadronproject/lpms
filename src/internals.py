@@ -39,7 +39,7 @@ class InternalFuncs(object):
         # FIXME: use a better method for environment functions.
         builtin_funcs = {"get": self.get}
         for key in builtin_funcs:
-            setattr(self, key, builtin_funcs[key])
+            setattr(self.env, key, builtin_funcs[key])
 
         for f in cst.environmental_files:
             self.import_script(os.path.join(cst.lpms_path, f))
