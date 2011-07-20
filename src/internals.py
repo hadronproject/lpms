@@ -34,11 +34,12 @@ class InternalFuncs(object):
         self.env.config = ""
         self.env.sandbox_valid_dirs = []
         self.env.backup = []
-        self.env.__setattr__("standart_procedure", True)
         self.env.__setattr__("standard_procedure", True)
-  
+ 
         # FIXME: use a better method for environment functions.
-        self.env.__dict__['get'] = self.get
+        builtin_funcs = {"get": self.get}
+        for key in builtin_funcs:
+            setattr(self, key, builtin_funcs[key])
 
         for f in cst.environmental_files:
             self.import_script(os.path.join(cst.lpms_path, f))
