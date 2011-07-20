@@ -58,7 +58,6 @@ class Interpreter(internals.InternalFuncs):
                 lpms.terminate()
 
             # import the script
-            print libfile
             self.import_script(libfile)
 
     def startup_funcs(self):
