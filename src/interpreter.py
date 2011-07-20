@@ -243,14 +243,14 @@ class Interpreter(internals.InternalFuncs):
             # if it is exists, run it
             self.run_func(stage)
         else:
-            if len(self.env.libraries) == 0 and self.env.standart_procedure:
+            if len(self.env.libraries) == 0 and self.env.standard_procedure:
                 self.run_func("standard_"+stage)
                 # and now, search build libraries' configuration function
             for lib in self.env.libraries:
-                if self.env.standart_procedure and lib+"_"+stage in self.env.__dict__.keys():
+                if self.env.standard_procedure and lib+"_"+stage in self.env.__dict__.keys():
                     self.run_func(lib+"_"+stage)
                 else:
-                    if self.env.standart_procedure and (stage != "post_install" or stage != "post_remove"):
+                    if self.env.standard_procedure and (stage != "post_install" or stage != "post_remove"):
                         self.run_func("standard_"+stage)
 
 def run(script, env, operation_order=None):
