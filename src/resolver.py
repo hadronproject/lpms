@@ -678,6 +678,8 @@ class DependencyResolver(object):
                 for local in local_data:
                     lrepo, lcategory, lname, lversion, lopt = local
                     fullname = (lrepo, lcategory, lname, lversion)
+                    if (repo, category, name, version) in self.single_pkgs:
+                        self.single_pkgs.remove((repo, category, name, version))
                     self.package_query.append(((repo, category, name, version), fullname))
                     if fullname in self.plan:
                         current_version, current_opts = self.plan[fullname]
@@ -687,11 +689,6 @@ class DependencyResolver(object):
 
                     self.plan.update({fullname: (lversion, lopt)})
                     self.collect(lrepo, lcategory, lname, lversion, lopt)
-            else:
-                if not (repo, category, name, version) in self.single_pkgs and \
-                        not (repo, category, name, version) in [data[0] for data in \
-                        self.package_query]:
-                            self.single_pkgs.append((repo, category, name, version))
 
     def resolve_depends(self, packages, cmd_options, specials=None):
         self.special_opts = specials
@@ -720,8 +717,10 @@ class DependencyResolver(object):
             self.current_package = pkg
             given_repo, given_category, given_name, given_version = pkg
             
-            db_options = self.repodb.get_options(given_repo, given_category, given_name, given_version)
-            self.collect(given_repo, given_category, given_name, given_version, fix_opts())
+            db_options = self.repodb.get_options(given_repo, given_category, \
+                    given_name, given_version)
+            self.collect(str(given_repo), str(given_category), str(given_name), \
+                    str(given_version), fix_opts())
 
         if not self.package_query or lpms.getopt("--ignore-depends"):
             return packages, self.operation_data
@@ -729,6 +728,10 @@ class DependencyResolver(object):
         plan = []
 
         try:
+            for package in packages:
+                if not package in [data[0] for data in self.package_query]:
+                    plan.append(package)
+
             for pkg in topsort(self.package_query)+self.single_pkgs:
                 repo, category, name, version = pkg
                 
