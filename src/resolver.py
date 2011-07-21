@@ -424,7 +424,8 @@ class DependencyResolver(object):
         self.package_query = []
         self.global_options = []
         self.config = conf.LPMSConfig()
-        
+        self.single_pkgs = []
+
     def package_select(self, data):
         slot = None
         gte, lte, lt, gt = False, False, False, False
@@ -666,7 +667,6 @@ class DependencyResolver(object):
                     (scategory, sname, sversion), sopt = stc_package_data
                     local_plan[key].append([stc_dep_repo, scategory, sname, sversion, sopt])
 
-
         self.operation_data.update({(repo, category, name, version): [local_plan, options]})
 
         def fix_opts():
@@ -687,6 +687,11 @@ class DependencyResolver(object):
 
                     self.plan.update({fullname: (lversion, lopt)})
                     self.collect(lrepo, lcategory, lname, lversion, lopt)
+            else:
+                if not (repo, category, name, version) in self.single_pkgs and \
+                        not (repo, category, name, version) in [data[0] for data in \
+                        self.package_query]:
+                            self.single_pkgs.append((repo, category, name, version))
 
     def resolve_depends(self, packages, cmd_options, specials=None):
         self.special_opts = specials
@@ -724,7 +729,7 @@ class DependencyResolver(object):
         plan = []
 
         try:
-            for pkg in topsort(self.package_query):
+            for pkg in topsort(self.package_query)+self.single_pkgs:
                 repo, category, name, version = pkg
                 
                 if (repo, category, name, version) in packages:
