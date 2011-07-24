@@ -52,14 +52,14 @@ class Merge(object):
         out.write(" "+conf_file+"\n\n")
         os.system("diff -Naur %s %s" % (conf_file, conf_file+".lpms-backup"))
         out.write("\n")
-        out.normal("[U]se new file, [R]emove new file, [P]ass\n")
+        out.normal("[U]se new file, [R]emove new file, [P]ass, [Q]uit\n")
 
     def start(self):
         for conf_file in self.query:
             if not os.path.isfile(conf_file+".lpms-backup"):
                 #FIXME: what if a conf file in self.query but it has not 
                 #.lpms-backup version?
-                #self.success.append(conf_file)
+                self.success.append(conf_file)
                 continue
 
             # show diff output
@@ -74,6 +74,8 @@ class Merge(object):
                 self.success.append(conf_file)
             elif answer == "P" or answer == "p":
                 continue
+            elif answer == "Q" or answer == "q":
+                return
             else:
                 out.warn("invalid character: %s" % answer)
                 show(i)
@@ -84,7 +86,7 @@ class Merge(object):
             if not q in self.success:
                 new_files.append(q)
 
-        if os.path.isfile(self.merge_conf_file) and new_files:
+        if os.path.isfile(self.merge_conf_file):
             shelltools.remove_file(self.merge_conf_file)
 
         if new_files:
