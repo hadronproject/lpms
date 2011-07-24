@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with lpms.  If not, see <http://www.gnu.org/licenses/>.
 
+import os
 import sys
 import logging
 import inspect
@@ -47,11 +48,16 @@ def catch_error(err, stage=0):
     terminate()
 
 
-# start logging
+def init_logging():
+    logger = None
+    if os.access(cst.logfile, os.W_OK):
+        logger = logging.getLogger(__name__)
+        hdlr = logging.FileHandler(cst.logfile)
+        formatter = logging.Formatter('%(created)f %(asctime)s %(levelname)s %(message)s')
+        hdlr.setFormatter(formatter)
+        logger.addHandler(hdlr)
+        logger.setLevel(logging.INFO)
+    return logger
 
-logger = logging.getLogger(__name__)
-hdlr = logging.FileHandler(cst.logfile)
-formatter = logging.Formatter('%(created)f %(asctime)s %(levelname)s %(message)s')
-hdlr.setFormatter(formatter)
-logger.addHandler(hdlr)
-logger.setLevel(logging.INFO)
+# initialize logging feature
+logger = init_logging()
