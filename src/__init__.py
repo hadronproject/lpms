@@ -59,5 +59,9 @@ def init_logging():
         logger.setLevel(logging.INFO)
     return logger
 
+# lpms uses utf-8 encoding as default
+reload(sys)
+sys.setdefaultencoding('utf-8')
+
 # initialize logging feature
 logger = init_logging()
