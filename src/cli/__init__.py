@@ -54,6 +54,7 @@ build_help = (('--pretend', '-p', 'Shows operation steps'),
         ('--ignore-conflicts', 'Ignore file conflicts if conflict protect is enabled.'),
         ('--ignore-sandbox', 'Disables sandbox facility.'),
         ('--enable-sandbox', 'Enables sandbox facilitiy.'),
+        ('--ignore-reserve-files', 'Ignores local files.'),
         ('--no-configure', 'Does not run configuration functions.'),
         ('--resume-build', 'Resumes the most recent build operation.'),
         ('--change-root', 'Changes installation target.'),
@@ -102,7 +103,8 @@ def usage():
 
 
 nevermind = ('--ignore-depends', '--quiet', '--verbose', '--force-upgrade', '--reset', \
-        '--ignore-sandbox', '--enable-sandbox', '--ignore-conflicts', '--no-configure')
+        '--ignore-sandbox', '--enable-sandbox', '--ignore-conflicts', '--no-configure',
+        '--ignore-reserve-files')
 
 exceptions = ('change-root', 'opts', 'stage')
 

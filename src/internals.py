@@ -30,6 +30,7 @@ class InternalFuncs(object):
     def __init__(self):
         self.env = Environment()
         self.env.libraries = []
+        self.env.reserve_files = []
         self.env.current_stage = None
         self.env.config = ""
         self.env.sandbox_valid_dirs = []
