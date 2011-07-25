@@ -165,7 +165,21 @@ class Merge(internals.InternalFuncs):
                     dir_tag.set(key, str(perms[key]))
                 dir_tag.text = d
 
+            # initialize reserve_files feature
+            reserve_files = []
+            if self.env.reserve_files:
+                if isinstance(self.env.reserve_files, basestring):
+                    reserve_files.extend([f for f in self.env.reserve_files.split(" ") \
+                            if f != ""])
+                elif isinstance(self.env.reserve_files, list) or isinstance(self.env.reserve_files, tuple):
+                    reserve_files.extend(self.env.reserve_files)
 
+            if os.path.isfile(os.path.join(cst.user_dir, cst.protect_file)):
+                with open(os.path.join(cst.user_dir, cst.protect_file)) as data:
+                    for rf in data.readlines():
+                        if not rf.startswith("#"):
+                            reserve_files.append(rf.strip())
+            
             # write regular files
             for f in files:
                 source = os.path.join(self.env.install_dir, root_path[1:], f)
@@ -185,20 +199,21 @@ class Merge(internals.InternalFuncs):
                         'application/x-sharedlib'):
                     utils.run_strip(source)
 
+                if lpms.getopt("--ignore-reserve-files"):
+                    reserve_files = []
+                    self.env.reserve_files = True
 
-                conf_file = os.path.join(root_path, f)
-                isconf = (f.endswith(".conf") or f.endswith(".cfg"))
-                if os.path.exists(target):
-                    if root_path[0:4] == "/etc" or isconf:
-                        if os.path.isfile(conf_file) and utils.sha1sum(source) != utils.sha1sum(conf_file):
-                            #entry = os.path.join("/var/tmp/merge-conf", "|".join(conf_file.split("/")))
-                            if not conf_file in self.merge_conf_data:
-                                self.merge_conf_data.append(conf_file)
+                if lpms.getopt("--ignore-reserve-files") and self.env.reserve_files is not False:
+                    conf_file = os.path.join(root_path, f)
+                    isconf = (f.endswith(".conf") or f.endswith(".cfg"))
+                    if os.path.exists(target) and not conf_file in reserve_files:
+                        if root_path[0:4] == "/etc" or isconf:
+                            if os.path.isfile(conf_file) and utils.sha1sum(source) != utils.sha1sum(conf_file):
+                                if not conf_file in self.merge_conf_data:
+                                    self.merge_conf_data.append(conf_file)
 
-                            #if not os.path.exists(entry):
-                            #    shelltools.touch(entry)
-                            target = target+".lpms-backup" 
-                            self.backup.append(target)
+                                target = target+".lpms-backup" 
+                                self.backup.append(target)
 
                 if os.path.islink(source):
                     realpath = os.readlink(source)
@@ -242,7 +257,7 @@ class Merge(internals.InternalFuncs):
         self.myfile = self.filesdb_path+"/"+self.env.fullname+".xml.new"
         if os.path.isfile(self.myfile):
             shelltools.remove_file(self.myfile)
-        shelltools.echo(iks.tostring(xml_root), self.myfile)
+        shelltools.echo(iks.tostring(xml_root, encoding='UTF-8'), self.myfile)
         
         lpms.logger.info("merged to %s" % self.env.real_root)
 

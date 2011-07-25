@@ -24,6 +24,7 @@ xmlfile_suffix = ".xml"
 lpms_path = "/usr/lib/python%s.%s/site-packages/lpms" % (sys.version_info[0], sys.version_info[1])
 logfile = "/var/log/lpms.log"
 user_dir = "/etc/lpms.user"
+protect_file = "reserve_files.conf"
 sets_dir = "sets"
 user_sets_dir = user_dir+"/"+sets_dir
 repo_conf = "/etc/lpms/repo.conf"
