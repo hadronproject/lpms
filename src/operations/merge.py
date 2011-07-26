@@ -165,7 +165,8 @@ class Merge(internals.InternalFuncs):
                     dir_tag.set(key, str(perms[key]))
                 dir_tag.text = d
 
-            # initialize reserve_files feature
+
+            # write regular files
             reserve_files = []
             if self.env.reserve_files:
                 if isinstance(self.env.reserve_files, basestring):
@@ -179,8 +180,8 @@ class Merge(internals.InternalFuncs):
                     for rf in data.readlines():
                         if not rf.startswith("#"):
                             reserve_files.append(rf.strip())
-            
-            # write regular files
+
+
             for f in files:
                 source = os.path.join(self.env.install_dir, root_path[1:], f)
                 target = os.path.join(self.env.real_root, root_path[1:], f)
@@ -203,10 +204,17 @@ class Merge(internals.InternalFuncs):
                     reserve_files = []
                     self.env.reserve_files = True
 
-                if lpms.getopt("--ignore-reserve-files") and self.env.reserve_files is not False:
+                if self.env.reserve_files is not False:
                     conf_file = os.path.join(root_path, f)
                     isconf = (f.endswith(".conf") or f.endswith(".cfg"))
-                    if os.path.exists(target) and not conf_file in reserve_files:
+                    def is_reserve():
+                        if lpms.getopt("--ignore-reserve-files"):
+                            return False
+                        elif not conf_file in reserve_files:
+                            return False
+                        return True
+
+                    if os.path.exists(target) and not is_reserve():
                         if root_path[0:4] == "/etc" or isconf:
                             if os.path.isfile(conf_file) and utils.sha1sum(source) != utils.sha1sum(conf_file):
                                 if not conf_file in self.merge_conf_data:
