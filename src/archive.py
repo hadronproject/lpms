@@ -19,6 +19,7 @@ import os
 import time
 import tarfile
 import zipfile
+import subprocess
 
 import lpms
 from lpms import out
@@ -45,6 +46,27 @@ class Archive:
         #    os.utime(fn, (t, t))
         #os.chdir(current)
 
+    def extract_lzma(self, path):
+        if not os.access("/bin/tar", os.X_OK) or not os.access("/bin/tar", os.F_OK):
+            lpms.terminate("please check app-arch/tar package")
+
+        current = os.getcwd()
+        os.chdir(self.location)
+        cmd = "/bin/tar --lzma xvf %s" % path
+        if path.endswith(".xz"):
+            cmd = "/bin/tar Jxvf %s" % path
+
+        stdout = subprocess.PIPE; stderr=subprocess.PIPE
+        result = subprocess.Popen(cmd, shell=True, stdout=stdout, stderr=stderr)
+        output, err = result.communicate()
+        if result.returncode != 0:
+            out.error("could not extract: %s" % out.color(path, "red"))
+            print(output+err)
+            os.chdir(current)
+            lpms.terminate()
+
+        os.chdir(current)
+
 def extract(file_path, location):
     if not os.path.isfile(file_path):
         lpms.terminate("%s could not found!" % file_path)
@@ -53,7 +75,7 @@ def extract(file_path, location):
             "tgz": 'extract_tar',
             "zip":'extract_zip', 
             "lzma": 'extract_lzma',
-            "xz": 'extractlzma',
+            "xz": 'extract_lzma',
             "tar.gz": 'extract_tar'
     }
     churchkey = Archive(location)
