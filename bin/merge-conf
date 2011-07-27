@@ -78,7 +78,7 @@ class Merge(object):
                 return
             else:
                 out.warn("invalid character: %s" % answer)
-                show(i)
+                #show(i)
 
     def save_merge_conf_file(self):
         new_files = []
@@ -96,15 +96,24 @@ class Merge(object):
 def merge_conf():
     for cmd in sys.argv[0:]:
         if cmd == "--help" or cmd == "-h":
-            out.write("configuration file manager for lpms.\n")
+            out.write("configuration file manager for lpms.\n\n")
             out.write("simply, run 'merge-conf' command to see changed configuration files.\n")
+            out.write("if you run the command with -f/--file parameter, it processes the given files.\n")
+            out.write("like this: # merge-conf -f /etc/foo.conf /etc/bar.cfg\n")
             return
         elif cmd == "--version":
             out.write("merge-conf-%s\n" %  __version__)
             return
 
+
     # run the program
     obj = Merge()
+    if sys.argv[1] == "-f" or sys.argv[1] == "--file":
+        obj.query = sys.argv[2:]
+        obj.start()
+        obj.load_merge_conf_file()
+        obj.save_merge_conf_file()
+        return
     obj.load_merge_conf_file()
     obj.start()
     obj.save_merge_conf_file()
