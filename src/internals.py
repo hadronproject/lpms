@@ -42,7 +42,7 @@ class InternalFuncs(object):
         for key in builtin_funcs:
             setattr(self.env, key, builtin_funcs[key])
 
-        for f in cst.environmental_files:
+        for f in cst.builtin_files:
             self.import_script(os.path.join(cst.lpms_path, f))
 
     def import_script(self, script_path):
