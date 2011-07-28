@@ -16,8 +16,11 @@
 # along with lpms.  If not, see <http://www.gnu.org/licenses/>.
 
 import sys
+import glob
 
-environmental_files = ('builtins.py', 'buildtools.py')
+lpms_path = "/usr/lib/python%s.%s/site-packages/lpms" % (sys.version_info[0], sys.version_info[1])
+
+builtin_files = glob.glob(lpms_path+"/built-in/*.py")
 
 root = "/"
 xmlfile_suffix = ".xml"
