@@ -126,6 +126,20 @@ class Update(internals.InternalFuncs):
             self.packages_num += 1
         #self.repo_db.commit()
 
+def db_backup():
+    import time
+    from lpms.shelltools import copy, remove_file
+
+    # remove previous database backup
+    dirname = os.path.dirname(cst.repositorydb_path)
+    for _file in os.listdir(dirname):
+        if _file.startswith("repositorydb") and _file.count(".") == 2:
+            remove_file(os.path.join(dirname, _file))
+
+    # create a backup with UNIX timestamp
+    timestamp = int(time.time())
+    copy(cst.repositorydb_path, cst.repositorydb_path+".%s" % timestamp)
+
 def main(params):
     # determine operation type
     repo_name = None
@@ -137,10 +151,14 @@ def main(params):
 
     repo_num = 0 
     if repo_name is None:
+        # firstly, lpms tries to create a copy of current repository database.
+        db_backup()
+
         out.normal("updating repository database...")
         for repo_name in os.listdir(cst.repos):
             if os.path.isfile(os.path.join(cst.repos, repo_name, "info/repo.conf")):
                 out.write(out.color(" * ", "red") + repo_name+"\n")
+                
                 operation.update_repository(repo_name)
                 repo_num += 1
         out.normal("%s repository(ies) is/are updated." % repo_num)

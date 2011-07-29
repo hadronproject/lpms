@@ -27,6 +27,7 @@ import hashlib
 import lpms
 from lpms import out
 from lpms import conf
+from lpms import shelltools
 from lpms import constants as cst
 
 
@@ -449,6 +450,19 @@ def indent(elem, level = 0):
     else:
         if level and (not elem.tail or not elem.tail.strip()):
             elem.tail = i
+
+def reload_previous_repodb():
+    dirname = os.path.dirname(cst.repositorydb_path)
+    for _file in os.listdir(dirname):
+        if _file.startswith("repositorydb") and _file.count(".") == 2:
+            shelltools.copy(os.path.join(dirname, _file), cst.repositorydb_path)
+            from datetime import datetime
+            timestamp = _file.split(".")[-1]
+            previous_date = datetime.fromtimestamp(float(timestamp)).strftime('%Y-%m-%d %H:%M:%S')
+            out.normal("loading previous database copy: %s" %
+                    out.color(previous_date, "red"))
+            return
+    out.error("no repodb backup found.")
 
 def list_disk_pkgs(repo, category):
     '''Lists pkgnames in the disk using repo and category name'''
