@@ -41,6 +41,7 @@ help_output = (('--help', '-h', 'Shows this message.'),
         ('--content', '-c', 'Lists files of given package.'),
         ('--force-upgrade', 'Forces lpms to use latest versions.'),
         ('--configure-pending', 'Configures pending packages if they were not configured at installation time.'),
+        ('--reload-previous-repodb', 'Reloads previous repository database backup.'),
         ('--verbose', 'Prints more output if possible.'),
         ('--quiet', 'Hides outputs if possible.'))
 
@@ -79,33 +80,36 @@ def usage():
     for cmd in build_help:
         if len(cmd) == 3:
             if lpms.getopt("--no-color") or lpms.getopt("-n"):
-                out.write(('%-19s %-10s : %s\n' % (out.color(cmd[0], 'green'),
+                out.write(('%-24s %-10s : %s\n' % (out.color(cmd[0], 'green'),
                 out.color(cmd[1], 'green'),
                 cmd[2])))
             else:
-                out.write(('%-27s %-10s : %s\n' % (out.color(cmd[0], 'green'),
+                out.write(('%-32s %-10s : %s\n' % (out.color(cmd[0], 'green'),
                 out.color(cmd[1], 'green'),
                 cmd[2])))
         else:
-            out.write(('%-30s : %s\n' % (out.color(cmd[0], 'green'), cmd[1])))
+            out.write(('%-35s : %s\n' % (out.color(cmd[0], 'green'), cmd[1])))
 
     out.write('\nOther Commands:\n')
     for cmd in help_output:
         if len(cmd) == 3:
             if lpms.getopt("--no-color") or lpms.getopt("-n"):
-                out.write(('%-19s %-10s : %s\n' % (out.color(cmd[0], 'green'),
+                out.write(('%-24s %-10s : %s\n' % (out.color(cmd[0], 'green'),
                 out.color(cmd[1], 'green'),
                 cmd[2])))
             else:
-                out.write(('%-27s %-10s : %s\n' % (out.color(cmd[0], 'green'),
+                out.write(('%-32s %-10s : %s\n' % (out.color(cmd[0], 'green'),
                 out.color(cmd[1], 'green'),
                 cmd[2])))
+        else:
+            out.write(('%-35s : %s\n' % (out.color(cmd[0], 'green'), cmd[1])))
+
     lpms.terminate()
 
 
 nevermind = ('--ignore-depends', '--quiet', '--verbose', '--force-upgrade', '--reset', \
         '--ignore-sandbox', '--force-unpack', '--enable-sandbox', '--ignore-conflicts', 
-        '--no-configure', '--ignore-reserve-files')
+        '--no-configure', '--ignore-reserve-files', '--reload-previous-repodb')
 
 exceptions = ('change-root', 'opts', 'stage')
 
@@ -229,6 +233,10 @@ def main():
     if invalid:
         out.warn("invalid: "+", ".join(invalid))
 
+    if lpms.getopt("--reload-previous-repodb"):
+        utils.reload_previous_repodb()
+        lpms.terminate()
+
     if instruct['resume']:
         pkgnames = []
 
@@ -284,7 +292,7 @@ def main():
     if set_remove:
         for pkg in set_remove:
             packages.remove(pkg)
-    
+
     # start building operation
     api.pkgbuild(packages, instruct)
 
