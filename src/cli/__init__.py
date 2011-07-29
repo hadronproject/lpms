@@ -48,6 +48,7 @@ build_help = (('--pretend', '-p', 'Shows operation steps'),
         ('--ask', '-a', 'Asks to the user before operation.'),
         ('--fetch-only', '-F', 'Only fetches packages, do not install.(not yet)'),
         ('--search', '-s', 'Searches given keyword in database.'),
+        ('--category-install', '-C', 'Installs packages that\'s in given repo/category'), 
         ('--resume', "Resumes previous installation operation. Use '--skip-first' to skip the first package."),
         ('--add-repo', 'Adds new repository(not yet).'),
         ('--ignore-depends', 'Ignores dependencies.'),
@@ -110,16 +111,16 @@ exceptions = ('change-root', 'opts', 'stage')
 
 toinstruct = ('ask', 'a', 'resume-build', 'resume', 'pretend', 'p', 'fetch-only', 'F', \
         'no-merge', 'remove', 'r', 'upgrade', 'U',  'skip-first', 'sync', 'S', 'update', 'u', \
-        'configure-pending')
+        'configure-pending', 'category-install', 'C')
 
 regular = ('help', 'h', 'version', 'v', 'belong', 'b', 'content', 'c', 'remove', 'r', \
-        'no-color', 'n', 'update', 'u', 'search', 's', 'upgrade', 'U', 'ask-repo', 'show-deps')
+        'no-color', 'n', 'update', 'u', 'search', 's', 'upgrade', 'U', 'ask-repo', 'C', 'show-deps')
 
 instruct = {'ask': False, 'pretend': False, 'resume-build': False, 'resume': False, \
         'pretend': False, 'no-merge': False, 'fetch-only': False, 'real_root': None, \
         'cmd_options': [], 'specials': {}, 'ignore-deps': False, 'sandbox': None,'stage': None, \
         'force': None, 'upgrade': None, 'remove': None, 'skip-first': False, 'sync': False, \
-        'update': False, 'configure-pending': False}
+        'update': False, 'configure-pending': False, 'category-install': False}
 
 def main():
     packages = []; invalid = []
@@ -271,10 +272,19 @@ def main():
             packages.extend(utils.set_parser(package[1:]))
             set_remove.append(package)
 
+    if instruct["category-install"]:
+        category_pkgs = [pkg for pkg in packages if \
+                len(pkg.split("/")) == 2]
+
+        for data in category_pkgs:
+            repo, category = data.split("/")
+            packages.extend(utils.list_disk_pkgs(repo, category))
+            set_remove.append(data)
+
     if set_remove:
         for pkg in set_remove:
             packages.remove(pkg)
-
+    
     # start building operation
     api.pkgbuild(packages, instruct)
 

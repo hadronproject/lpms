@@ -19,6 +19,7 @@ import re
 import os
 import sys
 import stat
+import glob
 import magic
 import string
 import hashlib
@@ -103,7 +104,12 @@ def get_mimetype(path):
         return False
     m = magic.open(magic.MIME_TYPE)
     m.load()
-    return m.file(path.encode('utf-8'))
+    try:
+        return m.file(path.encode('utf-8'))
+    #return m.file(path.decode('utf-8').encode('ascii', 'replace'))
+    except UnicodeDecodeError:
+        pass
+        #    out.warn("UnicodeDecodeError exception raised: %s" % path)
 
 def run_strip(path):
     p = os.popen("/usr/bin/strip -S %s" % path)
@@ -443,6 +449,24 @@ def indent(elem, level = 0):
     else:
         if level and (not elem.tail or not elem.tail.strip()):
             elem.tail = i
+
+def list_disk_pkgs(repo, category):
+    '''Lists pkgnames in the disk using repo and category name'''
+    packages = []
+    source_dir = os.path.join(cst.repos, repo, category)
+    if not os.path.isdir(source_dir):
+        out.warn("%s does not exist." % out.color(source_dir, "red"))
+        return packages
+
+    sources = os.listdir(source_dir)
+    if not sources:
+        out.warn("%s seems empty." % out.color(source_dir, "red"))
+        return packages
+
+    for source in sources:
+        if glob.glob(os.path.join(source_dir, source)+"/*.py"):
+            packages.append(source)
+    return packages
 
 def sandbox_dirs():
     dirs = []
