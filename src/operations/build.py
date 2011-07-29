@@ -103,7 +103,7 @@ class Build(internals.InternalFuncs):
             target = os.path.dirname(self.env.build_dir)
             unpack_file = os.path.join(os.path.dirname(target), ".unpacked")
             if os.path.isfile(unpack_file):
-                if self.env.force:
+                if lpms.getopt("--force-unpack"):
                     shelltools.remove_file(unpack_file)
                 else:
                     out.notify("%s seems already unpacked." % os.path.basename(archive_path))
@@ -353,7 +353,6 @@ def show_plan(repo, category, name, version, valid_options, options):
             instopts = instdb.get_options(repo, category, name, version)[version].split(" ")
         except (KeyError, TypeError):
             instopts = None
-
 
         for o in options.split(" "):
             if valid_options and o in valid_options:

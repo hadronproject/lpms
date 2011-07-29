@@ -103,8 +103,8 @@ def usage():
 
 
 nevermind = ('--ignore-depends', '--quiet', '--verbose', '--force-upgrade', '--reset', \
-        '--ignore-sandbox', '--enable-sandbox', '--ignore-conflicts', '--no-configure',
-        '--ignore-reserve-files')
+        '--ignore-sandbox', '--force-unpack', '--enable-sandbox', '--ignore-conflicts', 
+        '--no-configure', '--ignore-reserve-files')
 
 exceptions = ('change-root', 'opts', 'stage')
 
