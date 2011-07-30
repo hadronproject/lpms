@@ -108,12 +108,13 @@ def merge_conf():
 
     # run the program
     obj = Merge()
-    if sys.argv[1] == "-f" or sys.argv[1] == "--file":
+    if len(sys.argv) >= 2 and (sys.argv[1] == "-f" or sys.argv[1] == "--file"):
         obj.query = sys.argv[2:]
         obj.start()
         obj.load_merge_conf_file()
         obj.save_merge_conf_file()
         return
+
     obj.load_merge_conf_file()
     obj.start()
     obj.save_merge_conf_file()
