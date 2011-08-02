@@ -350,7 +350,8 @@ def show_plan(repo, category, name, version, valid_options, options):
     
     if options:
         try:
-            instopts = instdb.get_options(repo, category, name, version)[version].split(" ")
+            irepo = instdb.get_repo(category, name, version)
+            instopts = instdb.get_options(irepo, category, name, version)[version].split(" ")
         except (KeyError, TypeError):
             instopts = None
 
