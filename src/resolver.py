@@ -432,7 +432,7 @@ class DependencyResolver(object):
         slot_parsed = data.split(":")
         if len(slot_parsed) == 2:
             data, slot = slot_parsed
-            
+
         if ">=" == data[:2]:
             gte = True
             pkgname = data[2:]
@@ -473,6 +473,7 @@ class DependencyResolver(object):
             return category, name, utils.best_version(versions)
 
         name, version = utils.parse_pkgname(pkgname)
+
         category, name = name.split("/")
         result = []
         repo = self.repodb.find_pkg(name, pkg_category=category, selection = True)
@@ -481,6 +482,7 @@ class DependencyResolver(object):
                     "-"+self.current_package[-1], pkgname))
             lpms.terminate()
             #raise UnmetDependency(pkgname)
+
 
         if slot is None:
             versions = []
@@ -493,7 +495,7 @@ class DependencyResolver(object):
                 # FIXME: What the fuck?
                 print(data)
         else:
-            versions = repo[-1][slot]
+            versions = repo[-1][int(slot)]
 
         for rv in versions:
             vercmp = utils.vercmp(rv, version) 
@@ -589,28 +591,30 @@ class DependencyResolver(object):
             category, name, version = data[:-1]
             return self.repodb.get_repo(category, name, version)
 
-    def collect(self, repo, category, name, version, options):
+    def collect(self, repo, category, name, version, options, use_new_opts):
         dependencies = self.repodb.get_depends(repo, category, name, version)
 
         db_options = self.repodb.get_options(repo, category, name, version)
-        for go in self.global_options:
-            if not db_options:
-                out.error("%s/%s-%s not found." % (category, name, version))
-                lpms.terminate()
 
-            if version in db_options and db_options[version]:
-                db_option = db_options[version].split(" ")
-                if go in db_option and not go in options:
-                    options.append(go)
+        if use_new_opts or not self.instdb.get_version(name, pkg_category=category):
+            for go in self.global_options:
+                if not db_options:
+                    out.error("%s/%s-%s not found." % (category, name, version))
+                    lpms.terminate()
 
-        if self.special_opts and name in self.special_opts:
-            for opt in self.special_opts[name]:
-                if utils.opt(opt, self.special_opts[name], self.global_options):
-                    if not opt in options:
-                        options.append(opt)
-                else:
-                    if opt[1:] in options:
-                        options.remove(opt[1:])
+                if version in db_options and db_options[version]:
+                    db_option = db_options[version].split(" ")
+                    if go in db_option and not go in options:
+                        options.append(go)
+
+            if self.special_opts and name in self.special_opts:
+                for opt in self.special_opts[name]:
+                    if utils.opt(opt, self.special_opts[name], self.global_options):
+                        if not opt in options:
+                            options.append(opt)
+                    else:
+                        if opt[1:] in options:
+                            options.remove(opt[1:])
 
         # FIXME: ???
         if not dependencies:
@@ -688,9 +692,10 @@ class DependencyResolver(object):
                         lopt += current_opts
 
                     self.plan.update({fullname: (lversion, lopt)})
-                    self.collect(lrepo, lcategory, lname, lversion, lopt)
+                    self.collect(lrepo, lcategory, lname, lversion, lopt,
+                            use_new_opts)
 
-    def resolve_depends(self, packages, cmd_options, specials=None):
+    def resolve_depends(self, packages, cmd_options, use_new_opts, specials=None):
         self.special_opts = specials
         for options in (self.config.options.split(" "), cmd_options):
             for opt in options:
@@ -705,22 +710,17 @@ class DependencyResolver(object):
             opts = []
             if db_options:
                 try:
-                    for db in db_options[given_version].split(" "):
-                        if db in self.global_options:
-                            opts.append(db)
-                        
-                except AttributeError:
-                    pass
+                    for db in db_options[version].split(" "):
+                        if db in self.global_options: opts.append(db)
+                except AttributeError: pass
             return opts
 
         for pkg in packages:
             self.current_package = pkg
-            given_repo, given_category, given_name, given_version = pkg
-            
-            db_options = self.repodb.get_options(given_repo, given_category, \
-                    given_name, given_version)
-            self.collect(str(given_repo), str(given_category), str(given_name), \
-                    str(given_version), fix_opts())
+            repo, category, name, version = pkg
+
+            db_options = self.repodb.get_options(repo, category, name, version)
+            self.collect(repo, category, name, version, fix_opts(), use_new_opts)
 
         if not self.package_query or lpms.getopt("--ignore-depends"):
             return packages, self.operation_data
@@ -734,12 +734,13 @@ class DependencyResolver(object):
 
             for pkg in topsort(self.package_query)+self.single_pkgs:
                 repo, category, name, version = pkg
-                
+
                 if (repo, category, name, version) in packages:
                     plan.append(pkg)
                     continue
 
-                data = self.instdb.find_pkg(name, pkg_category = category, selection=True)
+                data = self.instdb.find_pkg(name, pkg_category = category)
+
                 if data:
                     db_options = self.instdb.get_options(repo, category, name, version)
                     # FIXME: get_options repo bilgisi olmadan calisabilmeli

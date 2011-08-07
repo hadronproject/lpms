@@ -228,16 +228,17 @@ def remove_package(pkgnames, instruct):
     '''Triggers remove operation for given packages'''
     remove.main([get_pkg(pkgname, repositorydb=False) for pkgname \
             in pkgnames], instruct)
-    
-def resolve_dependencies(data, cmd_options, specials=None):
-    '''Resolve dependencies using fixit object. This function 
+
+def resolve_dependencies(data, cmd_options, use_new_opts, specials=None):
+    '''Resolve dependencies using fixit object. This function
     prepares a full operation plan for the next stages'''
     out.normal("resolving dependencies")
     fixit = resolver.DependencyResolver()
-    return fixit.resolve_depends(data, cmd_options, specials)
+    return fixit.resolve_depends(data, cmd_options, use_new_opts, specials)
 
 def pkgbuild(pkgnames, instruct):
     '''Starting point of build operation'''
-    plan = resolve_dependencies([get_pkg(pkgname) for pkgname in pkgnames], 
-            instruct['cmd_options'], instruct['specials'])
+    plan = resolve_dependencies([get_pkg(pkgname) for pkgname in pkgnames],
+            instruct['cmd_options'], instruct['use-new-opts'],
+            instruct['specials'])
     build.main(plan, instruct)
