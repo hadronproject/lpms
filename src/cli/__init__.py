@@ -49,7 +49,8 @@ build_help = (('--pretend', '-p', 'Shows operation steps'),
         ('--ask', '-a', 'Asks to the user before operation.'),
         ('--fetch-only', '-F', 'Only fetches packages, do not install.(not yet)'),
         ('--search', '-s', 'Searches given keyword in database.'),
-        ('--category-install', '-C', 'Installs packages that\'s in given repo/category'), 
+        ('--category-install', '-C', 'Installs packages that\'s in given repo/category'),
+        ('--use-new-opts', '-N', 'Applies new global options for installed packages.'),
         ('--resume', "Resumes previous installation operation. Use '--skip-first' to skip the first package."),
         ('--add-repo', 'Adds new repository(not yet).'),
         ('--ignore-depends', 'Ignores dependencies.'),
@@ -115,7 +116,7 @@ exceptions = ('change-root', 'opts', 'stage')
 
 toinstruct = ('ask', 'a', 'resume-build', 'resume', 'pretend', 'p', 'fetch-only', 'F', \
         'no-merge', 'remove', 'r', 'upgrade', 'U',  'skip-first', 'sync', 'S', 'update', 'u', \
-        'configure-pending', 'category-install', 'C')
+        'configure-pending', 'category-install', 'C', 'use-new-opts', 'N')
 
 regular = ('help', 'h', 'version', 'v', 'belong', 'b', 'content', 'c', 'remove', 'r', \
         'no-color', 'n', 'update', 'u', 'search', 's', 'upgrade', 'U', 'ask-repo', 'C', 'show-deps')
@@ -124,7 +125,8 @@ instruct = {'ask': False, 'pretend': False, 'resume-build': False, 'resume': Fal
         'pretend': False, 'no-merge': False, 'fetch-only': False, 'real_root': None, \
         'cmd_options': [], 'specials': {}, 'ignore-deps': False, 'sandbox': None,'stage': None, \
         'force': None, 'upgrade': None, 'remove': None, 'skip-first': False, 'sync': False, \
-        'update': False, 'configure-pending': False, 'category-install': False}
+        'update': False, 'configure-pending': False, 'category-install': False,
+        "use-new-opts": False}
 
 def main():
     packages = []; invalid = []
