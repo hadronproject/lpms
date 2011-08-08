@@ -591,7 +591,7 @@ class DependencyResolver(object):
             category, name, version = data[:-1]
             return self.repodb.get_repo(category, name, version)
 
-    def collect(self, repo, category, name, version, options, use_new_opts):
+    def collect(self, repo, category, name, version, use_new_opts, recursive=True):
         dependencies = self.repodb.get_depends(repo, category, name, version)
 
         db_options = self.repodb.get_options(repo, category, name, version)
@@ -616,7 +616,7 @@ class DependencyResolver(object):
                         if opt[1:] in options:
                             options.remove(opt[1:])
 
-        # FIXME: ???
+        # FIXME: WHAT THE FUCK IS THAT??
         if not dependencies:
             lpms.terminate()
 
@@ -692,11 +692,13 @@ class DependencyResolver(object):
                         lopt += current_opts
 
                     self.plan.update({fullname: (lversion, lopt)})
-                    self.collect(lrepo, lcategory, lname, lversion, lopt,
-                            use_new_opts)
+                    if recursive:
+                        self.collect(lrepo, lcategory, lname, lversion, self.use_new_opts)
 
     def resolve_depends(self, packages, cmd_options, use_new_opts, specials=None):
         self.special_opts = specials
+        setattr(self, "use_new_opts", use_new_opts)
+
         for options in (self.config.options.split(" "), cmd_options):
             for opt in options:
                 if utils.opt(opt, cmd_options, self.config.options.split(" ")):
@@ -706,22 +708,30 @@ class DependencyResolver(object):
                     if opt in self.global_options:
                         self.global_options.remove(opt)
 
+        # FIXME: this is obsoleted.
         def fix_opts():
             opts = []
-            if db_options:
-                try:
-                    for db in db_options[version].split(" "):
-                        if db in self.global_options: opts.append(db)
-                except AttributeError: pass
+            if db_options and version in db_options and db_options[version]:
+                for db in db_options[version].split(" "):
+                    if db in self.global_options: opts.append(db)
             return opts
 
+        primary = []
         for pkg in packages:
             self.current_package = pkg
             repo, category, name, version = pkg
 
             db_options = self.repodb.get_options(repo, category, name, version)
-            self.collect(repo, category, name, version, fix_opts(), use_new_opts)
+            self.collect(repo, category, name, version, True, recursive=False)
+      
+        primary.extend(self.package_query)
+        self.package_query = []
 
+        for i in primary:
+            repo, category, name, version = i[1]
+            db_options = self.repodb.get_options(repo, category, name, version)
+            self.collect(repo, category, name, version, True)
+                  
         if not self.package_query or lpms.getopt("--ignore-depends"):
             return packages, self.operation_data
 
