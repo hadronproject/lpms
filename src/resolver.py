@@ -594,6 +594,8 @@ class DependencyResolver(object):
     def collect(self, repo, category, name, version, use_new_opts, recursive=True):
         dependencies = self.repodb.get_depends(repo, category, name, version)
 
+        options = []
+
         db_options = self.repodb.get_options(repo, category, name, version)
 
         if use_new_opts or not self.instdb.get_version(name, pkg_category=category):
