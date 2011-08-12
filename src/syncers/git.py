@@ -47,5 +47,8 @@ class GITSync(object):
 
 
 def run(repo, remote):
+    if not os.access("/usr/bin/git", os.X_OK):
+        lpms.terminate("/usr/bin/git seems not executable or not exist. Please check dev-vcs/git.")
+
     obj = GITSync(repo, remote)
     obj.sync()
