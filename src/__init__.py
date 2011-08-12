@@ -50,6 +50,12 @@ def catch_error(err, stage=0):
 
 def init_logging():
     logger = None
+    # create lpms.log file if it does not exist
+    if not os.access(cst.logfile, os.F_OK):
+        f = open(cst.logfile, 'w')
+        f.close()
+
+    # initialize
     if os.access(cst.logfile, os.W_OK):
         logger = logging.getLogger(__name__)
         hdlr = logging.FileHandler(cst.logfile)
@@ -57,6 +63,7 @@ def init_logging():
         hdlr.setFormatter(formatter)
         logger.addHandler(hdlr)
         logger.setLevel(logging.INFO)
+    
     return logger
 
 # lpms uses utf-8 encoding as default
