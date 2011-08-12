@@ -182,7 +182,7 @@ def export(variable, value):
 
 def opt(option, cmd_options, default_options):
     def decision(data_set):
-        for o in data_set:
+        for o in [d.strip() for d in data_set if d != ""]:
             if o[0] != "-" and o == option:
                 return True
             elif o[0] == "-":
