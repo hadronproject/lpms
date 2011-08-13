@@ -248,6 +248,8 @@ def main(raw_data, instruct):
             out.color(opr.env.category, "green"),
             out.color(opr.env.pkgname+"-"+opr.env.version, "green"), opr.env.repo)); i += 1
 
+        out.notify("you are using %s userland and %s kernel" % (opr.config.userland, opr.config.kernel))
+
         if opr.env.sandbox:
             lpms.logger.info("sandbox enabled build")
             out.notify("sandbox is enabled")

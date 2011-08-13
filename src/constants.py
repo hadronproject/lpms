@@ -52,12 +52,28 @@ distfiles = "/usr/portage/distfiles"
 extract_dir = "/var/tmp/lpms/"
 resume_file = extract_dir+"/"+"resume"
 
-doc = 'usr/share/doc'
-sbin = 'usr/sbin'
-man = 'usr/share/man'
-info = 'usr/share/info'
-data = 'usr/share'
+
+# lpms.conf is unhealty in this case.
+with open(config_dir+"/"+config_file) as data:
+    for line in data.readlines():
+        if line.startswith("userland") and line.split("=")[1].strip() == "GNU":
+            doc = 'usr/share/doc'
+            sbin = 'usr/sbin'
+            man = 'usr/share/man'
+            info = 'usr/share/info'
+            data = 'usr/share'
+            libexec = 'usr/libexec'
+            prefix = 'usr'
+            break
+        elif line.startswith("userland") and line.split("=")[1].strip() == "BSD":
+            doc = 'usr/local/share/doc'
+            sbin = 'usr/local/sbin'
+            man = 'usr/local/share/man'
+            info = 'usr/local/share/info'
+            data = 'usr/local/share'
+            libexec = 'usr/local/libexec'
+            prefix = 'usr/local'
+            break
+
 conf = 'etc'
 localstate = 'var'
-libexec = 'usr/libexec'
-prefix = 'usr'
