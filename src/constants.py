@@ -18,9 +18,6 @@
 import sys
 import glob
 
-lpms_path = "/usr/lib/python%s.%s/site-packages/lpms" % (sys.version_info[0], sys.version_info[1])
-
-builtin_files = glob.glob(lpms_path+"/built-in/*.py")
 
 root = "/"
 xmlfile_suffix = ".xml"
@@ -77,3 +74,7 @@ with open(config_dir+"/"+config_file) as data:
 
 conf = 'etc'
 localstate = 'var'
+
+lpms_path = "/%s/lib/python%s.%s/site-packages/lpms" % (prefix, sys.version_info[0], sys.version_info[1])
+
+builtin_files = glob.glob(lpms_path+"/built-in/*.py")
