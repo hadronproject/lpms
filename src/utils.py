@@ -31,6 +31,10 @@ from lpms import shelltools
 from lpms import constants as cst
 
 
+def check_cflags(flag):
+    return flag in [atom.strip() for \
+            atom in conf.LPMSConfig().CFLAGS.strip(" ")]
+
 def set_parser(set_name):
     sets = []
     for repo in valid_repos():
@@ -113,10 +117,10 @@ def get_mimetype(path):
         #    out.warn("UnicodeDecodeError exception raised: %s" % path)
 
 def run_strip(path):
-    p = os.popen("/usr/bin/strip -S %s" % path)
+    p = os.popen("/usr/bin/strip --strip-unneeded %s" % path)
     ret = p.close()
     if ret:
-        out.warn("strip command failed for %s" % path)
+        out.warn("/usr/bin/strip/ --strip-unneeded command failed for %s" % path)
 
 def set_valid_options(options, cmd_options, default_options):
     if options is None:

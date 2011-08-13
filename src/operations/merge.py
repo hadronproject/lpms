@@ -103,8 +103,12 @@ class Merge(internals.InternalFuncs):
         return False
 
     def merge_pkg(self):
+        isstrip = True
+        if "debug" in self.env.valid_opts or utils.check_cflags("-g") \
+                or utils.check_cflags("-ggdb") or utils.check_cflags("-g3"):
+                    isstrip = False
+
         '''Merge package to the system'''
-        
         def get_perms(path):
             '''Get permissions of given path, it may be file or directory'''
             return {"uid": utils.get_uid(path),
@@ -196,7 +200,7 @@ class Merge(internals.InternalFuncs):
                         out.warn("file conflict: %s" % target)
 
                 # strip binary files
-                if utils.get_mimetype(source) in ('application/x-executable', 'application/x-archive', \
+                if isstrip and utils.get_mimetype(source) in ('application/x-executable', 'application/x-archive', \
                         'application/x-sharedlib'):
                     utils.run_strip(source)
 
