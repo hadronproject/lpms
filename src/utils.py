@@ -20,7 +20,6 @@ import os
 import sys
 import stat
 import glob
-import magic
 import string
 import hashlib
 
@@ -107,14 +106,15 @@ def valid_repos():
 def get_mimetype(path):
     if not os.access(path, os.R_OK):
         return False
+    
+    if conf.LPMSConfig().userland == "BSD":
+        data = os.popen("file -i %s" % path).read().strip()
+        return data.split(":", 1)[1].split(";")[0].strip()
+    
+    import magic
     m = magic.open(magic.MIME_TYPE)
     m.load()
-    try:
-        return m.file(path.encode('utf-8'))
-    #return m.file(path.decode('utf-8').encode('ascii', 'replace'))
-    except UnicodeDecodeError:
-        pass
-        #    out.warn("UnicodeDecodeError exception raised: %s" % path)
+    return m.file(path.encode('utf-8'))
 
 def run_strip(path):
     p = os.popen("/usr/bin/strip --strip-unneeded %s" % path)
