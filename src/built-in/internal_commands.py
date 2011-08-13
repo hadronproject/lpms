@@ -266,13 +266,20 @@ def rmdir(target):
         shelltools.remove_dir(path)
 
 def setmod(*parameters):
-    return system('chmod %s' % " ".join(parameters))
+    if not system('chmod %s' % " ".join(parameters)):
+        lpms.terminate('setmod %s' % " ".join(parameters)+" failed.")
 
 def setowner(*parameters):
-    return system('chown %s' % " ".join(parameters))
+    if not system('chown %s' % " ".join(parameters)):
+        lpms.terminate('setowner %s' % " ".join(parameters)+" failed.")
 
 def setgroup(*parameters):
-    return system('chgrp %s' % " ".join(parameters))
+    if not system('chgrp %s' % " ".join(parameters)):
+        lpms.terminate('setgroup %s' % " ".join(parameters)+" failed.")
+
+def sed(*parameters):
+    if not system('sed %s' % " ".join(parameters)):
+        lpms.terminate('sed %s' % " ".join(parameters)+" failed.")
 
 def pwd():
     return os.getcwd()
