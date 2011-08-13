@@ -37,12 +37,12 @@ class UpgradeSystem(object):
         for pkg in self.instdb.get_all_names():
             repo, category, name = pkg
             
-            # catch packages which is from the outside
+            # catch packages which are from the outside
             if not self.repodb.find_pkg(name, pkg_category = category):
                 self.notfound_pkg.append((category, name))
 
             # get version data from repository database
-            repovers = self.repodb.get_version(name, repo, category)
+            repovers = self.repodb.get_version(name, pkg_category = category)
 
             # comparise versions
             for slot, instver in self.instdb.get_version(name, repo, category).items():
@@ -56,7 +56,7 @@ class UpgradeSystem(object):
                 result = utils.vercmp(best, instver[0]) 
 
                 if result != 0:
-                    self.packages.append(os.path.join(repo, category, name,))
+                    self.packages.append(os.path.join(category, name))
 
         if self.notfound_pkg:
             out.write("%s: the following packages were installed but they could not be found in the database:\n\n" 
