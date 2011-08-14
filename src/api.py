@@ -85,6 +85,9 @@ def configure_pending(packages, instruct):
 
     failed = []
 
+    if not os.access(pending_file, os.F_OK):
+        lpms.terminate("there are no pending packages.")
+
     with open(pending_file, 'rb') as data:
         pending_packages = pickle.load(data)
         for package in pending_packages:
