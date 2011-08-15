@@ -680,25 +680,27 @@ class DependencyResolver(object):
         self.operation_data.update({(repo, category, name, version): [local_plan, options]})
 
         for local_data in local_plan.values():
-            if local_data:
-                for local in local_data:
-                    lrepo, lcategory, lname, lversion, lopt = local
-                    fullname = (lrepo, lcategory, lname, lversion)
-                    if (repo, category, name, version) in self.single_pkgs:
-                        self.single_pkgs.remove((repo, category, name, version))
-                    self.package_query.append(((repo, category, name, version), fullname))
-                    if fullname in self.plan:
-                        plan_version, plan_options = self.plan[fullname]
-                        if (lrepo, lcategory, lname, lversion) in self.operation_data:
-                            for plan_option in plan_options:
-                                if not plan_option in self.operation_data[fullname][-1]:
-                                    self.modified_by_package.append(fullname)
-                                    self.operation_data[fullname][-1].append(plan_option)
-                        continue
+            if not local_data:
+                continue
+            for local in local_data:
+                lrepo, lcategory, lname, lversion, lopt = local
+                fullname = (lrepo, lcategory, lname, lversion)
+                if (repo, category, name, version) in self.single_pkgs:
+                    self.single_pkgs.remove((repo, category, name, version))
+                self.package_query.append(((repo, category, name, version), fullname))
+                if fullname in self.plan:
+                    plan_version, plan_options = self.plan[fullname]
+                    if (lrepo, lcategory, lname, lversion) in self.operation_data:
+                        for plan_option in plan_options:
+                            # FIXME: This is a bit problematic.
+                            self.modified_by_package.append(fullname)
+                            if not plan_option in self.operation_data[fullname][-1]:
+                                self.operation_data[fullname][-1].append(plan_option)
+                    continue
 
-                    self.plan.update({fullname: (lversion, lopt)})
-                    if recursive:
-                        self.collect(lrepo, lcategory, lname, lversion, self.use_new_opts)
+                self.plan.update({fullname: (lversion, lopt)})
+                if recursive:
+                    self.collect(lrepo, lcategory, lname, lversion, self.use_new_opts)
 
     def resolve_depends(self, packages, cmd_options, use_new_opts, specials=None):
         self.special_opts = specials
@@ -747,7 +749,9 @@ class DependencyResolver(object):
                 
                 if data:
                     irepo = self.instdb.get_repo(category, name, version)
+                    
                     db_options = self.instdb.get_options(irepo, category, name)
+
                     if version in db_options:
                         for opt in self.operation_data[pkg][-1]:
                             if not opt in db_options[version].split(" ") and not pkg in plan:
@@ -757,9 +761,9 @@ class DependencyResolver(object):
                         if not version in db_options and (lpms.getopt("-U") or lpms.getopt("--upgrade") \
                                 or lpms.getopt("--force-upgrade")):
                             plan.append(pkg)
-                        else:
+                        else: 
                             if not pkg in packages:
-                                del self.operation_data[pkg]
+                                del self.operation_data[pkg] 
                 else:
                     plan.append(pkg)
 
