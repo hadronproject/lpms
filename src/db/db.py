@@ -217,7 +217,7 @@ class PackageDatabase:
                     'runtime': pickle.loads(str(deps[5]))}
             return result
 
-    def get_options(self, repo, category, name, version):
+    def get_options(self, repo, category, name):
         self.cursor.execute('''select options from metadata where repo=(?) and category=(?) and name=(?)''', 
                 (repo, category, name,))
 
