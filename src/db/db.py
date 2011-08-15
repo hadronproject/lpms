@@ -220,8 +220,13 @@ class PackageDatabase:
     def get_options(self, repo, category, name, version):
         self.cursor.execute('''select options from metadata where repo=(?) and category=(?) and name=(?)''', 
                 (repo, category, name,))
+
+        result = {}
         try:
-            return pickle.loads(str(self.cursor.fetchone()[0]))
+            data = self.cursor.fetchall()
+            for d in data:
+                result.update(pickle.loads(str(d[0])))
+            return result
         except TypeError:
             return None
 
