@@ -39,9 +39,10 @@ class Info(object):
         lpms.terminate()
 
     def get_info(self, pkg):
+        # FIXME: iver is not necessary.
         def show_options(iver):
-            options = self.repo_db.get_options(self.repo, self.category, self.name, iver)
-            valid_opts = self.instdb.get_options(self.repo, self.category, self.name, iver)
+            options = self.repo_db.get_options(self.repo, self.category, self.name)
+            valid_opts = self.instdb.get_options(self.repo, self.category, self.name)
 
         self.repo, self.category, self.name, self.version = pkg
         repo_versions = []
