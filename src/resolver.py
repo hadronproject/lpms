@@ -592,11 +592,13 @@ class DependencyResolver(object):
             return self.repodb.get_repo(category, name, version)
 
     def collect(self, repo, category, name, version, use_new_opts, recursive=True):
+        
         dependencies = self.repodb.get_depends(repo, category, name, version)
 
         options = []
 
-        db_options = self.repodb.get_options(repo, category, name, version)
+        db_options = self.repodb.get_options(repo, category, name)
+        inst_options  = self.instdb.get_options(repo, category, name)
 
         if use_new_opts or not self.instdb.get_version(name, pkg_category=category):
             for go in self.global_options:
@@ -618,6 +620,7 @@ class DependencyResolver(object):
                         if opt[1:] in options:
                             options.remove(opt[1:])
 
+        #print repo, category, name, version, options
         # FIXME: WHAT THE FUCK IS THAT??
         if not dependencies:
             lpms.terminate()
@@ -672,12 +675,8 @@ class DependencyResolver(object):
                     stc_dep_repo = self.get_repo(stc_package_data[0])
                     (scategory, sname, sversion), sopt = stc_package_data
                     local_plan[key].append([stc_dep_repo, scategory, sname, sversion, sopt])
-
+        
         self.operation_data.update({(repo, category, name, version): [local_plan, options]})
-
-        def fix_opts():
-            for o in lopt:
-                if not o in current_opts: return True
 
         for local_data in local_plan.values():
             if local_data:
@@ -688,10 +687,12 @@ class DependencyResolver(object):
                         self.single_pkgs.remove((repo, category, name, version))
                     self.package_query.append(((repo, category, name, version), fullname))
                     if fullname in self.plan:
-                        current_version, current_opts = self.plan[fullname]
-                        if not fix_opts() or lversion != current_version:
-                            continue
-                        lopt += current_opts
+                        plan_version, plan_options = self.plan[fullname]
+                        if (lrepo, lcategory, lname, lversion) in self.operation_data:
+                            for plan_option in plan_options:
+                                if not plan_option in self.operation_data[fullname][-1]:
+                                    self.operation_data[fullname][-1].append(plan_option)
+                        continue
 
                     self.plan.update({fullname: (lversion, lopt)})
                     if recursive:
@@ -710,20 +711,10 @@ class DependencyResolver(object):
                     if opt in self.global_options:
                         self.global_options.remove(opt)
 
-        # FIXME: this is obsoleted.
-        def fix_opts():
-            opts = []
-            if db_options and version in db_options and db_options[version]:
-                for db in db_options[version].split(" "):
-                    if db in self.global_options: opts.append(db)
-            return opts
-
         primary = []
         for pkg in packages:
             self.current_package = pkg
             repo, category, name, version = pkg
-
-            db_options = self.repodb.get_options(repo, category, name, version)
             self.collect(repo, category, name, version, True, recursive=False)
       
         primary.extend(self.package_query)
@@ -731,9 +722,8 @@ class DependencyResolver(object):
 
         for i in primary:
             repo, category, name, version = i[1]
-            db_options = self.repodb.get_options(repo, category, name, version)
             self.collect(repo, category, name, version, True)
-                  
+
         if not self.package_query or lpms.getopt("--ignore-depends"):
             return packages, self.operation_data
 
@@ -752,12 +742,10 @@ class DependencyResolver(object):
                     continue
 
                 data = self.instdb.find_pkg(name, pkg_category = category)
-
+                
                 if data:
-                    db_options = self.instdb.get_options(repo, category, name, version)
-                    # FIXME: get_options repo bilgisi olmadan calisabilmeli
-                    if not db_options:
-                        continue
+                    irepo = self.instdb.get_repo(category, name, version)
+                    db_options = self.instdb.get_options(irepo, category, name)
                     if version in db_options:
                         for opt in self.operation_data[pkg][-1]:
                             if not opt in db_options[version].split(" ") and not pkg in plan:
