@@ -156,6 +156,8 @@ def main(params):
 
         out.normal("updating repository database...")
         for repo_name in os.listdir(cst.repos):
+            if not repo_name in utils.valid_repos():
+                continue
             if os.path.isfile(os.path.join(cst.repos, repo_name, "info/repo.conf")):
                 out.write(out.color(" * ", "red") + repo_name+"\n")
                 
@@ -168,6 +170,10 @@ def main(params):
             repo, category = repo_name.split("/")
             repo_path = os.path.join(cst.repos, repo)
             
+            if not repo in utils.valid_repos():
+                out.error("%s is not a repository." % out.color(repo, "red"))
+                lpms.terminate()
+
             for pkg in os.listdir(os.path.join(repo_path, category)):
                 operation.update_package(repo_path, category, pkg, update=True)
             operation.repo_db.commit()
@@ -187,13 +193,21 @@ def main(params):
                 if utils.parse_pkgname(name) is not None and len(utils.parse_pkgname(name)) == 2:
                     out.error("you must use %s" % (out.color("="+repo_name, "red")))
                     lpms.terminate()
-                    
+            
+            if not repo in utils.valid_repos():
+                out.error("%s is not a repository." % out.color(repo, "red"))
+                lpms.terminate()
+
             repo_path = os.path.join(cst.repos, repo)
             out.normal("updating %s/%s/%s" % (repo, category, name))
             operation.update_package(repo_path, category, name, my_version = version, update = True)
             operation.repo_db.commit()
         
         else:
+            if not repo_name in utils.valid_repos():
+                out.error("%s is not a repository." % out.color(repo_name, "red"))
+                lpms.terminate()
+            
             repo_dir = os.path.join(cst.repos, repo_name)
             if os.path.isdir(repo_dir):
                 repo_path = os.path.join(repo_dir, cst.repo_file)
