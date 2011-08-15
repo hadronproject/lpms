@@ -148,8 +148,8 @@ class API(object):
 
         #return self.db.get_version(pkgname, repo_name, pkg_category)
 
-    def get_options(self, repo_name, pkgname, pkg_category, version):
-        return self.db.get_options(repo_name, pkgname, pkg_category, version)
+    def get_options(self, repo_name, pkgname, pkg_category):
+        return self.db.get_options(repo_name, pkgname, pkg_category)
 
     def get_slot(self, repo_name, pkgname, pkg_category, pkg_version):
         return self.db.get_slot(repo_name, pkgname, pkg_category, pkg_version)
