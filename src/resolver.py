@@ -414,6 +414,7 @@ def find_cycles(parent_children):
 
 class DependencyResolver(object):
     def __init__(self):
+        self.modified_by_package = []
         self.repodb = dbapi.RepositoryDB()
         self.instdb = dbapi.InstallDB()
         self.operation_data = {}
@@ -691,6 +692,7 @@ class DependencyResolver(object):
                         if (lrepo, lcategory, lname, lversion) in self.operation_data:
                             for plan_option in plan_options:
                                 if not plan_option in self.operation_data[fullname][-1]:
+                                    self.modified_by_package.append(fullname)
                                     self.operation_data[fullname][-1].append(plan_option)
                         continue
 
@@ -749,7 +751,8 @@ class DependencyResolver(object):
                     if version in db_options:
                         for opt in self.operation_data[pkg][-1]:
                             if not opt in db_options[version].split(" ") and not pkg in plan:
-                                plan.append(pkg)
+                                if self.use_new_opts or pkg in self.modified_by_package:
+                                    plan.append(pkg)
                     else:
                         if not version in db_options and (lpms.getopt("-U") or lpms.getopt("--upgrade") \
                                 or lpms.getopt("--force-upgrade")):
