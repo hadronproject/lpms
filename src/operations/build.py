@@ -161,7 +161,7 @@ def main(raw_data, instruct):
         for atom in operation_plan:
             valid_options = operation_data[atom][-1]
             repo, category, name, version  = atom
-            options = dbapi.RepositoryDB().get_options(repo, category, name, version)[version]
+            options = dbapi.RepositoryDB().get_options(repo, category, name)[version]
             show_plan(repo, category, name, version, valid_options, options)
 
         if instruct["pretend"]:
@@ -353,7 +353,7 @@ def show_plan(repo, category, name, version, valid_options, options):
     if options:
         try:
             irepo = instdb.get_repo(category, name, version)
-            instopts = instdb.get_options(irepo, category, name, version)[version].split(" ")
+            instopts = instdb.get_options(irepo, category, name)[version].split(" ")
         except (KeyError, TypeError):
             instopts = None
 
