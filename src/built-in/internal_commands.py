@@ -124,7 +124,7 @@ def prepare_target(path):
 #    __builtins__.update({"libraries": libraries})
 
 def opt(option):
-    return utils.opt(option, cmd_options, default_options)
+    return utils.opt(option, cmd_options, default_options, valid_opts)
 
 def config_decide(option, secondary=None, appends=['--enable-', '--disable-']):
     result = []

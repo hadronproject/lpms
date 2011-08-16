@@ -110,7 +110,7 @@ def get_mimetype(path):
     if conf.LPMSConfig().userland == "BSD":
         data = os.popen("file -i %s" % path).read().strip()
         return data.split(":", 1)[1].split(";")[0].strip()
-    
+
     import magic
     m = magic.open(magic.MIME_TYPE)
     m.load()
@@ -184,7 +184,7 @@ def check_path(binary):
 def export(variable, value):
     os.environ[variable] = value
 
-def opt(option, cmd_options, default_options):
+def opt(option, cmd_options, default_options, from_package = []):
     def decision(data_set):
         for o in [d.strip() for d in data_set if d != ""]:
             if o[0] != "-" and o == option:
@@ -192,7 +192,7 @@ def opt(option, cmd_options, default_options):
             elif o[0] == "-":
                 if "".join(o.split("-")[1:]) == option:
                     return False
-    for data_set in (cmd_options, default_options):
+    for data_set in (from_package, cmd_options, default_options):
         my_dec = decision(data_set)
         if my_dec is None:
             continue
