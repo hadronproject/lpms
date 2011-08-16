@@ -597,6 +597,8 @@ class DependencyResolver(object):
         dependencies = self.repodb.get_depends(repo, category, name, version)
 
         options = []
+        if (repo, category, name, version) in self.operation_data:
+            options.extend(self.operation_data[(repo, category, name, version)][-1])
 
         db_options = self.repodb.get_options(repo, category, name)
         inst_options  = self.instdb.get_options(repo, category, name)
@@ -610,8 +612,8 @@ class DependencyResolver(object):
                 if version in db_options and db_options[version]:
                     db_option = db_options[version].split(" ")
                     if go in db_option and not go in options:
-                        options.append(go)
-
+                         options.append(go)
+ 
             if self.special_opts and name in self.special_opts:
                 for opt in self.special_opts[name]:
                     if utils.opt(opt, self.special_opts[name], self.global_options):
@@ -660,14 +662,14 @@ class DependencyResolver(object):
             if dynamic_deps:
                 dyn_packages, dyn_options, no  = self.fix_dynamic_deps(dynamic_deps[0], options)
                 for d in no:
-                    if d in options:
+                    if d in options: 
                         options.remove(d)
                 for dyn_dep in dyn_packages:
                     dyn_package_data = self.parse_package_name(dyn_dep)
                     dyn_dep_repo = self.get_repo(dyn_package_data[0])
                     (dcategory, dname, dversion), dopt = dyn_package_data
                     local_plan[key].append([dyn_dep_repo, dcategory, dname, dversion, dopt])
-                    
+                     
             static_deps = " ".join([dep for dep in dependencies[key] if isinstance(dep, str)])
 
             if static_deps:
@@ -676,7 +678,7 @@ class DependencyResolver(object):
                     stc_dep_repo = self.get_repo(stc_package_data[0])
                     (scategory, sname, sversion), sopt = stc_package_data
                     local_plan[key].append([stc_dep_repo, scategory, sname, sversion, sopt])
-        
+
         self.operation_data.update({(repo, category, name, version): [local_plan, options]})
 
         for local_data in local_plan.values():
@@ -696,11 +698,12 @@ class DependencyResolver(object):
                             self.modified_by_package.append(fullname)
                             if not plan_option in self.operation_data[fullname][-1]:
                                 self.operation_data[fullname][-1].append(plan_option)
+                                self.collect(lrepo, lcategory, lname, lversion, self.use_new_opts)
                     continue
 
                 self.plan.update({fullname: (lversion, lopt)})
                 if recursive:
-                    self.collect(lrepo, lcategory, lname, lversion, self.use_new_opts)
+                    self .collect(lrepo, lcategory, lname, lversion, self.use_new_opts)
 
     def resolve_depends(self, packages, cmd_options, use_new_opts, specials=None):
         self.special_opts = specials
@@ -736,14 +739,14 @@ class DependencyResolver(object):
         try:
             for package in packages:
                 if not package in [data[0] for data in self.package_query]:
-                    plan.append(package)
+                     plan.append(package)
 
             for pkg in topsort(self.package_query)+self.single_pkgs:
                 repo, category, name, version = pkg
-
+               
                 if (repo, category, name, version) in packages:
                     plan.append(pkg)
-                    continue
+                    continue 
 
                 data = self.instdb.find_pkg(name, pkg_category = category)
                 
@@ -756,14 +759,14 @@ class DependencyResolver(object):
                         for opt in self.operation_data[pkg][-1]:
                             if not opt in db_options[version].split(" ") and not pkg in plan:
                                 if self.use_new_opts or pkg in self.modified_by_package:
-                                    plan.append(pkg)
+                                     plan.append(pkg)
                     else:
                         if not version in db_options and (lpms.getopt("-U") or lpms.getopt("--upgrade") \
-                                or lpms.getopt("--force-upgrade")):
+                                 or lpms.getopt("--force-upgrade")):
                             plan.append(pkg)
                         else: 
                             if not pkg in packages:
-                                del self.operation_data[pkg] 
+                                 del self.operation_data[pkg] 
                 else:
                     plan.append(pkg)
 
