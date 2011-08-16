@@ -221,3 +221,8 @@ def main(params):
                 lpms.terminate("repo.conf not found in %s" % os.path.join(cst.repos, repo_name))
 
     out.normal("Total %s packages have been processed." % operation.packages_num)
+    
+    for repo in operation.repo_db.get_repos():
+        if not repo[0] in utils.valid_repos():
+            operation.repo_db.drop_repo(repo[0])
+            out.warn("%s dropped." % repo[0])
