@@ -731,6 +731,9 @@ class DependencyResolver(object):
             repo, category, name, version = i[1]
             self.collect(repo, category, name, version, True)
 
+        if not self.package_query and primary:
+            self.package_query.extend(primary)
+
         if not self.package_query or lpms.getopt("--ignore-depends"):
             return packages, self.operation_data
 
@@ -743,7 +746,7 @@ class DependencyResolver(object):
 
             for pkg in topsort(self.package_query)+self.single_pkgs:
                 repo, category, name, version = pkg
-               
+
                 if (repo, category, name, version) in packages:
                     plan.append(pkg)
                     continue 
