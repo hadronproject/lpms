@@ -55,7 +55,7 @@ class PackageDatabase:
 
     def get_repos(self):
         self.cursor.execute('''select repo from metadata''')
-        return set(self.connection.fetchall())
+        return list(set(self.cursor.fetchall()))
 
     def add_pkg(self, data, commit=True):
         def get_slot():
