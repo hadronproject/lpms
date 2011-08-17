@@ -42,8 +42,11 @@ class UpgradeSystem(object):
                 self.notfound_pkg.append((category, name))
 
             # get version data from repository database
-            repovers = self.repodb.get_version(name, pkg_category = category)
-
+            data =  self.repodb.find_pkg(name, pkg_category = category, selection=True)
+            if not data:
+                continue
+            repovers = data[0][-1]
+            
             # comparise versions
             for slot, instver in self.instdb.get_version(name, repo, category).items():
                 # a slot must inclue single version for installed packages database.
