@@ -680,6 +680,10 @@ class DependencyResolver(object):
                     local_plan[key].append([stc_dep_repo, scategory, sname, sversion, sopt])
 
         self.operation_data.update({(repo, category, name, version): [local_plan, options]})
+        
+        if not local_plan['build'] and not local_plan['runtime']:
+            if not (repo, category, name, version) in self.single_pkgs:
+                self.single_pkgs.append((repo, category, name, version))
 
         for local_data in local_plan.values():
             if not local_data:
@@ -755,7 +759,6 @@ class DependencyResolver(object):
                 
                 if data:
                     irepo = self.instdb.get_repo(category, name, version)
-                    
                     db_options = self.instdb.get_options(irepo, category, name)
 
                     if version in db_options:
@@ -768,8 +771,8 @@ class DependencyResolver(object):
                                  or lpms.getopt("--force-upgrade")):
                             plan.append(pkg)
                         else: 
-                            if not pkg in packages:
-                                 del self.operation_data[pkg] 
+                            if not pkg in packages and pkg in self.operation_data: 
+                                del self.operation_data[pkg] 
                 else:
                     plan.append(pkg)
 
