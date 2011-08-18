@@ -593,7 +593,7 @@ class DependencyResolver(object):
             return self.repodb.get_repo(category, name, version)
 
     def collect(self, repo, category, name, version, use_new_opts, recursive=True):
-        
+
         dependencies = self.repodb.get_depends(repo, category, name, version)
 
         options = []
@@ -623,7 +623,6 @@ class DependencyResolver(object):
                         if opt[1:] in options:
                             options.remove(opt[1:])
 
-        #print repo, category, name, version, options
         # FIXME: WHAT THE FUCK IS THAT??
         if not dependencies:
             lpms.terminate()
@@ -748,12 +747,17 @@ class DependencyResolver(object):
                 if not package in [data[0] for data in self.package_query]:
                      plan.append(package)
 
-            for pkg in topsort(self.package_query)+self.single_pkgs:
-                repo, category, name, version = pkg
+            processed = topsort(self.package_query)
+            for single_pkg in self.single_pkgs:
+                if not single_pkg in processed:
+                    processed.append(single_pkg)
 
+            for pkg in processed:
+                repo, category, name, version = pkg
                 if (repo, category, name, version) in packages:
-                    plan.append(pkg)
-                    continue 
+                    if not pkg in plan:
+                        plan.append(pkg)
+                        continue 
 
                 data = self.instdb.find_pkg(name, pkg_category = category)
                 
@@ -765,16 +769,19 @@ class DependencyResolver(object):
                         for opt in self.operation_data[pkg][-1]:
                             if not opt in db_options[version].split(" ") and not pkg in plan:
                                 if self.use_new_opts or pkg in self.modified_by_package:
-                                     plan.append(pkg)
+                                    if not pkg in plan:
+                                        plan.append(pkg)
                     else:
                         if not version in db_options and (lpms.getopt("-U") or lpms.getopt("--upgrade") \
                                  or lpms.getopt("--force-upgrade")):
-                            plan.append(pkg)
+                            if not pkg in plan:
+                                plan.append(pkg)
                         else: 
                             if not pkg in packages and pkg in self.operation_data: 
                                 del self.operation_data[pkg] 
                 else:
-                    plan.append(pkg)
+                    if not pkg in plan:
+                        plan.append(pkg)
 
             plan.reverse()
             return plan, self.operation_data
