@@ -722,6 +722,7 @@ class DependencyResolver(object):
                         self.global_options.remove(opt)
 
         primary = []
+        packages = list(set(packages))
         for pkg in packages:
             self.current_package = pkg
             repo, category, name, version = pkg
