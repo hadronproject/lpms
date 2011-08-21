@@ -1,8 +1,11 @@
+import os
+
 import lpms
 
 from lpms import out
 from lpms import conf
 from lpms import utils
+from lpms import constants as cst
 
 from lpms.db import dbapi
 
@@ -426,6 +429,79 @@ class DependencyResolver(object):
         self.global_options = []
         self.config = conf.LPMSConfig()
         self.single_pkgs = []
+        self.get_user_defined_files()
+
+    def get_user_defined_files(self):
+        for user_defined_file in cst.user_defined_files:
+            if not os.access(user_defined_file, os.W_OK):
+                continue
+            with open(user_defined_file) as data:
+                data = [line.strip() for line in data.readlines() \
+                        if line != "#"]
+            setattr(self, "user_defined_"+os.path.basename(user_defined_file), data)
+
+    def parse_user_defined_file(self, data):
+        affected = []
+        slot = None
+        slot_parsed = data.split(":")
+        if len(slot_parsed) == 2:
+            data, slot = slot_parsed
+
+        def parse(pkgname):
+            category, name = pkgname.split("/")
+            name, version = utils.parse_pkgname(name)
+            versions = []
+            map(lambda x: versions.extend(x), \
+                    dbapi.RepositoryDB().get_version(name, pkg_category=category).values())
+            return category, name, version, versions
+
+        if ">=" == data[:2]:
+            category, name, version, versions = parse(data[2:])
+
+            for ver in versions:
+                if utils.vercmp(ver, version) == 1:
+                    affected.append(ver)
+            affected.append(version)
+
+            return category, name, affected
+
+        elif "<=" == data[:2]:
+            category, name, version, versions = parse(data[2:])
+            for ver in versions:
+                if utils.vercmp(ver, version) == -1:
+                    affected.append(ver)
+            affected.append(version)
+
+            return category, name, affected
+
+        elif "<" == data[:1]:
+            category, name, version, versions = parse(data[1:])
+            for ver in versions:
+                if utils.vercmp(ver, version) == -1:
+                    affected.append(ver)
+            return category, name, affected
+
+        elif ">" == data[:1]:
+            category, name, version, versions = parse(data[1:])
+
+            for ver in versions:
+                if utils.vercmp(ver, version) == 1:
+                    affected.append(ver)
+
+            return category, name, affected
+
+        elif "==" == data[:2]:
+            pkgname = data[2:]
+            category, name = pkgname.split("/")
+            name, version = utils.parse_pkgname(name)
+
+            return category, name, version
+        else:
+            category, name = data.split("/")
+            versions = []
+            map(lambda x: versions.extend(x), \
+                    dbapi.RepositoryDB().get_version(name, pkg_category=category).values())
+            return category, name, versions
 
     def package_select(self, data):
         slot = None
@@ -784,6 +860,25 @@ class DependencyResolver(object):
                     if not pkg in plan:
                         plan.append(pkg)
 
+            locked_packages = []
+            for line in self.user_defined_lock:
+                locked_packages.extend([self.parse_user_defined_file(line)])
+
+            for item in plan:
+                plan_category = item[1]; plan_name = item[2]; plan_version = item[3]
+                for locked_package in locked_packages:
+                    if plan_category == locked_package[0] and \
+                            plan_name == locked_package[1] and \
+                            plan_version in locked_package[2]:
+                                out.write("\n")
+                                for v in locked_package[2]:
+                                    out.warn("%s-%s" % ("/".join(item[:-1]), v))
+                                out.write("\n")
+                                if len(locked_package[2]) > 1:
+                                    out.error("these packages were locked by system administrator.")
+                                else:
+                                    out.error("this package was locked by system administrator.")
+                                lpms.terminate()
             plan.reverse()
             return plan, self.operation_data
 
