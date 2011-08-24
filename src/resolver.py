@@ -429,6 +429,7 @@ class DependencyResolver(object):
         self.global_options = []
         self.config = conf.LPMSConfig()
         self.single_pkgs = []
+        self.udo = {}
         self.get_user_defined_files()
 
     def get_user_defined_files(self):
@@ -440,7 +441,24 @@ class DependencyResolver(object):
                         if line != "#"]
             setattr(self, "user_defined_"+os.path.basename(user_defined_file), data)
 
-    def parse_user_defined_file(self, data):
+    def parse_user_defined_options_file(self):
+        if not hasattr(self, "user_defined_options"):
+            return
+
+        for user_defined_option in self.user_defined_options:
+            category, name, versions, opts = self.parse_user_defined_file(user_defined_option, True)
+            self.udo.update({(category, name):(versions, opts)})
+
+    def parse_user_defined_file(self, data, opt=False):
+        user_defined_options = None
+        if opt:
+            data = data.split(" ", 1)
+            if len(data) > 1:
+                data, user_defined_options = data
+                user_defined_options = [atom.strip() for atom in \
+                        user_defined_options.strip().split(" ")]
+            else:
+                data = data[0]
         affected = []
         slot = None
         slot_parsed = data.split(":")
@@ -452,7 +470,7 @@ class DependencyResolver(object):
             name, version = utils.parse_pkgname(name)
             versions = []
             map(lambda x: versions.extend(x), \
-                    dbapi.RepositoryDB().get_version(name, pkg_category=category).values())
+                    self.repodb.get_version(name, pkg_category=category).values())
             return category, name, version, versions
 
         if ">=" == data[:2]:
@@ -463,6 +481,9 @@ class DependencyResolver(object):
                     affected.append(ver)
             affected.append(version)
 
+            if user_defined_options:
+                return category, name, affected, user_defined_options
+
             return category, name, affected
 
         elif "<=" == data[:2]:
@@ -471,6 +492,9 @@ class DependencyResolver(object):
                 if utils.vercmp(ver, version) == -1:
                     affected.append(ver)
             affected.append(version)
+            
+            if user_defined_options:
+                return category, name, affected, user_defined_options
 
             return category, name, affected
 
@@ -479,6 +503,10 @@ class DependencyResolver(object):
             for ver in versions:
                 if utils.vercmp(ver, version) == -1:
                     affected.append(ver)
+                    
+            if user_defined_options:
+                return category, name, affected, user_defined_options
+
             return category, name, affected
 
         elif ">" == data[:1]:
@@ -487,6 +515,9 @@ class DependencyResolver(object):
             for ver in versions:
                 if utils.vercmp(ver, version) == 1:
                     affected.append(ver)
+                    
+            if user_defined_options:
+                return category, name, affected, user_defined_options
 
             return category, name, affected
 
@@ -494,13 +525,20 @@ class DependencyResolver(object):
             pkgname = data[2:]
             category, name = pkgname.split("/")
             name, version = utils.parse_pkgname(name)
+            
+            if user_defined_options:
+                return category, name, affected, user_defined_options
 
             return category, name, version
         else:
             category, name = data.split("/")
             versions = []
             map(lambda x: versions.extend(x), \
-                    dbapi.RepositoryDB().get_version(name, pkg_category=category).values())
+                    self.repodb.get_version(name, pkg_category=category).values())
+            
+            if user_defined_options:
+                return category, name, versions, user_defined_options
+
             return category, name, versions
 
     def package_select(self, data):
@@ -689,7 +727,16 @@ class DependencyResolver(object):
                     db_option = db_options[version].split(" ")
                     if go in db_option and not go in options:
                          options.append(go)
- 
+
+            if self.udo and (category, name) in self.udo and version in self.udo[(category, name)][0]:
+                for opt in self.udo[(category, name)][1]:
+                    if utils.opt(opt, self.udo[(category, name)][1], self.global_options):
+                        if not opt in options:
+                            options.append(opt)
+                    else:
+                        if opt[1:] in options:
+                            options.remove(opt[1:])
+
             if self.special_opts and name in self.special_opts:
                 for opt in self.special_opts[name]:
                     if utils.opt(opt, self.special_opts[name], self.global_options):
@@ -786,6 +833,7 @@ class DependencyResolver(object):
 
     def resolve_depends(self, packages, cmd_options, use_new_opts, specials=None):
         self.special_opts = specials
+        self.parse_user_defined_options_file()
         setattr(self, "use_new_opts", use_new_opts)
 
         for options in (self.config.options.split(" "), cmd_options):
