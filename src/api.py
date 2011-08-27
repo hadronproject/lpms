@@ -42,7 +42,7 @@ from lpms.operations import upgrade
 class InitializeInterpreter(internals.InternalFuncs):
     '''Base class for initialize the lpms spec interpreter
     It can be used for any purpose'''
-    def __init__(self, script, instruct, operations):
+    def __init__(self, script, instruct, operations, remove=False):
         super(InitializeInterpreter, self).__init__()
         self.script = script
         self.env.__dict__.update(instruct)
@@ -52,7 +52,6 @@ class InitializeInterpreter(internals.InternalFuncs):
     def initialize(self):
         '''Registers some basic environmet variables and runs the interpreter'''
         repo, category, name, version = self.script
-        out.normal("configuring %s/%s/%s-%s" % (repo, category, name, version))
 
         for key, data in {"repo": repo, "name": name, "version": version, \
                 "category": category, "pkgname": name}.items():
@@ -62,7 +61,8 @@ class InitializeInterpreter(internals.InternalFuncs):
                 name, name)+"-"+version+cst.spec_suffix
 
         # compile the script
-        self.import_script(spec_file)
+        if os.access(spec_file, os.F_OK):
+            self.import_script(spec_file)
 
         # remove irrelevant functions for environment.
         # because, the following functions must be run by Build class
@@ -71,7 +71,7 @@ class InitializeInterpreter(internals.InternalFuncs):
             if func in self.env.__dict__:
                 delattr(self.env, func)
 
-        return interpreter.run(spec_file, self.env, self.operations)
+        return interpreter.run(spec_file, self.env, self.operations, remove)
 
 
 def configure_pending(packages, instruct):
@@ -91,8 +91,9 @@ def configure_pending(packages, instruct):
     with open(pending_file, 'rb') as data:
         pending_packages = pickle.load(data)
         for package in pending_packages:
+            repo, category, name, version = package 
+            out.normal("configuring %s/%s/%s-%s" % (repo, category, name, version))
             if not InitializeInterpreter(package, instruct, ['post_install']).initialize():
-                repo, category, name, version = package 
                 out.warn("%s/%s/%s-%s could not configured." % (repo, category, name, version))
                 failed.append(package)
 
@@ -196,7 +197,7 @@ def get_pkg(pkgname, repositorydb=True):
             selection = True)
 
     if not result:
-        out.error("%s not found in repository database." % out.color(pkgname, "brightred"))
+        out.error("%s not found in database." % out.color(pkgname, "brightred"))
         lpms.terminate()
 
     length = len(result)
@@ -229,8 +230,27 @@ def upgrade_system(instruct):
 
 def remove_package(pkgnames, instruct):
     '''Triggers remove operation for given packages'''
-    remove.main([get_pkg(pkgname, repositorydb=False) for pkgname \
-            in pkgnames], instruct)
+    packages = [get_pkg(pkgname, repositorydb=False) for pkgname in pkgnames]
+    instruct['count'] = len(packages); i = 0;
+    if instruct['ask']:
+        for package in packages:
+            repo, category, name, version = package
+            out.write("%s/%s/%s/%s\n" % (out.color(repo, "green"), 
+                out.color(category, "green"), out.color(name, "green"), 
+                out.color(version, "green")))
+        utils.xterm_title("lpms: confirmation request")
+        out.write("\nTotal %s package will be removed.\n\n" % out.color(str(instruct['count']), "green"))
+        if not utils.confirm("do you want to continue?"):
+            out.write("quitting...\n")
+            utils.xterm_title_reset()
+            lpms.terminate()
+
+    for package in packages:
+        i += 1;
+        instruct['i'] = i
+        if not InitializeInterpreter(package, instruct, ['remove'], remove=True).initialize():
+            repo, category, name, version = package 
+            out.warn("an error occured during remove operation: %s/%s/%s-%s" % (repo, category, name, version))
 
 def resolve_dependencies(data, cmd_options, use_new_opts, specials=None):
     '''Resolve dependencies using fixit object. This function

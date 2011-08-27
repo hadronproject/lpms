@@ -32,6 +32,7 @@ from lpms import shelltools
 from lpms.exceptions import *
 from lpms.shelltools import touch
 from lpms.operations import merge
+from lpms.operations import remove
 from lpms import constants as cst
 
 class Interpreter(internals.InternalFuncs):
@@ -185,6 +186,7 @@ class Interpreter(internals.InternalFuncs):
         out.notify("%s/%s installed." % (self.env.category, self.env.fullname))
         if not os.path.isfile(installed_file):
             touch(installed_file)
+
         if self.env.stage == "install":
             lpms.terminate()
 
@@ -196,6 +198,69 @@ class Interpreter(internals.InternalFuncs):
             lpms.terminate()
 
         merge.main(self.env)
+
+    def run_remove(self):
+        utils.xterm_title("(%s/%s) lpms: removing %s/%s-%s from %s" % (self.env.i, self.env.count, 
+            self.env.category, self.env.pkgname, self.env.version, self.env.repo))
+
+        remove.main((self.env.repo, self.env.category, self.env.pkgname, 
+            self.env.version), self.env.real_root)
+
+    def run_post_remove(self):
+        #if lpms.getopt("--no-configure") or self.env.real_root != cst.root:
+        #    out.warn_notify("post_install function skipping...")
+        #    pkg_data = (self.env.repo, self.env.category, \
+        #            self.env.name, self.env.version)
+
+        #    pending_file = os.path.join(self.env.real_root, cst.configure_pending_file)
+        #    if not os.path.exists(pending_file):
+        #        with open(pending_file, "wb") as _data:
+        #            pickle.dump([pkg_data], _data)
+        #    else:
+        #        data = []
+        #        with open(pending_file, "rb") as _data:
+        #            pending_packages = pickle.load(_data)
+        #            if not pkg_data in pending_packages:
+        #                data.append(pkg_data)
+
+        #            data.extend(pending_packages)
+        #        shelltools.remove_file(pending_file)
+        #        with open(pending_file, "wb") as _data:
+        #            pickle.dump(data, _data)
+        #    return
+
+        # sandbox must be disabled
+        self.env.sandbox = False
+
+        self.run_stage("post_remove")
+
+    def run_pre_remove(self):
+        #if lpms.getopt("--no-configure") or self.env.real_root != cst.root:
+        #    out.warn_notify("post_install function skipping...")
+        #    pkg_data = (self.env.repo, self.env.category, \
+        #            self.env.name, self.env.version)
+
+        #    pending_file = os.path.join(self.env.real_root, cst.configure_pending_file)
+        #    if not os.path.exists(pending_file):
+        #        with open(pending_file, "wb") as _data:
+        #            pickle.dump([pkg_data], _data)
+        #    else:
+        #        data = []
+        #        with open(pending_file, "rb") as _data:
+        #            pending_packages = pickle.load(_data)
+        #            if not pkg_data in pending_packages:
+        #                data.append(pkg_data)
+
+        #            data.extend(pending_packages)
+        #        shelltools.remove_file(pending_file)
+        #        with open(pending_file, "wb") as _data:
+        #            pickle.dump(data, _data)
+        #    return
+
+        # sandbox must be disabled
+        self.env.sandbox = False
+
+        self.run_stage("pre_remove")
 
     def run_post_install(self):
         if lpms.getopt("--no-configure") or self.env.real_root != cst.root:
@@ -252,16 +317,23 @@ class Interpreter(internals.InternalFuncs):
                     if self.env.standard_procedure and (stage != "post_install" or stage != "post_remove"):
                         self.run_func("standard_"+stage)
 
-def run(script, env, operation_order=None):
+def run(script, env, operation_order=None, remove=False):
     ipr = Interpreter(script, env)
+    #firstly, prepare operation_order
     if not operation_order:
         operation_order = ['configure', 'build', 'install', 'merge']
 
-    if 'prepare' in env.__dict__.keys():
+    if not remove and 'prepare' in env.__dict__.keys():
         operation_order.insert(0, 'prepare')
     
-    if 'post_install' in env.__dict__.keys() and not 'post_install' in operation_order:
+    if not remove and 'post_install' in env.__dict__.keys() and not 'post_install' in operation_order:
         operation_order.insert(len(operation_order), 'post_install')
+
+    if remove and 'pre_remove' in env.__dict__ and not 'pre_remove' in operation_order:
+        operation_order.insert(0, 'pre_remove')
+
+    if remove and 'post_remove' in env.__dict__ and not 'post_remove' in operation_order:
+        operation_order.insert(len(operation_order), 'post_remove')
 
     # FIXME: we need more flow control
     for opr in operation_order:
