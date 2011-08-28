@@ -17,6 +17,7 @@
 
 import os
 import glob
+import random
 import cPickle as pickle
 
 import lpms
