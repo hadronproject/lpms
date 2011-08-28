@@ -99,18 +99,24 @@ class Update(internals.InternalFuncs):
             runtime = []; build = []
             if 'depends' in self.env.__dict__.keys():
                     deps = utils.depends_parser(self.env.depends)
-                    if 'runtime' in deps.keys():
+                    if 'runtime' in deps:
                         runtime = deps['runtime']
-                    if 'build' in deps.keys():
+                    if 'build' in deps:
                         build = deps['build']
+                    if 'common' in deps:
+                        runtime.extend(deps['common'])
+                        build.extend(deps['common'])
 
-            for opt in ('opt_runtime', 'opt_build'):
+            for opt in ('opt_common', 'opt_runtime', 'opt_build'):
                 try:
                     deps = utils.parse_opt_deps(getattr(self.env, opt))
                     if opt.split("_")[1] == "runtime":
                         runtime.append(deps)
                     elif opt.split("_")[1] == "build":
                         build.append(deps)
+                    elif opt.split("_")[1] == "common":
+                        build.append(deps)
+                        runtime.append(deps)
                     del deps
                 except AttributeError:
                     continue
