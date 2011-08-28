@@ -22,6 +22,7 @@ import stat
 import glob
 import string
 import hashlib
+import collections
 
 import lpms
 from lpms import out
@@ -358,8 +359,6 @@ def parse_url_tag(urls, name, version):
             download_list.append((result[0], url))
     return download_list
 
-
-
 def pkg_selection_dialog(data):
     if not lpms.getopt("--ask-repo"):
         repo = select_repo([d[0] for d in data])
@@ -395,26 +394,28 @@ def pkg_selection_dialog(data):
             continue
 
 def metadata_parser(data):
-    info = {"options": None}
-    for p in data.split("\n"):
-        parsed = list(p.split("@"))
-        if len(parsed) == 2:
-            tag = [t for t in list(parsed[0]) if t != "\t" and t != " " and t != "\n"]
-            data = list(parsed[1])
-            for d in list(parsed[1]):
-                if d == " " or d == "\t" or d == "\n":
-                    data.remove(d)
-                else:
-                    break
-            hede = list(parsed[1])
-            hede.reverse()
-            for x in hede:
-                if x == " " or d == "\t" or d == "\n":
-                    data.remove(x)
-                else:
-                    break
-            info["".join(tag)] = "".join(data)
-    return info
+    metadata = collections.OrderedDict()
+    keys = ('summary', 'src_url', 'license', 'arch', 'homepage', 'options')
+    lines = data.strip().split('\n')
+    subtotal = []
+    for line in lines:
+        line = line.split('@', 1)
+        if len(line) == 1:
+            last_item = list(metadata)[-1]
+            metadata[last_item] = metadata[last_item]+" "+line[0].strip()
+            continue
+        mykey, mydata = line
+        mykey = mykey.strip()
+        if mykey in keys:
+            metadata[mykey] = mydata.strip()
+        else:
+            last_item = list(metadata)[-1]
+            metadata[last_item] = metadata[last_item]+" "+"@".join(line).strip()
+    
+    if not "options" in metadata:
+        metadata["options"] = None
+
+    return metadata
 
 def depends_parser(depends):
     deps = {}
