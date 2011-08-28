@@ -244,6 +244,31 @@ def main(raw_data, instruct):
         lpms.logger.info("starting build (%s/%s) %s/%s/%s-%s" % (i, count, opr.env.repo, 
             opr.env.category, opr.env.name, opr.env.version))
 
+        # The Zen of Python
+        if random.randrange(0, 1000001) in range(0, 1001):
+            data = """The Zen of Python, by Tim Peters
+            Beautiful is better than ugly.
+            Explicit is better than implicit.
+            Simple is better than complex.
+            Complex is better than complicated.
+            Flat is better than nested.
+            Sparse is better than dense.
+            Readability counts.
+            Special cases aren't special enough to break the rules.
+            Although practicality beats purity.
+            Errors should never pass silently.
+            Unless explicitly silenced.
+            In the face of ambiguity, refuse the temptation to guess.
+            There should be one-- and preferably only one --obvious way to do it.
+            Although that way may not be obvious at first unless you're Dutch.
+            Now is better than never.
+            Although never is often better than *right* now.
+            If the implementation is hard to explain, it's a bad idea.
+            If the implementation is easy to explain, it may be a good idea.
+            Namespaces are one honking great idea -- let's do more of those!"""
+            data = data.split("\n")
+            out.normal(data[0]+": "+data[random.randrange(2, 19)].strip())
+
         out.normal("(%s/%s) building %s/%s from %s" % (i, count,
             out.color(opr.env.category, "green"),
             out.color(opr.env.pkgname+"-"+opr.env.version, "green"), opr.env.repo)); i += 1
