@@ -26,6 +26,7 @@ from lpms import out
 from lpms import utils
 from lpms import resolver
 from lpms import internals
+from lpms import initpreter
 from lpms import shelltools
 from lpms import interpreter
 from lpms import constants as cst
@@ -37,42 +38,6 @@ from lpms.operations import build
 from lpms.operations import update
 from lpms.operations import remove
 from lpms.operations import upgrade
-
-
-class InitializeInterpreter(internals.InternalFuncs):
-    '''Base class for initialize the lpms spec interpreter
-    It can be used for any purpose'''
-    def __init__(self, script, instruct, operations, remove=False):
-        super(InitializeInterpreter, self).__init__()
-        self.script = script
-        self.env.__dict__.update(instruct)
-        self.operations = operations
-        self.env.__dict__["get"] = self.get
-
-    def initialize(self):
-        '''Registers some basic environmet variables and runs the interpreter'''
-        repo, category, name, version = self.script
-
-        for key, data in {"repo": repo, "name": name, "version": version, \
-                "category": category, "pkgname": name}.items():
-            setattr(self.env, key, data)
-
-        spec_file = os.path.join(cst.repos, repo, category, \
-                name, name)+"-"+version+cst.spec_suffix
-
-        # compile the script
-        if os.access(spec_file, os.F_OK):
-            self.import_script(spec_file)
-
-        # remove irrelevant functions for environment.
-        # because, the following functions must be run by Build class
-        # that is defined in operations/build.py
-        for func in ('prepare', 'install', 'build', 'configure'):
-            if func in self.env.__dict__:
-                delattr(self.env, func)
-
-        return interpreter.run(spec_file, self.env, self.operations, remove)
-
 
 def configure_pending(packages, instruct):
     '''Configure packages that do not configured after merge operation'''
@@ -93,7 +58,7 @@ def configure_pending(packages, instruct):
         for package in pending_packages:
             repo, category, name, version = package 
             out.normal("configuring %s/%s/%s-%s" % (repo, category, name, version))
-            if not InitializeInterpreter(package, instruct, ['post_install']).initialize():
+            if not initpreter.InitializeInterpreter(package, instruct, ['post_install']).initialize():
                 out.warn("%s/%s/%s-%s could not configured." % (repo, category, name, version))
                 failed.append(package)
 
@@ -248,7 +213,7 @@ def remove_package(pkgnames, instruct):
     for package in packages:
         i += 1;
         instruct['i'] = i
-        if not InitializeInterpreter(package, instruct, ['remove'], remove=True).initialize():
+        if not initpreter.InitializeInterpreter(package, instruct, ['remove'], remove=True).initialize():
             repo, category, name, version = package 
             out.warn("an error occured during remove operation: %s/%s/%s-%s" % (repo, category, name, version))
 

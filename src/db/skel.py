@@ -52,7 +52,9 @@ def installed_schema():
             name text,
             version text,
             build blob,
-            runtime blob
+            runtime blob,
+            postmerge blob,
+            conflict blob
         );
         """
 
@@ -77,7 +79,9 @@ def repo_schema():
             name text,
             version text,
             build blob,
-            runtime blob
+            runtime blob,
+            postmerge blob,
+            conflict blob
         );
     """
 

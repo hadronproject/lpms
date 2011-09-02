@@ -709,7 +709,6 @@ class DependencyResolver(object):
     def collect(self, repo, category, name, version, use_new_opts, recursive=True):
 
         dependencies = self.repodb.get_depends(repo, category, name, version)
-
         options = []
         if (repo, category, name, version) in self.operation_data:
             options.extend(self.operation_data[(repo, category, name, version)][-1])
@@ -750,7 +749,7 @@ class DependencyResolver(object):
         if not dependencies:
             lpms.terminate()
 
-        local_plan = {"build":[], "runtime": []}
+        local_plan = {"build":[], "runtime": [], "postmerge": [], "conflict": []}
 
         plan = {}
 
@@ -778,7 +777,7 @@ class DependencyResolver(object):
                                 break
             return parsed
 
-        for key in ('build', 'runtime'):
+        for key in ('build', 'runtime', 'conflict', 'postmerge'):
             dynamic_deps = [dep for dep in dependencies[key] if isinstance(dep, dict)]
 
             if dynamic_deps:
@@ -790,6 +789,12 @@ class DependencyResolver(object):
                     dyn_package_data = self.parse_package_name(dyn_dep)
                     dyn_dep_repo = self.get_repo(dyn_package_data[0])
                     (dcategory, dname, dversion), dopt = dyn_package_data
+                    if key == "conflict":
+                        if not self.instdb.find_pkg(dname, repo_name = dyn_dep_repo, 
+                                pkg_category = dcategory):
+                            continue
+                        local_plan[key].append([dyn_dep_repo, dcategory, dname, dversion])
+                        continue
                     local_plan[key].append([dyn_dep_repo, dcategory, dname, dversion, dopt])
                      
             static_deps = " ".join([dep for dep in dependencies[key] if isinstance(dep, str)])
@@ -799,23 +804,34 @@ class DependencyResolver(object):
                     stc_package_data = self.parse_package_name(stc_dep)
                     stc_dep_repo = self.get_repo(stc_package_data[0])
                     (scategory, sname, sversion), sopt = stc_package_data
+                    if key == "conflict":
+                        if not self.instdb.find_pkg(sname, repo_name = stc_dep_repo, 
+                                pkg_category = scategory):
+                            continue
+                        local_plan[key].append([stc_dep_repo, scategory, sname, sversion])
+                        continue
                     local_plan[key].append([stc_dep_repo, scategory, sname, sversion, sopt])
 
         self.operation_data.update({(repo, category, name, version): [local_plan, options]})
         
+        #FIXME: postmerge dependency?
         if not local_plan['build'] and not local_plan['runtime']:
             if not (repo, category, name, version) in self.single_pkgs:
                 self.single_pkgs.append((repo, category, name, version))
 
-        for local_data in local_plan.values():
-            if not local_data:
+        for key in ('build', 'runtime', 'postmerge'):
+            if not local_plan[key]:
                 continue
-            for local in local_data:
+            for local in local_plan[key]:
                 lrepo, lcategory, lname, lversion, lopt = local
                 fullname = (lrepo, lcategory, lname, lversion)
                 if (repo, category, name, version) in self.single_pkgs:
                     self.single_pkgs.remove((repo, category, name, version))
-                self.package_query.append(((repo, category, name, version), fullname))
+                if key == "postmerge":
+                    self.package_query.append((fullname, (repo, category, name, version)))
+                    self.collect(lrepo, lcategory, lname, lversion, self.use_new_opts)
+                else:
+                    self.package_query.append(((repo, category, name, version), fullname))
                 if fullname in self.plan:
                     plan_version, plan_options = self.plan[fullname]
                     if (lrepo, lcategory, lname, lversion) in self.operation_data:
@@ -829,7 +845,7 @@ class DependencyResolver(object):
 
                 self.plan.update({fullname: (lversion, lopt)})
                 if recursive:
-                    self .collect(lrepo, lcategory, lname, lversion, self.use_new_opts)
+                    self.collect(lrepo, lcategory, lname, lversion, self.use_new_opts)
 
     def resolve_depends(self, packages, cmd_options, use_new_opts, specials=None):
         self.special_opts = specials
