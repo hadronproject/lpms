@@ -22,12 +22,13 @@ import cPickle as pickle
 
 import lpms
 
-from lpms import conf
 from lpms import out
+from lpms import conf
 from lpms import utils
 from lpms import fetcher
 from lpms import archive
 from lpms import internals
+from lpms import initpreter
 from lpms import shelltools
 from lpms import interpreter
 from lpms import constants as cst
@@ -160,10 +161,19 @@ def main(raw_data, instruct):
         out.write("\n")
         out.normal("these packages will be merged, respectively:\n")
         for atom in operation_plan:
-            valid_options = operation_data[atom][-1]
+            data, valid_options = operation_data[atom]
             repo, category, name, version  = atom
             options = dbapi.RepositoryDB().get_options(repo, category, name)[version]
             show_plan(repo, category, name, version, valid_options, options)
+            if data['conflict']:
+                for conflict in data['conflict']:
+                    # the last item is options of the package
+                    crepo, ccategory, cname, cversion = conflict
+                    out.write(" %s %s/%s/%s-%s\n" % (out.color("conflict:", "brightred"),
+                        out.color(crepo, "green"),
+                        out.color(ccategory, "green"),
+                        out.color(cname, "green"),
+                        out.color(cversion, "green")))
 
         if instruct["pretend"]:
             lpms.terminate()
@@ -186,6 +196,26 @@ def main(raw_data, instruct):
 
     for plan in operation_plan:
         opr = Build()
+        # if conflict list is not empty,
+        # remove the packages in the list.
+        # To do this, run spec interpreter once again. 
+        if operation_data[plan][0]["conflict"]:
+            # prepare the environment variables
+            conflict_instruct = {"ask": False, "real_root": instruct["real_root"],
+                    "count": len(operation_data[plan][0]["conflict"])}
+            i = 0
+            for conflict in operation_data[plan][0]["conflict"]:
+                i += 1;
+                conflict_instruct['i'] = i
+                # run the interpreter with remove parameter
+                # operation_order => ["remove"]
+                if not initpreter.InitializeInterpreter(conflict, conflict_instruct, 
+                        ['remove'], remove=True).initialize():
+                    repo, category, name, version = conflict
+                    out.error("an error occured during remove operation: %s/%s/%s-%s" % (repo, category, name, version))
+                    lpms.terminate()
+            out.write("\n")
+
         setattr(opr.env, 'todb', operation_data[plan][0])
         setattr(opr.env, 'valid_opts', operation_data[plan][1])
 
@@ -320,6 +350,7 @@ def main(raw_data, instruct):
         catdir = os.path.dirname(os.path.dirname(opr.env.install_dir))
         if catdir:
             shelltools.remove_file(catdir)
+
 
         # resume feature
         # delete package data, if it is installed successfully

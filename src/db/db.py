@@ -190,12 +190,14 @@ class PackageDatabase:
         self.commit()
 
     def add_depends(self, data, commit=True):
-        repo_name, category, name, version, build, runtime = data
-        if not self.get_depends(repo_name, category, name, version) is not None:
-            self.cursor.execute('''insert into depends values (?, ?, ?, ?, ?, ?)''', 
+        repo_name, category, name, version, build, runtime, postmerge, conflict = data
+        if not self.get_depends(repo_name, category, name, version):
+            self.cursor.execute('''insert into depends values (?, ?, ?, ?, ?, ?, ?, ?)''', 
                     (repo_name, category, name, version,
                     sqlite3.Binary(pickle.dumps(build, 1)),
-                    sqlite3.Binary(pickle.dumps(runtime, 1))
+                    sqlite3.Binary(pickle.dumps(runtime, 1)),
+                    sqlite3.Binary(pickle.dumps(postmerge, 1)),
+                    sqlite3.Binary(pickle.dumps(conflict, 1))
                     ))
         if commit:
             self.commit()
@@ -205,17 +207,32 @@ class PackageDatabase:
                 (repo, category, name, version,))
         return self.cursor.fetchone()
 
-    def get_depends(self, repo_name, category, name, version=None):
-        data = self.cursor.execute('''select * from depends where repo=(?) and category=(?) and name=(?)''', 
-                (repo_name, category, name,))
-        if version is not None:
-            data = self.cursor.execute('''select * from depends where repo=(?) and category=(?) and name=(?) and version=(?)''', (
-                    repo_name, category, name, version,))
+    def get_depends(self, repo_name, category, name, version):
+        #FIXME: remove magic numbers
+        #if version is not None:
+        #    self.cursor.execute('''select * from depends where repo=(?) and category=(?) and name=(?) and version=(?)''', 
+        #            (repo_name, category, name, version,))
+        #else:
+        self.cursor.execute('''select * from depends where repo=(?) and category=(?) and name=(?) and version=(?)''', 
+            (repo_name, category, name, version,))
 
-        for deps in data:
-            result = {'build': pickle.loads(str(deps[4])),
-                    'runtime': pickle.loads(str(deps[5]))}
-            return result
+        result = {}
+        for deps in self.cursor.fetchall():
+            if deps[6] is None:
+                postmerge = []
+            else:
+                postmerge = pickle.loads(str(deps[6]))
+
+            if deps[7] is None:
+                conflict = []
+            else:
+                conflict = pickle.loads(str(deps[7]))
+
+            result.update({'build': pickle.loads(str(deps[4])),
+                    'runtime': pickle.loads(str(deps[5])),
+                    'postmerge': postmerge,
+                    'conflict': conflict})
+        return result
 
     def get_options(self, repo, category, name):
         self.cursor.execute('''select options from metadata where repo=(?) and category=(?) and name=(?)''', 

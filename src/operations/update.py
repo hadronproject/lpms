@@ -96,18 +96,22 @@ class Update(internals.InternalFuncs):
 
             self.repo_db.add_pkg(data, commit=False)
             # add dependency mumbo-jumbo
-            runtime = []; build = []
+            runtime = []; build = []; postmerge = []; conflict = []
             if 'depends' in self.env.__dict__.keys():
-                    deps = utils.depends_parser(self.env.depends)
-                    if 'runtime' in deps:
-                        runtime = deps['runtime']
-                    if 'build' in deps:
-                        build = deps['build']
-                    if 'common' in deps:
-                        runtime.extend(deps['common'])
-                        build.extend(deps['common'])
+                deps = utils.depends_parser(self.env.depends)
+                if 'runtime' in deps:
+                    runtime.extend(deps['runtime'])
+                if 'build' in deps:
+                    build.extend(deps['build'])
+                if 'common' in deps:
+                    runtime.extend(deps['common'])
+                    build.extend(deps['common'])
+                if 'postmerge' in deps:
+                    postmerge.extend(deps['postmerge'])
+                if 'conflict' in deps:
+                    conflict.extend(deps['conflict'])
 
-            for opt in ('opt_common', 'opt_runtime', 'opt_build'):
+            for opt in ('opt_common', 'opt_conflict', 'opt_runtime', 'opt_build'):
                 try:
                     deps = utils.parse_opt_deps(getattr(self.env, opt))
                     if opt.split("_")[1] == "runtime":
@@ -117,14 +121,21 @@ class Update(internals.InternalFuncs):
                     elif opt.split("_")[1] == "common":
                         build.append(deps)
                         runtime.append(deps)
+                    elif opt.split("_")[1] == "postmerge":
+                        postmerge.append(deps)
+                    elif opt.split("_")[1] == "conflict":
+                        conflict.append(deps)
                     del deps
                 except AttributeError:
                     continue
 
-            dependencies = (repo, category, self.env.name, self.env.version, build, runtime)
+            dependencies = (repo, category, self.env.name, self.env.version, 
+                    build, runtime, postmerge, conflict)
             self.repo_db.add_depends(dependencies)
             # remove optional keys
-            for key in ('depends', 'options', 'opt_runtime', 'opt_build'):
+            for key in ('depends', 'options', 'opt_runtime', 
+                    'opt_build', 'opt_conflict', 'opt_common', 
+                    'opt_postmerge'):
                 try:
                     del self.env.__dict__[key]
                 except KeyError:
@@ -169,6 +180,7 @@ def main(params):
                 
                 operation.update_repository(repo_name)
                 repo_num += 1
+                
         out.normal("%s repository(ies) is/are updated." % repo_num)
     else:
         if len(repo_name.split("/")) == 2:
