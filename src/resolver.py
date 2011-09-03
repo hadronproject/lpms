@@ -541,7 +541,10 @@ class DependencyResolver(object):
 
             return category, name, versions
 
-    def package_select(self, data):
+    def package_select(self, data, instdb=False):
+        db = self.repodb
+        if instdb:
+            db = self.instdb
         slot = None
         gte, lte, lt, gt = False, False, False, False
         slot_parsed = data.split(":")
@@ -566,8 +569,10 @@ class DependencyResolver(object):
         else:
             category, name = data.split("/")
             versions = []
-            version_data = self.repodb.find_pkg(name, pkg_category=category, selection = True)
+            version_data = db.find_pkg(name, pkg_category=category, selection = True)
             if not version_data:
+                if instdb:
+                    return
                 out.error("unmet dependency for %s: %s" % ("/".join(self.current_package[:-1])+\
                         "-"+self.current_package[-1], data))
                 lpms.terminate()
@@ -591,8 +596,10 @@ class DependencyResolver(object):
 
         category, name = name.split("/")
         result = []
-        repo = self.repodb.find_pkg(name, pkg_category=category, selection = True)
+        repo = db.find_pkg(name, pkg_category=category, selection = True)
         if not repo:
+            if instdb:
+                return
             out.error("unmet dependency for %s: %s" % ("/".join(self.current_package[:-1])+\
                     "-"+self.current_package[-1], pkgname))
             lpms.terminate()
@@ -684,14 +691,20 @@ class DependencyResolver(object):
 
         return depends, opts, no 
 
-    def parse_package_name(self, data):
+    def parse_package_name(self, data, instdb=False):
         #try:
         try:
             name, opts = self.opt_parser(data)
         except ValueError:
-            return self.package_select(data), []
+            result = self.package_select(data, instdb)
+            if not result:
+                return
+            return result, []
         else:
-            return self.package_select(name), opts
+            result = self.package_select(name, instdb),
+            if not result:
+                return
+            return result, opts
         #except UnmetDependency as err:
         #    print err
 
@@ -786,13 +799,15 @@ class DependencyResolver(object):
                     if d in options: 
                         options.remove(d)
                 for dyn_dep in dyn_packages:
-                    dyn_package_data = self.parse_package_name(dyn_dep)
+                    if key == "conflict":
+                        dyn_package_data = self.parse_package_name(dyn_dep, instdb=True)
+                        if not dyn_package_data:
+                            continue
+                    else:
+                        dyn_package_data = self.parse_package_name(dyn_dep)
                     dyn_dep_repo = self.get_repo(dyn_package_data[0])
                     (dcategory, dname, dversion), dopt = dyn_package_data
                     if key == "conflict":
-                        if not self.instdb.find_pkg(dname, repo_name = dyn_dep_repo, 
-                                pkg_category = dcategory):
-                            continue
                         local_plan[key].append([dyn_dep_repo, dcategory, dname, dversion])
                         continue
                     local_plan[key].append([dyn_dep_repo, dcategory, dname, dversion, dopt])
@@ -801,13 +816,15 @@ class DependencyResolver(object):
 
             if static_deps:
                 for stc_dep in parse_depend_line(static_deps):
-                    stc_package_data = self.parse_package_name(stc_dep)
+                    if key == "conflict":
+                        stc_package_data = self.parse_package_name(stc_dep, instdb=True)
+                        if not stc_package_data:
+                            continue
+                    else:
+                        stc_package_data = self.parse_package_name(stc_dep)
                     stc_dep_repo = self.get_repo(stc_package_data[0])
                     (scategory, sname, sversion), sopt = stc_package_data
                     if key == "conflict":
-                        if not self.instdb.find_pkg(sname, repo_name = stc_dep_repo, 
-                                pkg_category = scategory):
-                            continue
                         local_plan[key].append([stc_dep_repo, scategory, sname, sversion])
                         continue
                     local_plan[key].append([stc_dep_repo, scategory, sname, sversion, sopt])
