@@ -21,20 +21,22 @@ import os
 import lpms
 
 from lpms import exceptions
-
 from lpms import constants as cst
 
 class ReadConfig(object):
-    def __init__(self, data):
+    def __init__(self, data, delimiter=None):
+        if not delimiter:
+            delimiter = "="
+
         for line in data:
             if not line.strip() or line.startswith("#"):
                 continue
 
-            parsed_line = line.split("=", 1)
+            parsed_line = line.split(delimiter, 1)
             if len(parsed_line) == 1:
                 i = 1
                 while True:
-                    prev_key = data[data.index(line) - i].split("=", 1)[0].strip()
+                    prev_key = data[data.index(line) - i].split(delimiter, 1)[0].strip()
                     if prev_key in self.__dict__:
                         self.__dict__[prev_key] += " "+parsed_line[0].strip()
                         break
