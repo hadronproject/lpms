@@ -75,11 +75,17 @@ def syncronize(cmdline, instruct):
     '''Syncronizes package repositories via any SCM
     and run update and upgrade operations if wanted'''
     query = cmdline
+    valid_repos = utils.valid_repos()
+
     if not cmdline:
-        query = utils.valid_repos()
+        query = valid_repos
 
     for repo in query:
-        sync.SyncronizeRepo().run(repo)
+        if repo in valid_repos:
+            sync.SyncronizeRepo().run(repo)
+        else:
+            out.error("%s is not a valid repository." % repo)
+            lpms.terminate()
 
     if instruct["update"]:
         update_repository(cmdline)
