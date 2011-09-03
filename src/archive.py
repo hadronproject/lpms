@@ -25,13 +25,27 @@ import lpms
 from lpms import out
 
 class Archive:
-    def __init__(self, location):
+    def __init__(self, location, partial):
         self.location = location
+        self.partial = partial
         
     def extract_tar(self, path):
-        f = tarfile.open(path, 'r')
+        if not tarfile.is_tarfile(path):
+            out.error("%s is not a valid tar file." % path)
+            lpms.terminate()
+
+        archive = tarfile.open(path, 'r')
         out.notify("extracting %s to %s" % (os.path.basename(path), self.location))
-        f.extractall(self.location)
+        if isinstance(self.partial, list):
+            for name in archive.getnames():
+                if name in self.partial:
+                    archive.extract(name, path=self.location)
+                else:
+                    for partial in self.partial:
+                        if len(name.split(partial, 1)) == 2:
+                            archive.extract(name, path=self.location)
+        else:
+            archive.extractall(self.location)
 
     def extract_zip(self, path):
         f = zipfile.ZipFile(path)
@@ -67,7 +81,7 @@ class Archive:
 
         os.chdir(current)
 
-def extract(file_path, location):
+def extract(file_path, location, partial=False):
     if not os.path.isfile(file_path):
         lpms.terminate("%s could not found!" % file_path)
     valid_types = {
@@ -78,7 +92,7 @@ def extract(file_path, location):
             "xz": 'extract_lzma',
             "tar.gz": 'extract_tar'
     }
-    churchkey = Archive(location)
+    churchkey = Archive(location, partial)
     for __type in valid_types.keys():
         if file_path.endswith(__type):
             getattr(churchkey, valid_types[__type])(file_path)
