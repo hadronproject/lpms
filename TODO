@@ -8,7 +8,7 @@
 (-) more exception
 (+) package sets(like repo components)
 (+) option definitions.
-(-) post_remove, pre_install, pre_remove functions will be added to interpreter.
+(+) post_remove, pre_install, pre_remove functions will be added to interpreter.
 (-) database locking
 (-) unit tests will be written
 (-) we need more exception and error messages will be improved.
