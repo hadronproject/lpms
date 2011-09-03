@@ -110,7 +110,12 @@ class Build(internals.InternalFuncs):
                 else:
                     out.notify("%s seems already unpacked." % os.path.basename(archive_path))
                     continue
-            archive.extract(str(archive_path), str(target))
+            if hasattr(self.env, "partial"):
+                partial = [atom.strip() for atom in self.env.partial.split(" ") 
+                        if atom != "#"]
+                archive.extract(str(archive_path), str(target), partial)
+            else:
+                archive.extract(str(archive_path), str(target))
         shelltools.touch(unpack_file)
 
     def parse_url_tag(self):
