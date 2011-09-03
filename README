@@ -13,10 +13,9 @@ lpms aims to be functional, user-friendly, fast and powerful.
 Dependencies
 -------------
 
-* lpms is written in Python-2.7.1. So you should use Python-2.7.x or Python-2.6.x. 
-But 2.7 series is recommended.
+* lpms is written in Python-2.7.1.
 
-* Python must be compiled with sqlite support. So lpms depends on sqlite.
+* Python-2.7.x must be compiled with sqlite support. So lpms depends on sqlite.
 
 * lpms uses 'catbox' as sandboxing application. You can find catbox in Hadron's main
 repository.
