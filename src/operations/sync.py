@@ -20,6 +20,8 @@ import lpms
 from lpms import out
 from lpms import constants as cst
 
+# FIXME: This module must be rewritten. Object Oriended is nice.
+
 class SyncronizeRepo(object):
     def __init__(self):
         self.data = None
