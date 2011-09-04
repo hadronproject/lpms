@@ -39,6 +39,7 @@ help_output = (('--help', '-h', 'Shows this message.'),
         ('--search', '-s', 'Searches given package in database.'),
         ('--belong', '-b', 'Queries the package that owns given keyword.'),
         ('--content', '-c', 'Lists files of given package.'),
+        ('--list-repos', 'Lists all repositories.'),
         ('--force-upgrade', 'Forces lpms to use latest versions.'),
         ('--configure-pending', 'Configures pending packages if they were not configured at installation time.'),
         ('--reload-previous-repodb', 'Reloads previous repository database backup.'),
@@ -110,7 +111,8 @@ def usage():
 
 nevermind = ('--ignore-depends', '--quiet', '--verbose', '--force-upgrade', '--reset', \
         '--ignore-sandbox', '--force-unpack', '--enable-sandbox', '--ignore-conflicts', 
-        '--no-configure', '--ignore-reserve-files', '--reload-previous-repodb')
+        '--no-configure', '--ignore-reserve-files', '--reload-previous-repodb',
+        '--list-repos')
 
 exceptions = ('change-root', 'opts', 'stage')
 
@@ -174,13 +176,10 @@ def main():
                 usage()
             elif (l[2:] == 'version'):
                 version()
-            #elif (l[2:] == 'update'):
-            #    utils.check_root()
-            #    try:
-            #        update.main(cli[(cli.index(l) + 1):])
-            #    except IndexError:
-            #        update.main()
-            #    return
+            elif l[2:] == 'list-repos':
+                from lpms.cli import list_repos
+                list_repos.main()
+                return
             elif (l[2:] == 'info'):
                 from lpms.cli import info
                 info.Info(cli[(cli.index(l) + 1):]).run()
