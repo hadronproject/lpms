@@ -942,8 +942,9 @@ class DependencyResolver(object):
                         plan.append(pkg)
 
             locked_packages = []
-            for line in self.user_defined_lock:
-                locked_packages.extend([self.parse_user_defined_file(line)])
+            if hasattr(self, "user_defined_lock"):
+                for line in self.user_defined_lock:
+                    locked_packages.extend([self.parse_user_defined_file(line)])
 
             for item in plan:
                 plan_category = item[1]; plan_name = item[2]; plan_version = item[3]
