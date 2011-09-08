@@ -395,7 +395,7 @@ def pkg_selection_dialog(data):
 
 def metadata_parser(data):
     metadata = collections.OrderedDict()
-    keys = ('summary', 'src_url', 'license', 'arch', 'homepage', 'options')
+    keys = ('summary', 'src_url', 'license', 'arch', 'homepage', 'options', 'slot')
     lines = data.strip().split('\n')
     subtotal = []
     for line in lines:
