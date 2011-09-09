@@ -5,14 +5,26 @@
 (+) terminal titles
 (+) dependency resolver will be coded again. options, version decisions and many others will be added.
 (-) more documentation
-(-) use exceptions instead of lpms.terminate
 (+) package sets(like repo components)
 (+) option definitions.
 (+) post_remove, pre_install, pre_remove functions will be added to interpreter.
 (-) database locking
-(-) unit tests will be written
 (-) we need more exception and error messages will be improved.
 (+) file collisions
+(-) improve file collision feature
 (+) config protect feature will be improved
-(-) an 'environment update' script
+(-) review search and info commans
+
+# Further development #
+=======================
+(-) memory and speed optimizations
+(-) Write a new database module and api in orm style
 (-) re-write operations/build and operations/merge.py
+(-) an 'environment update' script
+(-) unit tests will be written 
+(-) use exceptions instead of lpms.terminate
+(-) improve dependency resolver
+(-) write a seperated dependency query tool
+(-) write a seperated searching tool
+(-) binary package support
+(-) binary repository support
