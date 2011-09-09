@@ -2,10 +2,10 @@
 ==========================
 
 (+) build libraries support will be improved.
-(+) terminal titles?
+(+) terminal titles
 (+) dependency resolver will be coded again. options, version decisions and many others will be added.
 (-) more documentation
-(-) more exception
+(-) use exceptions instead of lpms.terminate
 (+) package sets(like repo components)
 (+) option definitions.
 (+) post_remove, pre_install, pre_remove functions will be added to interpreter.
@@ -15,3 +15,4 @@
 (+) file collisions
 (+) config protect feature will be improved
 (-) an 'environment update' script
+(-) re-write operations/build and operations/merge.py
