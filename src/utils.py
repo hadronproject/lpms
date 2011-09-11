@@ -115,7 +115,9 @@ def get_mimetype(path):
     import magic
     m = magic.open(magic.MIME_TYPE)
     m.load()
-    return m.file(path.encode('utf-8'))
+    fileinfo = m.file(path)
+    m.close()
+    return fileinfo
 
 def run_strip(path):
     p = os.popen("/usr/bin/strip --strip-unneeded %s" % path)
