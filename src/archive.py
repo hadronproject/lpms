@@ -46,6 +46,8 @@ class Archive:
                             archive.extract(name, path=self.location)
         else:
             archive.extractall(self.location)
+        
+        archive.close()
 
     def extract_zip(self, path):
         f = zipfile.ZipFile(path)
