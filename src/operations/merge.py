@@ -305,14 +305,31 @@ class Merge(internals.InternalFuncs):
             self.env.license, self.env.src_url, 
             " ".join(self.env.valid_opts), self.env.slot, self.env.arch)
 
-        try:
-            builddeps, runtimedeps = self.env.todb["build"], self.env.todb["runtime"]
-        except KeyError:
-            builddeps, runtimedeps = [], []
+        # FIXME: I dont like this
+        if "build" in self.env.todb:
+            builddeps = self.env.todb["build"]
+        else:
+            builddeps = []
 
+        if "runtime" in self.env.todb:
+            runtimedeps = self.env.todb["runtime"]
+        else:
+            runtimedeps = []
+
+        if "postmerge" in self.env.todb:
+            postmerge = self.env.todb["postmerge"]
+        else:
+            postmerge = []
+
+        if "conflict" in self.env.todb:
+            conflict = self.env.todb["conflict"]
+        else:
+            conflict = []
+
+        # write package data to install db
         self.instdb.add_pkg(data, commit=True)
         self.instdb.add_depends((self.env.repo, self.env.category, self.env.name, 
-                self.env.version, builddeps, runtimedeps), commit=True)
+                self.env.version, builddeps, runtimedeps, postmerge, conflict), commit=True)
 
         # write build info. flags, build time and etc.
         #self.instdb.drop_buildinfo(self.env.repo, self.env.category, self.env.name, self.env.version)
