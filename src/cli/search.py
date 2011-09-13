@@ -63,8 +63,7 @@ class Search(object):
                                 ",".join(instdb_repo_query))
 
                 if lpms.getopt("--mark"):
-                    # buraya da yazmak gerek
-                    out.write("%s%s/%s/%s (%s)\n    %s" %(pkg_status, repo, category, 
+                    out.write("%s%s/%s/%s (%s) %s\n    %s" %(pkg_status, repo, category, 
                         replace.sub(out.color(r"\1", "red"), name),
                         " ".join(versions),
                         other_repo,
