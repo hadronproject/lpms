@@ -149,6 +149,11 @@ class API(object):
         #return self.db.get_version(pkgname, repo_name, pkg_category)
 
     def get_options(self, repo_name, pkgname, pkg_category):
+        #FIXME: get_repos returns a list sometimes if the package 
+        # installed from a unavaiable repository.
+        if isinstance(repo_name, list):
+            # we use the first item of the list for this db version.
+            repo_name = repo_name[0]
         return self.db.get_options(repo_name, pkgname, pkg_category)
 
     def get_slot(self, repo_name, pkgname, pkg_category, pkg_version):
@@ -164,7 +169,8 @@ class API(object):
         return self.db.get_arch(repo_name, category, pkgname, version)
 
     def get_repo(self, category, pkgname, version = None):
-        for repo in utils.valid_repos():
+        valid_repos = utils.valid_repos()
+        for repo in valid_repos:
             raw_result = self.find_pkg(pkgname, repo_name = repo, \
                     pkg_category = category)
             if raw_result:
@@ -175,8 +181,27 @@ class API(object):
                     if version in versions:
                         return repo
                 return repo
-    
-        return False
+        
+        # if the package installed but repository is not available,
+        # api runs this block.
+        # if the package is not installed, returns a empty list.
+        repos = []
+        for repo in self.get_repos():
+            if not repo in valid_repos:
+                # repo is a tuple in (u'hebelek',) format.
+                # i will fuck lpms database in the near future.
+                repo = repo[0]
+                raw_result = self.find_pkg(pkgname, repo_name = repo,
+                        pkg_category = category)
+                if raw_result:
+                    if version:
+                        versions = []
+                        map(lambda v: versions.extend(v), self.get_version(pkgname, \
+                                pkg_category = category).values())
+                        if version in versions:
+                            return repo
+                    repos.append(repo)
+        return repos
 
 def fix_path(path):
     for arg in sys.argv:
