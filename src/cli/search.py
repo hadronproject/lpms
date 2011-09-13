@@ -53,17 +53,26 @@ class Search(object):
                 map(lambda x: versions.extend(x), self.repodb.get_version(name, repo, category).values())
                 
                 pkg_status = ""
-                if  self.instdb.get_repo(category, name) == repo:
+                other_repo = ""
+                instdb_repo_query = self.instdb.get_repo(category, name) 
+                if  instdb_repo_query == repo:
                     pkg_status = "["+out.color("I", "brightgreen")+"] "
-                
+                else:
+                    if instdb_repo_query and isinstance(instdb_repo_query, list):
+                        other_repo = "%s installed from %s" % (out.color("=>", "red"), \
+                                ",".join(instdb_repo_query))
+
                 if lpms.getopt("--mark"):
+                    # buraya da yazmak gerek
                     out.write("%s%s/%s/%s (%s)\n    %s" %(pkg_status, repo, category, 
                         replace.sub(out.color(r"\1", "red"), name),
                         " ".join(versions),
+                        other_repo,
                         replace.sub(out.color(r"\1", "red"), summary))+'\n')
                 else:
-                    out.write("%s%s/%s/%s (%s)\n    %s" % (pkg_status, out.color(repo, "green"),  
+                    out.write("%s%s/%s/%s (%s) %s\n    %s" % (pkg_status, out.color(repo, "green"),  
                         out.color(category, "green"),
                         out.color(name, "green"),
                         " ".join(versions),
+                        other_repo,
                         summary+'\n'))
