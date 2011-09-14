@@ -120,7 +120,7 @@ class Build(internals.InternalFuncs):
 
     def parse_url_tag(self):
         def set_shortening(data, opt=False):
-            for short in ('$name', '$version', '$fullname', '$my_fullname', '$my_name', '$my_version'):
+            for short in ('$slot, $my_slot, $name', '$version', '$fullname', '$my_fullname', '$my_name', '$my_version'):
                 try:
                     data = data.replace(short, self.env.__dict__[short[1:]])
                 except KeyError:
@@ -223,7 +223,6 @@ def main(raw_data, instruct):
 
         setattr(opr.env, 'todb', operation_data[plan][0])
         setattr(opr.env, 'valid_opts', operation_data[plan][1])
-
         operation_data[plan]
         keys = {'repo':0, 'category':1, 'pkgname':2, 'version':3}
         for key in keys:
