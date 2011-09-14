@@ -17,6 +17,7 @@
 
 import os
 import time
+import gzip
 import tarfile
 import zipfile
 import subprocess
@@ -46,13 +47,13 @@ class Archive:
                             archive.extract(name, path=self.location)
         else:
             archive.extractall(self.location)
-        
         archive.close()
 
     def extract_zip(self, path):
-        f = zipfile.ZipFile(path)
+        f = zipfile.ZipFile(path, "r")
         out.notify("extracting %s to %s" % (os.path.basename(path), self.location))
-        f.extractall(self.location)
+        f.extractall(path=self.location)
+        f.close()
         #current = os.getcwd()
         #os.chdir(self.location)
         #z = zipfile.ZipFile(path, 'r')
@@ -83,6 +84,18 @@ class Archive:
 
         os.chdir(current)
 
+    def extract_gz(self, path):
+        '''Extracts GZIP archives. It generally ships single files like
+        a patch.
+        '''
+        current = os.getcwd()
+        os.chdir(self.location)
+        archive = gzip.open(path, "rb")
+        out.notify("extracting %s to %s" % (os.path.basename(path), self.location))
+        file_content = archive.read()
+        archive.close()
+        os.chdir(current)
+
 def extract(file_path, location, partial=False):
     if not os.path.isfile(file_path):
         lpms.terminate("%s could not found!" % file_path)
@@ -92,9 +105,10 @@ def extract(file_path, location, partial=False):
             "zip":'extract_zip', 
             "lzma": 'extract_lzma',
             "xz": 'extract_lzma',
-            "tar.gz": 'extract_tar'
+            "tar.gz": 'extract_tar',
+            "gz": 'extract_gz'
     }
     churchkey = Archive(location, partial)
-    for __type in valid_types.keys():
-        if file_path.endswith(__type):
-            getattr(churchkey, valid_types[__type])(file_path)
+    for file_type in valid_types:
+        if file_path.endswith(file_type):
+            getattr(churchkey, valid_types[file_type])(file_path)
