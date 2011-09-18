@@ -300,10 +300,13 @@ def patch(*args, **kwarg):
 
     if not args:
         patch_dir = os.path.join(cst.repos, repo, category, pkgname, cst.files_dir)
-        ptch = glob.glob(patch_dir+"/*"+cst.patch_suffix)
+        if "location" in kwarg:
+            patch_dir = kwarg.get("location")
+
+        patches = glob.glob(patch_dir+"/*"+cst.patch_suffix)
         if not ptch:
             lpms.catch_error("no patch found in \'files\' directory.")
-        if apply_patch(ptch, level, reverse) is not None:
+        if apply_patch(patches, level, reverse) is not None:
             lpms.catch_error("patch failed.")
         return 
 
@@ -311,7 +314,10 @@ def patch(*args, **kwarg):
     for patch_name in args:
         if repo != "local":
             src = os.path.join(cst.repos, repo, category, pkgname, cst.files_dir, patch_name)
+            if "location" in kwarg:
+                src = os.path.join(kwarg.get("location"), patch_name)
         else:
+            # local repository feature is not in use.
             src = os.path.join(dirname(spec), cst.files_dir, patch_name)
 
         if patch_name.endswith(cst.patch_suffix):
