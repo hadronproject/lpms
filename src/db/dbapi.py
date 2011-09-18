@@ -151,9 +151,12 @@ class API(object):
     def get_options(self, repo_name, pkgname, pkg_category):
         #FIXME: get_repos returns a list sometimes if the package 
         # installed from a unavaiable repository.
-        if isinstance(repo_name, list):
+        if not repo_name:
+            return
+        elif isinstance(repo_name, list):
             # we use the first item of the list for this db version.
             repo_name = repo_name[0]
+
         return self.db.get_options(repo_name, pkgname, pkg_category)
 
     def get_slot(self, repo_name, pkgname, pkg_category, pkg_version):
