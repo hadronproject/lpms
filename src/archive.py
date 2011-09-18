@@ -88,13 +88,13 @@ class Archive:
         '''Extracts GZIP archives. It generally ships single files like
         a patch.
         '''
-        current = os.getcwd()
-        os.chdir(self.location)
-        archive = gzip.open(path, "rb")
-        out.notify("extracting %s to %s" % (os.path.basename(path), self.location))
-        file_content = archive.read()
-        archive.close()
-        os.chdir(current)
+        with gzip.open(path, "rb") as archive:
+            out.notify("extracting %s to %s" % (os.path.basename(path), self.location))
+            file_content = archive.read()
+            with open(os.path.join(self.location, 
+                "".join(os.path.basename(path).split(".gz"))), 
+                "w+") as myfile:
+                myfile.write(file_content)
 
 def extract(file_path, location, partial=False):
     if not os.path.isfile(file_path):
