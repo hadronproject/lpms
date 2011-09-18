@@ -66,16 +66,19 @@ class Build(internals.InternalFuncs):
 
     def prepare_download_plan(self, applied):
         for url in self.urls:
-            self.extract_plan.append(url)
             if not isinstance(url, tuple):
+                self.extract_plan.append(url)
                 if self.check_cache(url):
                     continue
                 self.download_plan.append(url)
             else:
-                if self.check_cache(url[1]):
+                option, url = url
+                if self.check_cache(url):
                     continue
-                if url[0] in applied: self.download_plan.append(url[1])
-        self.env.extract_plan = self.extract_plan
+                if option in applied: 
+                    self.download_plan.append(url)
+                    self.extract_plan.append(url)
+        setattr(self.env, "extract_plan", self.extract_plan)
 
     def prepare_environment(self):
         if self.env.sandbox is None:
@@ -130,12 +133,14 @@ class Build(internals.InternalFuncs):
             else:
                 self.urls.append(data)
 
-        for i in self.env.src_url.split(" "):
-            result = i.split("(")
+        for url in self.env.src_url.split(" "):
+            result = url.split("(")
             if len(result) == 1:
-                set_shortening(result[0])
+                set_shortening(url)
             elif len(result) == 2:
-                set_shortening(result[1], opt=True)
+                option, url = result
+                url = url.replace(")", "")
+                set_shortening(url, opt=option)
 
     def compile_script(self):
         if not os.path.isfile(self.env.spec_file):
@@ -223,6 +228,7 @@ def main(raw_data, instruct):
 
         setattr(opr.env, 'todb', operation_data[plan][0])
         setattr(opr.env, 'valid_opts', operation_data[plan][1])
+
         operation_data[plan]
         keys = {'repo':0, 'category':1, 'pkgname':2, 'version':3}
         for key in keys:
