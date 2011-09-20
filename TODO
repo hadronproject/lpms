@@ -28,3 +28,4 @@
 (-) write a seperated searching tool
 (-) binary package support
 (-) binary repository support
+(-) write a Makefile or setup.py for installation
