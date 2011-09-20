@@ -23,7 +23,7 @@ repository.
 
 Installation
 -------------
-lpms runs as a standard Python module. So you copy 'src' directory to Python's 
+lpms runs as a standard Python module. So you should copy 'src' directory to Python's 
 site-packages directory. Note that, src directory is named as 'lpms'. For details, 
 see lpms' build script.
 
