@@ -304,7 +304,7 @@ def patch(*args, **kwarg):
             patch_dir = kwarg.get("location")
 
         patches = glob.glob(patch_dir+"/*"+cst.patch_suffix)
-        if not ptch:
+        if not patches:
             lpms.catch_error("no patch found in \'files\' directory.")
         if apply_patch(patches, level, reverse) is not None:
             lpms.catch_error("patch failed.")
