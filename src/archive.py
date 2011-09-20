@@ -21,8 +21,10 @@ import gzip
 import tarfile
 import zipfile
 import subprocess
+from collections import OrderedDict
 
 import lpms
+
 from lpms import out
 
 class Archive:
@@ -99,16 +101,18 @@ class Archive:
 def extract(file_path, location, partial=False):
     if not os.path.isfile(file_path):
         lpms.terminate("%s could not found!" % file_path)
-    valid_types = {
-            'tar.bz2': 'extract_tar',
-            "tgz": 'extract_tar',
-            "zip":'extract_zip', 
-            "lzma": 'extract_lzma',
-            "xz": 'extract_lzma',
-            "tar.gz": 'extract_tar',
-            "gz": 'extract_gz'
-    }
+    valid_types = OrderedDict([
+            ('tar.bz2', 'extract_tar'),
+            ('tgz',  'extract_tar'),
+            ('zip', 'extract_zip'), 
+            ('lzma', 'extract_lzma'),
+            ('xz', 'extract_lzma'),
+            ('tar.gz', 'extract_tar'),
+            ('gz', 'extract_gz')
+    ])
+
     churchkey = Archive(location, partial)
     for file_type in valid_types:
         if file_path.endswith(file_type):
             getattr(churchkey, valid_types[file_type])(file_path)
+            return
