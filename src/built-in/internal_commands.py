@@ -167,15 +167,18 @@ def get_env(value):
     return os.environ[value]
 
 def makedirs(target):
-    if inspect.stack()[1][3] == "install":
-        shelltools.makedirs(prepare_target(target))
-    else:
-        shelltools.makedirs(target)
+    if current_stage == "install":
+        target = prepare_target(target)
+    shelltools.makedirs(target)
 
 def touch(path):
+    if current_stage == "install":
+        path = prepare_target(path)
     shelltools.touch(path)
 
 def echo(content, target):
+    if current_stage == "install":
+        target = prepare_target(target)
     shelltools.echo(content, target)
 
 def isfile(path):
