@@ -145,7 +145,7 @@ def get_pkg(pkgname, repositorydb=True):
         if result is not None:
             name, version = result
 
-    if version:
+    if version and repo is None:
         # check repository priority for given version
         data = db.find_pkg(name, repo_name = repo, pkg_category = category)
         if data:
