@@ -109,6 +109,11 @@ def get_pkg(pkgname, repositorydb=True):
         =sys-devel/binutils-2.14
     '''
 
+    def collect_versions(version_data):
+        i = []
+        map(lambda x: i.extend(x), version_data.values())
+        return  i
+
     def select_version(data):
         versions = []
         map(lambda ver: versions.extend(ver), data.values())
@@ -176,12 +181,20 @@ def get_pkg(pkgname, repositorydb=True):
         repo, category, name, version_data = result[0]
         if version is None:
             version = select_version(version_data)
+        else:
+            if not version in collect_versions(version_data):
+                out.error("%s/%s/%s-%s is not found in the database." % (repo, category, name, version))
+                lpms.terminate()
         return repo, category, name, version
 
     elif length == 4:
         repo, category, name, version_data = result
         if version is None:
             version = select_version(version_data)
+        else:
+            if not version in collect_versions(version_data):
+                out.error("%s/%s/%s-%s is not found in the database." % (repo, category, name, version))
+                lpms.terminate()
         return repo, category, name, version
 
 def upgrade_system(instruct):
