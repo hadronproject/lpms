@@ -701,7 +701,7 @@ class DependencyResolver(object):
                 return
             return result, []
         else:
-            result = self.package_select(name, instdb),
+            result = self.package_select(name, instdb)
             if not result:
                 return
             return result, opts
