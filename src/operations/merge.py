@@ -284,20 +284,23 @@ class Merge(internals.InternalFuncs):
         
         def rmpkg(data):
             '''removes installed versions from database'''
-            for key in data[-1].keys():
+            # last object of 'data' list is a dictonary that contains
+            # versions with slot. It likes this:
+            # {"0": ['0.14', '0.12'], "1": ["1.2"]}
+            for key in data[-1]:
                 if key == self.env.slot:
                     for ver in data[-1][key]:
                         self.instdb.remove_pkg(data[0], self.env.category, 
                                 self.env.name, ver)
 
         if installed:
-            if not isinstance(installed, bool) or isinstance(installed, tuple):
+            if isinstance(installed, list):
+                # remove the db entry if the package is found more than one repositories.
+                for i in installed:
+                    rmpkg(i)
+            elif isinstance(installed, tuple):
                 # remove the db entry if the package is installed from a single repository.
                 rmpkg(installed)
-            elif isinstance(installed, list):
-                # remove the db entry if the package is found more than one repositories.
-                for pkg in installed:
-                    rmpkg(pkg)
 
         data =(self.env.repo, self.env.category, 
             self.env.name, self.env.version, 
