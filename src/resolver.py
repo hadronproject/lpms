@@ -757,6 +757,12 @@ class DependencyResolver(object):
                     else:
                         if opt[1:] in options:
                             options.remove(opt[1:])
+        else:
+            # save existing options
+            if version in inst_options:
+                for iopt in inst_options[version].split(" "):
+                    if iopt in self.global_options and not iopt in options:
+                        options.append(iopt)
 
         # FIXME: WHAT THE FUCK IS THAT??
         if not dependencies:
