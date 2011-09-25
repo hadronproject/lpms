@@ -392,24 +392,30 @@ def show_plan(repo, category, name, version, valid_options, options):
     #if pkgdata:
     #    map(lambda ver: ivers.extend(ver), pkgdata[-1].values())
 
-    if (category, name) == pkgdata[1:-1]:
+    if pkgdata:
         repovers = repodb.get_version(name, pkg_category = category)
+        slot = instdb.get_slot(category, name, version)
+        valid_repos = utils.valid_repos()
 
-        for key in repovers:
-            if version in repovers[key]:
-                try:
-                    instver = pkgdata[-1][key][0]
-                    cmpres = utils.vercmp(version, instver)
-                    if cmpres == 1:
-                        status[0] = out.color("U", "brightgreen")
-                        oldver = "["+out.color(instver, "brightgreen")+"]"
-                    elif cmpres == 0:
-                        status[0] = out.color("R", "brightyellow")
-                    elif cmpres == -1:
-                        status[0] = out.color("D", "brightred")
-                        oldver = "["+out.color(instver, "brightred")+"]"
-                except KeyError:
-                    status[-1] = out.color("NS", "brightgreen")
+        if slot is None:
+            status[-1] = out.color("NS", "brightgreen")
+        else:
+            if isinstance(pkgdata, list):
+                for item in pkgdata:
+                    if slot in item[-1]:
+                        pkgdata = item
+                        break
+            if version in repovers[slot]:
+                instver = pkgdata[-1][slot][0]
+                cmpres = utils.vercmp(version, instver)
+                if cmpres == 1:
+                    status[0] = out.color("U", "brightgreen")
+                    oldver = "["+out.color(instver, "brightgreen")+"]"
+                elif cmpres == 0:
+                    status[0] = out.color("R", "brightyellow")
+                elif cmpres == -1:
+                    status[0] = out.color("D", "brightred")
+                    oldver = "["+out.color(instver, "brightred")+"]"
     else:
         status[0] = out.color("N", "brightgreen")
 
