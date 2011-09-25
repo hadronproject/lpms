@@ -57,6 +57,18 @@ class PackageDatabase:
         self.cursor.execute('''select repo from metadata''')
         return list(set(self.cursor.fetchall()))
 
+    def get_slot(self, category, name, version):
+        self.cursor.execute('''select version from metadata where category=(?) and name=(?)''', 
+                (category, name,))
+        
+        items = self.cursor.fetchall()
+        for item in items:
+            # first object of the tuple ships data
+            result = pickle.loads(str(item[0]))
+            for slot in result:
+                if version in result[slot]:
+                    return slot
+
     def add_pkg(self, data, commit=True):
         def get_slot():
             self.cursor.execute('''select version from metadata where repo=(?) and category=(?) and name=(?)''', 
