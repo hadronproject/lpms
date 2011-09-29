@@ -56,7 +56,6 @@ class UpgradeSystem(object):
                 # a slot must inclue single version for installed packages database.
                 # But get_version method returns a dict and instver is a list.
                 # Hence, I used instver[0] in the code.
-                print repovers, slot, data
                 if not repovers or not slot in repovers:
                     continue
                 best = utils.best_version(repovers[slot])
