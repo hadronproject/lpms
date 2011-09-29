@@ -45,7 +45,7 @@ class UpgradeSystem(object):
             data =  self.repodb.find_pkg(name, pkg_category = category, selection=True)
             if not data:
                 continue
-            repovers = data[0][-1]
+            repovers = data[-1]
             
             # comparise versions
             for slot, instver in self.instdb.get_version(name, repo, category).items():
