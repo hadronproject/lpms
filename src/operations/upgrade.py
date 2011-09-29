@@ -61,7 +61,7 @@ class UpgradeSystem(object):
                     continue
                 best = utils.best_version(repovers[slot])
                 result = utils.vercmp(best, instver[0]) 
-                print result, pkg
+                
                 if result != 0:
                     self.packages.append(os.path.join(category, name))
 
