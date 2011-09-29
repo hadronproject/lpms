@@ -36,7 +36,6 @@ class UpgradeSystem(object):
     def select_pkgs(self):
         for pkg in self.instdb.get_all_names():
             repo, category, name = pkg
-            
             # catch packages which are from the outside
             if not self.repodb.find_pkg(name, pkg_category = category):
                 self.notfound_pkg.append((category, name))
@@ -45,19 +44,24 @@ class UpgradeSystem(object):
             data =  self.repodb.find_pkg(name, pkg_category = category, selection=True)
             if not data:
                 continue
-            repovers = data[-1]
+            
+            # FIXME: this hack will be fixed in new database version
+            if isinstance(data, list):
+                repovers = data[0][-1]
+            else:
+                repovers = data[-1]
             
             # comparise versions
             for slot, instver in self.instdb.get_version(name, repo, category).items():
                 # a slot must inclue single version for installed packages database.
                 # But get_version method returns a dict and instver is a list.
                 # Hence, I used instver[0] in the code.
+                print repovers, slot, data
                 if not repovers or not slot in repovers:
                     continue
-
                 best = utils.best_version(repovers[slot])
                 result = utils.vercmp(best, instver[0]) 
-
+                print result, pkg
                 if result != 0:
                     self.packages.append(os.path.join(category, name))
 
