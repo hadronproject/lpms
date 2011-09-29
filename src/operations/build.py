@@ -285,7 +285,6 @@ def main(raw_data, instruct):
         lpms.logger.info("starting build (%s/%s) %s/%s/%s-%s" % (i, count, opr.env.repo, 
             opr.env.category, opr.env.name, opr.env.version))
 
-        # The Zen of Python
         if random.randrange(0, 1000001) in range(0, 1001):
             data = """The Zen of Python, by Tim Peters
             Beautiful is better than ugly.
@@ -395,11 +394,13 @@ def show_plan(repo, category, name, version, valid_options, options):
     if pkgdata:
         repovers = repodb.get_version(name, pkg_category = category)
         slot = instdb.get_slot(category, name, version)
-        valid_repos = utils.valid_repos()
+        repo_slot = repodb.get_slot(category, name, version)
 
-        if slot is None:
+        if slot is None and not repo_slot in pkgdata[-1]:
             status[-1] = out.color("NS", "brightgreen")
         else:
+            if slot is None:
+                slot = repo_slot
             if isinstance(pkgdata, list):
                 for item in pkgdata:
                     if slot in item[-1]:
