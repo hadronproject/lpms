@@ -204,6 +204,11 @@ def main(raw_data, instruct):
         with open(cst.resume_file, "wb") as _data:
             pickle.dump(raw_data, _data)
 
+    if not os.path.ismount("/proc"):
+        out.warn("/proc is not mounted. You have been warned.")
+    if not os.path.ismount("/dev"):
+        out.warn("/dev is not mounted. You have been warned.")
+
     for plan in operation_plan:
         opr = Build()
         # if conflict list is not empty,
