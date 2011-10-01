@@ -63,6 +63,7 @@ def conf(*args, **kwargs):
                 cst.info, cst.data, \
                 cst.conf, cst.localstate, cst.libexec, " ".join(args))
             args = " ".join([member for member in args.split(" ") if member != ""])
+            out.notify("running %s" % args)
             if not system(args):
                 lpms.terminate()
         else:
@@ -73,6 +74,7 @@ def conf(*args, **kwargs):
 
 def raw_configure(*parameters):
     '''Runs configure script with only given parameters'''
+    out.notify("running ./configure %s" % " ".join(parameters))
     if not system("./configure %s" % " ".join(parameters)):
         lpms.terminate()
 
@@ -83,11 +85,13 @@ def make(*parameters, **kwargs):
     else:
         jobs = cfg.LPMSConfig().MAKEOPTS
 
+    out.notify("running make %s %s" % (str(jobs), " ".join(parameters)))
     if not system("make %s %s" % (str(jobs), " ".join(parameters))):
         lpms.catch_error("make failed.")
 
 def raw_install(parameters = '', arg='install'):
     '''Runs installation function with only given parameters'''
+    out.notify("running make %s %s" % (parameters, arg))
     if not system("make %s %s" % (parameters, arg)):
         lpms.catch_error("raw_install() function failed.")
 
@@ -113,41 +117,56 @@ def linstall(parameters='', arg='install'):
                     }
 
     args = " ".join([member for member in args.split(" ") if member != ""])
+    out.notify("running %s" % args) 
     if not system(args):
-        lpms.catch_error("listall failed.")
+        lpms.catch_error("linstall failed.")
 
 def aclocal(*parameters):
     '''Runs aclocal with given parameters'''
-    if not system("aclocal %s" % " ".join(parameters)):
+    command = " ".join(parameters)
+    out.notify("running aclocal %s" % command)
+    if not system("aclocal %s" % command):
         lpms.catch_error("aclocal failed.")
 
 def intltoolize(*parameters):
     '''Runs intltoolize with given parameters'''
-    if not system("intltoolize %s" % " ".join(parameters)):
+    command = " ".join(parameters)
+    out.notify("running intltoolize %s" % command)
+    if not system("intltoolize %s" % command):
         lpms.catch_error("intltoolize failed.")
 
 def libtoolize(*parameters):
     '''Runs libtoolize with given parameters'''
-    if not system("libtoolize %s" % " ".join(parameters)):
+    command = " ".join(parameters)
+    out.notify("running libtoolize %s" % command)
+    if not system("libtoolize %s" % command):
         lpms.catch_error("libtoolize failed.")
 
 def autoconf(*parameters):
     '''Runs autoconf with given parameters'''
-    if not system("autoconf %s" % " ".join(parameters)):
+    command = " ".join(parameters)
+    out.notify("running autoconf %s" % command)
+    if not system("autoconf %s" % command):
         lpms.catch_error("autoconf failed.")
 
 def autoreconf(*parameters):
     '''Runs autoreconf with given parameters'''
-    if not system("autoreconf %s" % " ".join(parameters)):
+    command = " ".join(parameters)
+    out.notify("running autoreconf %s" % command)
+    if not system("autoreconf %s" % command):
         lpms.catch_error("autoreconf failed.")
 
 def automake(*parameters):
     '''Runs automake with given parameters'''
-    if not system("automake %s" % " ".join(parameters)):
+    command = " ".join(parameters)
+    out.notify("running automake %s" % command)
+    if not system("automake %s" % command):
         lpms.catch_error("automake failed.")
 
 def autoheader(*parameters):
     '''Runs autoheader with given parameters'''
-    if not system("autoheader %s" % " ".join(parameters)):
+    command = " ".join(parameters)
+    out.notify("running autoheader %s" % command)
+    if not system("autoheader %s" % command):
         lpms.catch_error("autoheader failed.")
 
