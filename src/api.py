@@ -217,9 +217,10 @@ def remove_package(pkgnames, instruct):
     packages = [get_pkg(pkgname, repositorydb=False) for pkgname in pkgnames]
     instruct['count'] = len(packages); i = 0;
     if instruct['ask']:
+        out.write("\n")
         for package in packages:
             repo, category, name, version = package
-            out.write("%s/%s/%s/%s\n" % (out.color(repo, "green"), 
+            out.write(" %s %s/%s/%s-%s\n" % (out.color(">", "brightgreen"), out.color(repo, "green"), 
                 out.color(category, "green"), out.color(name, "green"), 
                 out.color(version, "green")))
         utils.xterm_title("lpms: confirmation request")
