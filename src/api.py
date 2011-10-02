@@ -108,7 +108,8 @@ def get_pkg(pkgname, repositorydb=True):
         =binutils-2.13
         =sys-devel/binutils-2.14
     '''
-
+    
+    valid_repos = utils.valid_repos()
     def collect_versions(version_data):
         i = []
         map(lambda x: i.extend(x), version_data.values())
@@ -156,7 +157,7 @@ def get_pkg(pkgname, repositorydb=True):
         if data:
             repos = [r[0] for r in data]
             found = False
-            for valid_repo in utils.valid_repos():
+            for valid_repo in valid_repos:
                 if valid_repo in repos:
                     result = data[repos.index(valid_repo)]
                     versions = []
@@ -164,8 +165,16 @@ def get_pkg(pkgname, repositorydb=True):
                     if version in versions:
                         found = True
                         break
+            
             if not found:
                 result = None
+                for invalid_repo in repos:
+                    if not invalid_repo in valid_repos:
+                        for item in data:
+                            if invalid_repo == item[0]:
+                                for key in item[-1]:
+                                    if version in item[-1][key]:
+                                        result = item; break
         else:
             result = None
     else:
