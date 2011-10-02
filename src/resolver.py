@@ -605,19 +605,22 @@ class DependencyResolver(object):
             lpms.terminate()
             #raise UnmetDependency(pkgname)
 
+        if isinstance(repo, list):
+            repo = repo[0]
 
+        versions = []
         if slot is None:
-            versions = []
             # FIXME: because of our database :'(
-            if isinstance(repo, list):
-                repo = repo[0]
             try:
                 map(lambda v: versions.extend(v), repo[-1].values())
             except AttributeError:
                 # FIXME: What the fuck?
                 print(data)
         else:
-            versions = repo[-1][int(slot)]
+            if slot in repo[-1]:
+                versions = repo[-1][int(slot)]
+            else:
+                map(lambda v: versions.extend(v), repo[-1].values())
 
         for rv in versions:
             vercmp = utils.vercmp(rv, version) 
