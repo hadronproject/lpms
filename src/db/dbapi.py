@@ -180,11 +180,12 @@ class API(object):
                 if version:
                     versions = []
                     map(lambda v: versions.extend(v), self.get_version(pkgname, \
-                            pkg_category = category).values())
+                            repo_name = repo, pkg_category = category).values())
                     if version in versions:
                         return repo
-                return repo
-        
+                else:
+                    return repo
+
         # if the package installed but repository is not available,
         # api runs this block.
         # if the package is not installed, returns a empty list.
