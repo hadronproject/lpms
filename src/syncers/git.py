@@ -20,6 +20,7 @@ import os
 
 import lpms
 
+from lpms import out
 from lpms import shelltools
 from lpms import constants as cst
 
@@ -39,7 +40,9 @@ class GITSync(object):
         if self.git_repo():
             os.chdir(self.repo_path)
             if lpms.getopt("--reset"):
+                out.warn("forcing git to overwrite local files")
                 shelltools.system("git reset --hard HEAD")
+                shelltools.system("git clean -f -d")
             shelltools.system("git pull -f -u origin")
         else:
             os.chdir(os.path.dirname(self.repo_path))
