@@ -620,6 +620,10 @@ class DependencyResolver(object):
             if slot in repo[-1]:
                 versions = repo[-1][int(slot)]
             else:
+                #out.warn("%s is an invalid slot value for %s/%s/%s" % \
+                #        (out.color(slot, "red"), repo[0], category, name))
+                #out.warn("So lpms will use the latest version")
+                #print "/".join(self.current_package[:-1])
                 map(lambda v: versions.extend(v), repo[-1].values())
 
         for rv in versions:
@@ -641,6 +645,9 @@ class DependencyResolver(object):
                 if vercmp == 0:
                     return category, name, rv
 
+        if not result:
+            map(lambda v: result.extend(v), db.get_version(name, \
+                    pkg_category=category).values())
         return category, name, utils.best_version(result)
 
     def opt_parser(self, data):
@@ -769,6 +776,7 @@ class DependencyResolver(object):
 
         # FIXME: WHAT THE FUCK IS THAT??
         if not dependencies:
+            print repo, category, name, version, self.repodb.get_repo(category, name, version)
             lpms.terminate()
 
         local_plan = {"build":[], "runtime": [], "postmerge": [], "conflict": []}
@@ -927,11 +935,9 @@ class DependencyResolver(object):
                         continue 
 
                 data = self.instdb.find_pkg(name, pkg_category = category)
-                
                 if data:
                     irepo = self.instdb.get_repo(category, name, version)
                     db_options = self.instdb.get_options(irepo, category, name)
-
                     if version in db_options:
                         for opt in self.operation_data[pkg][-1]:
                             if not opt in db_options[version].split(" ") and not pkg in plan:
