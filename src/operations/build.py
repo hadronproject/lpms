@@ -123,7 +123,8 @@ class Build(internals.InternalFuncs):
 
     def parse_url_tag(self):
         def set_shortening(data, opt=False):
-            for short in ('$slot', '$my_slot', '$name', '$version', '$fullname', '$my_fullname', '$my_name', '$my_version'):
+            for short in ('$src_url', '$url_prefix', '$slot', '$my_slot', '$name', \
+                    '$version', '$fullname', '$my_fullname', '$my_name', '$my_version'):
                 try:
                     data = data.replace(short, self.env.__dict__[short[1:]])
                 except KeyError:
