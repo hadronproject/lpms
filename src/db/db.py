@@ -51,7 +51,13 @@ class PackageDatabase:
         self.cursor.executescript(skel.schema(self.db_path))
 
     def commit(self):
-        return self.connection.commit()
+        try:
+            return self.connection.commit()
+        except sqlite3.OperationalError as err:
+            print(err)
+            if err == "database is locked":
+                print("another thing is going on...")
+            lpms.terminate()
 
     def get_repos(self):
         self.cursor.execute('''select repo from metadata''')
