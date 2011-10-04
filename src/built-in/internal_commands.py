@@ -19,10 +19,15 @@ import os
 import glob
 import inspect
 
-from lpms import utils
-from lpms import out
-from lpms import shelltools
+import lpms
 
+from lpms import out
+from lpms import utils
+from lpms import shelltools
+from lpms.archive import extract as internal_extract
+from lpms.fetcher import URLFetcher
+
+from lpms import constants as cst
 
 def addflag(fn):
     def wrapped(flag):
@@ -162,6 +167,19 @@ def config_with(option, secondary=None):
 
 def export(variable, value):
     os.environ[variable] = value
+
+def unpack(*filenames, **kwargs):
+    location = kwargs.get("location", dirname(build_dir))
+    partial = kwargs.get("partial", None)
+
+    for filename in filenames:
+        path = joinpath(cst.src_cache, filename)
+        internal_extract(path, location, partial)
+
+def fetch(*urls):
+    if not URLFetcher().run(urls):
+        error("download failed, please check your spec.")
+        lpms.terminate()
 
 def get_env(value):
     return os.environ[value]
