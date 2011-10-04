@@ -49,7 +49,7 @@ config_file = "lpms.conf"
 distfiles = "/usr/portage/distfiles"
 extract_dir = "/var/tmp/lpms/"
 resume_file = extract_dir+"/"+"resume"
-
+src_cache = "/var/cache/lpms/sources"
 
 # lpms.conf is unhealty in this case.
 with open(config_dir+"/"+config_file) as data:
