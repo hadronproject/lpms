@@ -343,7 +343,7 @@ def main(raw_data, instruct):
             utils.xterm_title("lpms: extracting %s/%s/%s-%s" % (opr.env.repo, opr.env.category,
                 opr.env.name, opr.env.version))
 
-            if not "extract" in opt.env.__dict__:
+            if not "extract" in opr.env.__dict__:
                 opr.extract_sources()
                 if opr.env.stage == "unpack":
                     lpms.terminate()
