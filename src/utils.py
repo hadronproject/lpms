@@ -840,6 +840,7 @@ def pkgsplit(mypkg, silent = 1):
         return None
 
 def best_version(versions):
+    versions = list(set(versions))
     for ver in versions:
         i = 0
         for __ver in versions:
