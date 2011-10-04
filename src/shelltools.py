@@ -233,13 +233,18 @@ def remove_file(pattern):
         return False
 
     for path in src:
-        if is_file(path) or is_link(path):
+        if is_link(path):
             try:
                 os.unlink(path)
-            except OSError:
+            except OSError as err:
                 out.error("[remove_file] an error occured: %s" % path)
                 lpms.catch_error(err)
-
+        elif is_file(path):
+            try:
+                os.remove(path)
+            except OSError as err:
+                out.error("[remove_file] an error occured: %s" % path)
+                lpms.catch_error(err)
         elif not is_dir(path):
             out.error("[remove_file] file %s doesn\'t exists." % path)
             return False
