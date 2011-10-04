@@ -44,7 +44,7 @@ class Interpreter(internals.InternalFuncs):
         self.config = conf.LPMSConfig()
         self.get_build_libraries()
         self.startup_funcs()
-
+        
     def get_build_libraries(self):
         for lib in self.env.libraries:
             if len(lib.split("/")) == 2:
@@ -82,7 +82,7 @@ class Interpreter(internals.InternalFuncs):
 
             self.env.sandbox_valid_dirs = utils.sandbox_dirs()
             self.env.sandbox_valid_dirs.append(self.config.build_dir)
-            for i in ('build_dir', 'install_dir'):
+            for i in ('build_dir', 'install_dir', 'src_cache'):
                 self.env.sandbox_valid_dirs.append(getattr(self.env, i))
             # run in catbox
             ret = catbox.run(getattr(self.env, func_name),
@@ -112,6 +112,20 @@ class Interpreter(internals.InternalFuncs):
     def sandbox_logger(self, command, path, canonical_path):
         pass
 
+    def run_extract(self):
+        out.normal("extracting source...")
+        extracted_file = os.path.join(self.env.build_dir.split("source")[0],
+                ".extracted")
+        if os.path.isfile(extracted_file): 
+            out.warn_notify("source already extracted.")
+            return True
+        self.run_stage("extract")
+        out.notify("source extracted.")
+        if not os.path.isfile(extracted_file):
+            touch(extracted_file)
+        if self.env.stage == "extract":
+            lpms.terminate()
+    
     def run_prepare(self):
         out.normal("preparing source...")
         prepared_file = os.path.join(self.env.build_dir.split("source")[0],
@@ -303,7 +317,7 @@ class Interpreter(internals.InternalFuncs):
     def run_stage(self, stage):
         self.env.current_stage = stage
         # firstly, we find a configuration function in environment
-        if stage in self.env.__dict__.keys():
+        if stage in self.env.__dict__:
             # if it is exists, run it
             self.run_func(stage)
         else:
@@ -323,10 +337,16 @@ def run(script, env, operation_order=None, remove=False):
     if not operation_order:
         operation_order = ['configure', 'build', 'install', 'merge']
 
-    if not remove and 'prepare' in env.__dict__.keys():
+    if not remove and 'extract' in env.__dict__:
+        operation_order.insert(0, 'extract')
+
+    if not remove and not 'extract' in env.__dict__ and 'prepare' in env.__dict__:
         operation_order.insert(0, 'prepare')
+
+    if not remove and 'extract' in env.__dict__ and 'prepare' in env.__dict__:
+        operation_order.insert(1, 'prepare')
     
-    if not remove and 'post_install' in env.__dict__.keys() and not 'post_install' in operation_order:
+    if not remove and 'post_install' in env.__dict__ and not 'post_install' in operation_order:
         operation_order.insert(len(operation_order), 'post_install')
 
     if remove and 'pre_remove' in env.__dict__ and not 'pre_remove' in operation_order:
