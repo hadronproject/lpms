@@ -123,8 +123,8 @@ class Build(internals.InternalFuncs):
 
     def parse_url_tag(self):
         def set_shortening(data, opt=False):
-            for short in ('$src_url', '$url_prefix', '$slot', '$my_slot', '$name', \
-                    '$version', '$fullname', '$my_fullname', '$my_name', '$my_version'):
+            for short in ('$url_prefix', '$src_url', '$slot', '$my_slot', '$name', '$version', \
+                    '$fullname', '$my_fullname', '$my_name', '$my_version'):
                 try:
                     data = data.replace(short, self.env.__dict__[short[1:]])
                 except KeyError:
@@ -147,7 +147,6 @@ class Build(internals.InternalFuncs):
         if not os.path.isfile(self.env.spec_file):
             lpms.catch_error("%s not found!" % self.env.spec_file)
         self.import_script(self.env.spec_file)
-
 
 def main(raw_data, instruct):
     operation_plan, operation_data = raw_data
@@ -266,6 +265,7 @@ def main(raw_data, instruct):
         setattr(opr.env, "count", count)
         setattr(opr.env, "filesdir", os.path.join(cst.repos, opr.env.repo, 
             opr.env.category, opr.env.pkgname, cst.files_dir))
+        setattr(opr.env, "src_cache", cst.src_cache)
 
         # FIXME: This is no good!
         ####################################
@@ -343,9 +343,10 @@ def main(raw_data, instruct):
             utils.xterm_title("lpms: extracting %s/%s/%s-%s" % (opr.env.repo, opr.env.category,
                 opr.env.name, opr.env.version))
 
-            opr.extract_sources()
-            if opr.env.stage == "unpack":
-                lpms.terminate()
+            if not "extract" in opt.env.__dict__:
+                opr.extract_sources()
+                if opr.env.stage == "unpack":
+                    lpms.terminate()
 
         if opr.env.valid_opts is not None and len(opr.env.valid_opts) != 0:
             out.notify("applied options: %s" % 
