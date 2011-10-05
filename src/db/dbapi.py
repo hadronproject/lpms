@@ -27,6 +27,14 @@ class API(object):
     def __init__(self, db_path):
         self.db = db.PackageDatabase(db_path)
 
+    def invalid_repos(self):
+        valid_repos = utils.valid_repos()
+        invalids = []
+        for repo in self.get_repos():
+            if not repo[0] in valid_repos:
+                invalids.append(repo[0])
+        return invalids
+
     def find_pkg(self, pkgname, repo_name = None, pkg_category = None, 
             selection=False):
         package = []
