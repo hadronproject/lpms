@@ -431,6 +431,8 @@ class DependencyResolver(object):
         self.single_pkgs = []
         self.udo = {}
         self.get_user_defined_files()
+        self.should_upgrade = []
+        self.active = None
 
     def get_user_defined_files(self):
         for user_defined_file in cst.user_defined_files:
@@ -540,16 +542,35 @@ class DependencyResolver(object):
                 return category, name, versions, user_defined_options
 
             return category, name, versions
+        
+    def get_versions(self, versions, slot=None):
+        vers = []
+        data = versions.values()
+        if slot is not None:
+            if slot in versions:
+                data = versions[slot]
+        if not isinstance(data[0], list):
+            return data
+        map(lambda v: vers.extend(v), data)
+        return vers
 
-    def package_select(self, data, instdb=False):
+    def get_best_version(self, versions):
+        return utils.best_version(versions)
+    
+    def package_select(self, incoming, instdb=False):
         db = self.repodb
         if instdb:
             db = self.instdb
         slot = None
-        gte, lte, lt, gt = False, False, False, False
-        slot_parsed = data.split(":")
+        gte, lte, lt, gt, et = False, False, False, False, False
+        slot_parsed = incoming.split(":")
         if len(slot_parsed) == 2:
             data, slot = slot_parsed
+        elif len(slot_parsed) > 2:
+            out.error("%s invalid dependency in %s.py" % (data, self.active))
+            lpms.terminate()
+        else:
+            data = incoming
 
         if ">=" == data[:2]:
             gte = True
@@ -569,85 +590,114 @@ class DependencyResolver(object):
         else:
             category, name = data.split("/")
             versions = []
-            version_data = db.find_pkg(name, pkg_category=category, selection = True)
-            if not version_data:
+            repo = db.find_pkg(name, pkg_category=category)
+            if not repo:
                 if instdb:
                     return
-                out.error("unmet dependency for %s: %s" % ("/".join(self.current_package[:-1])+\
-                        "-"+self.current_package[-1], data))
+                out.error("unmet dependency: %s depends on %s" % (out.color(self.active, \
+                        "red"), out.color(incoming, "red")))
                 lpms.terminate()
 
-            if isinstance(version_data, list):
-                version_data = version_data[-1]
-
-            # FIXME: fix db.get_version and use it
-            if slot is None:
-                map(lambda ver: versions.extend(ver), version_data[-1].values())
-            else:
-                try:
-                    versions = version_data[-1][slot]
-                except KeyError:
-                    out.error("%s is invalid slot for %s" % (slot, data))
-                    lpms.terminate()
-
+            # FIXME: ungodly hack, because of our fucking database
+            if isinstance(repo, tuple):
+                repo = [repo]
+            
+            for valid_repo in utils.valid_repos():
+                for version_data in repo:
+                    if valid_repo != version_data[0]:
+                        continue
+                    # FIXME: fix db.get_version and use it
+                    if slot is None:
+                        map(lambda ver: versions.extend(ver), version_data[-1].values())
+                    else:
+                        try:
+                            versions = version_data[-1][slot]
+                        except KeyError:
+                            versions = []
+                        if not slot in self.instdb.get_version(name, repo_name=valid_repo, \
+                                pkg_category=category):
+                            self.should_upgrade.append((category, name))
+                    if versions:
+                        break
             return category, name, utils.best_version(versions)
 
         name, version = utils.parse_pkgname(pkgname)
 
         category, name = name.split("/")
+        
         result = []
-        repo = db.find_pkg(name, pkg_category=category, selection = True)
-        if not repo:
+        repo_query = db.find_pkg(name, pkg_category=category)
+        if not repo_query:
             if instdb:
                 return
-            out.error("unmet dependency for %s: %s" % ("/".join(self.current_package[:-1])+\
-                    "-"+self.current_package[-1], pkgname))
+            out.error("unmet dependency: %s depends on %s" % (out.color(self.active, \
+                        "red"), out.color(incoming, "red")))
             lpms.terminate()
-            #raise UnmetDependency(pkgname)
 
-        if isinstance(repo, list):
-            repo = repo[0]
-
-        versions = []
-        if slot is None:
-            # FIXME: because of our database :'(
-            try:
-                map(lambda v: versions.extend(v), repo[-1].values())
-            except AttributeError:
-                # FIXME: What the fuck?
-                print(data)
-        else:
-            if slot in repo[-1]:
-                versions = repo[-1][int(slot)]
+        for valid_repo in utils.valid_repos():
+            for repo in repo_query:
+                if valid_repo == repo[0]:
+                    break
+            versions = []
+            if slot is None:
+                # FIXME: because of our database :'(
+                try:
+                    map(lambda v: versions.extend(v), repo[-1].values())
+                except AttributeError:
+                    # FIXME: What the fuck?
+                    print(data)
             else:
-                #out.warn("%s is an invalid slot value for %s/%s/%s" % \
-                #        (out.color(slot, "red"), repo[0], category, name))
-                #out.warn("So lpms will use the latest version")
-                #print "/".join(self.current_package[:-1])
-                map(lambda v: versions.extend(v), repo[-1].values())
+                if slot in repo[-1]:
+                    versions = repo[-1][slot]
+                else:
+                    continue
+                    #map(lambda v: versions.extend(v), repo[-1].values())
 
-        for rv in versions:
-            vercmp = utils.vercmp(rv, version) 
+            installed_versions = self.instdb.get_version(name, pkg_category=category)
+            dec = utils.vercmp(version, self.get_best_version(self.get_versions(installed_versions, slot)))
+            
             if lt:
-                if vercmp == -1:
-                    result.append(rv)
-            elif gt:
-                if vercmp == 1 or vercmp == 0:
-                    result.append(rv)
-            elif lte:
-                if vercmp == -1 or vercmp == 0:
-                    result.append(rv)
+                if dec != 1 and not (category, name) in self.should_upgrade:
+                    self.should_upgrade((category, name))
             elif gte:
-                version = version.strip()
-                if utils.vercmp(rv, version) == 1 or utils.vercmp(rv, version) == 0:
-                    result.append(rv)
+                if dec == 1 and not (category, name) in self.should_upgrade:
+                    self.should_upgrade.append((category, name))
+            elif lte:
+                if dec == -1 and not (category, name) in self.should_upgrade:
+                    self.should_upgrade.append((category, name))
+            elif gt:
+                if dec != -1 and not (category, name) in self.should_upgrade:
+                    self.should_upgrade.append((category, name))
             elif et:
-                if vercmp == 0:
-                    return category, name, rv
+                if dec != 0 and not (category, name) in self.should_upgrade:
+                    self.should_upgrade.append((category, name))
 
+            for rv in versions:
+                vercmp = utils.vercmp(rv, version) 
+                if lt:
+                    if vercmp == -1:
+                        result.append(rv)
+                elif gt:
+                    if vercmp == 1 or vercmp == 0:
+                        result.append(rv)
+                elif lte:
+                    if vercmp == -1 or vercmp == 0:
+                        result.append(rv)
+                elif gte:
+                    version = version.strip()
+                    if utils.vercmp(rv, version) == 1 or utils.vercmp(rv, version) == 0:
+                        result.append(rv)
+                elif et:
+                    if vercmp == 0:
+                        return category, name, rv
+
+            if result:
+                break
         if not result:
-            map(lambda v: result.extend(v), db.get_version(name, \
-                    pkg_category=category).values())
+            out.error("unmet dependency: %s depends on %s" % (out.color(self.active, "red"), 
+                out.color(incoming, "red")))
+            lpms.terminate()
+        
         return category, name, utils.best_version(result)
 
     def opt_parser(self, data):
@@ -730,7 +780,7 @@ class DependencyResolver(object):
             return self.repodb.get_repo(category, name, version)
 
     def collect(self, repo, category, name, version, use_new_opts, recursive=True):
-
+        self.active = os.path.join(repo, category, name)+"-"+version
         dependencies = self.repodb.get_depends(repo, category, name, version)
         options = []
         if (repo, category, name, version) in self.operation_data:
@@ -776,7 +826,8 @@ class DependencyResolver(object):
 
         # FIXME: WHAT THE FUCK IS THAT??
         if not dependencies:
-            print repo, category, name, version, self.repodb.get_repo(category, name, version)
+            print repo, category, name, version, dependencies
+            print self.repodb.get_repo(category, name, version)
             lpms.terminate()
 
         local_plan = {"build":[], "runtime": [], "postmerge": [], "conflict": []}
@@ -946,7 +997,7 @@ class DependencyResolver(object):
                                         plan.append(pkg)
                     else:
                         if not version in db_options and (lpms.getopt("-U") or lpms.getopt("--upgrade") \
-                                 or lpms.getopt("--force-upgrade")):
+                                or lpms.getopt("--force-upgrade")) or (category, name) in self.should_upgrade:
                             if not pkg in plan:
                                 plan.append(pkg)
                         else: 
