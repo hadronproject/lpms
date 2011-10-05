@@ -115,9 +115,9 @@ def get_mimetype(path):
     import magic
     m = magic.open(magic.MIME_TYPE)
     m.load()
-    fileinfo = m.file(path)
+    mimetype = m.file(path.encode('utf-8'))
     m.close()
-    return fileinfo
+    return mimetype
 
 def run_strip(path):
     p = os.popen("/usr/bin/strip --strip-unneeded %s" % path)
@@ -841,10 +841,17 @@ def pkgsplit(mypkg, silent = 1):
 
 def best_version(versions):
     versions = list(set(versions))
+    listed_vers = {}
     for ver in versions:
         i = 0
         for __ver in versions:
             if ver !=  __ver:
                 i += vercmp(ver, __ver)
-        if len(versions) - 1 == i or i == 0:
+                listed_vers[ver] = i
+    
+    if not listed_vers:
+        return versions[0]
+    
+    for ver in listed_vers:
+        if listed_vers[ver] == sorted(listed_vers.values())[-1]:
             return ver
