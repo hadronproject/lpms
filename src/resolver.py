@@ -613,7 +613,7 @@ class DependencyResolver(object):
                         try:
                             versions = version_data[-1][slot]
                         except KeyError:
-                            versions = []
+                            versions = self.get_versions(version_data[-1])
                         if not slot in self.instdb.get_version(name, repo_name=valid_repo, \
                                 pkg_category=category):
                             self.should_upgrade.append((category, name))
