@@ -642,6 +642,8 @@ class DependencyResolver(object):
             else:
                 if valid_repo != repo_query[0]:
                     continue
+                else:
+                    repo = repo_query
             versions = []
             if slot is None:
                 # FIXME: because of our database :'(
