@@ -717,7 +717,8 @@ class DependencyResolver(object):
                 lpms.terminate()
 
             opt = "".join(data[first_index+1:end_index])
-            return "".join(data[:first_index]), utils.internal_opts(opt.strip().split(" "), self.global_options)
+            opt = [i.strip() for i in opt.split(",")]
+            return "".join(data[:first_index]), utils.internal_opts(opt, self.global_options)
         
         return "".join(data)
 
@@ -797,6 +798,7 @@ class DependencyResolver(object):
         inst_options  = self.instdb.get_options(repo, category, name)
         if not version in inst_options or use_new_opts or not self.instdb.get_version(name, \
                 pkg_category=category):
+
             for go in self.global_options:
                 if not db_options:
                     out.error("%s/%s-%s not found." % (category, name, version))
@@ -805,7 +807,7 @@ class DependencyResolver(object):
                 if version in db_options and db_options[version]:
                     db_option = db_options[version].split(" ")
                     if go in db_option and not go in options:
-                         options.append(go)
+                        options.append(go)
 
             if self.udo and (category, name) in self.udo and version in self.udo[(category, name)][0]:
                 for opt in self.udo[(category, name)][1]:
@@ -824,6 +826,7 @@ class DependencyResolver(object):
                     else:
                         if opt[1:] in options:
                             options.remove(opt[1:])
+                        
         else:
             # save existing options
             if version in inst_options:
