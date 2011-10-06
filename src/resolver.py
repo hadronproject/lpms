@@ -635,9 +635,13 @@ class DependencyResolver(object):
             lpms.terminate()
 
         for valid_repo in utils.valid_repos():
-            for repo in repo_query:
-                if valid_repo == repo[0]:
-                    break
+            if isinstance(repo_query, list):
+                for repo in repo_query:
+                    if valid_repo == repo[0]:
+                        break
+            else:
+                if valid_repo != repo_query[0]:
+                    continue
             versions = []
             if slot is None:
                 # FIXME: because of our database :'(
