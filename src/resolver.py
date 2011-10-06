@@ -789,13 +789,14 @@ class DependencyResolver(object):
         self.active = os.path.join(repo, category, name)+"-"+version
         dependencies = self.repodb.get_depends(repo, category, name, version)
         options = []
+
         if (repo, category, name, version) in self.operation_data:
             options.extend(self.operation_data[(repo, category, name, version)][-1])
 
         db_options = self.repodb.get_options(repo, category, name)
         inst_options  = self.instdb.get_options(repo, category, name)
-
-        if use_new_opts or not self.instdb.get_version(name, pkg_category=category):
+        if not version in inst_options or use_new_opts or not self.instdb.get_version(name, \
+                pkg_category=category):
             for go in self.global_options:
                 if not db_options:
                     out.error("%s/%s-%s not found." % (category, name, version))
