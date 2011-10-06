@@ -617,8 +617,8 @@ class DependencyResolver(object):
                         if not slot in self.instdb.get_version(name, repo_name=valid_repo, \
                                 pkg_category=category):
                             self.should_upgrade.append((category, name))
-                    if versions:
-                        break
+                    if versions: break
+                if versions: break
             return category, name, utils.best_version(versions)
 
         name, version = utils.parse_pkgname(pkgname)
@@ -697,7 +697,7 @@ class DependencyResolver(object):
             out.error("unmet dependency: %s depends on %s" % (out.color(self.active, "red"), 
                 out.color(incoming, "red")))
             lpms.terminate()
-        
+
         return category, name, utils.best_version(result)
 
     def opt_parser(self, data):
@@ -996,8 +996,8 @@ class DependencyResolver(object):
                                     if not pkg in plan:
                                         plan.append(pkg)
                     else:
-                        if not version in db_options and (lpms.getopt("-U") or lpms.getopt("--upgrade") \
-                                or lpms.getopt("--force-upgrade")) or (category, name) in self.should_upgrade:
+                        if lpms.getopt("-U") or lpms.getopt("--upgrade") or lpms.getopt("--force-upgrade") \
+                                or (category, name) in self.should_upgrade:
                             if not pkg in plan:
                                 plan.append(pkg)
                         else: 
