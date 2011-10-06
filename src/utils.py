@@ -542,7 +542,7 @@ _pv = '(?P<pn>' + _pkg + '(?P<pn_inval>-' + _vr + ')?)' + '-(?P<ver>' + _v + ')(
 ver_regexp = re.compile("^" + _vr + "$")
 suffix_regexp = re.compile("^(alpha|beta|rc|pre|p)(\\d*)$")
 suffix_value = {"pre": -2, "p": 0, "alpha": -4, "beta": -3, "rc": -1}
-endversion_keys = ["pre", "p", "alpha", "beta", "rc"]
+endversion_keys = ["pre", "p", "alpha", "beta", "rc", "hr"]
 
 def vercmp(ver1, ver2, silent=1):
 	"""
@@ -840,6 +840,8 @@ def pkgsplit(mypkg, silent = 1):
         return None
 
 def best_version(versions):
+    if not versions:
+        return
     versions = list(set(versions))
     listed_vers = {}
     for ver in versions:
