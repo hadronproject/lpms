@@ -660,23 +660,25 @@ class DependencyResolver(object):
                     #map(lambda v: versions.extend(v), repo[-1].values())
 
             installed_versions = self.instdb.get_version(name, pkg_category=category)
-            dec = utils.vercmp(version, self.get_best_version(self.get_versions(installed_versions, slot)))
-            
-            if lt:
-                if dec != 1 and not (category, name) in self.should_upgrade:
-                    self.should_upgrade((category, name))
-            elif gte:
-                if dec == 1 and not (category, name) in self.should_upgrade:
-                    self.should_upgrade.append((category, name))
-            elif lte:
-                if dec == -1 and not (category, name) in self.should_upgrade:
-                    self.should_upgrade.append((category, name))
-            elif gt:
-                if dec != -1 and not (category, name) in self.should_upgrade:
-                    self.should_upgrade.append((category, name))
-            elif et:
-                if dec != 0 and not (category, name) in self.should_upgrade:
-                    self.should_upgrade.append((category, name))
+
+            if installed_versions:
+                dec = utils.vercmp(version, self.get_best_version(self.get_versions(installed_versions, slot)))
+                
+                if lt:
+                    if dec != 1 and not (category, name) in self.should_upgrade:
+                        self.should_upgrade((category, name))
+                elif gte:
+                    if dec == 1 and not (category, name) in self.should_upgrade:
+                        self.should_upgrade.append((category, name))
+                elif lte:
+                    if dec == -1 and not (category, name) in self.should_upgrade:
+                        self.should_upgrade.append((category, name))
+                elif gt:
+                    if dec != -1 and not (category, name) in self.should_upgrade:
+                        self.should_upgrade.append((category, name))
+                elif et:
+                    if dec != 0 and not (category, name) in self.should_upgrade:
+                        self.should_upgrade.append((category, name))
 
             for rv in versions:
                 vercmp = utils.vercmp(rv, version) 
