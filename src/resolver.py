@@ -433,6 +433,7 @@ class DependencyResolver(object):
         self.get_user_defined_files()
         self.should_upgrade = []
         self.active = None
+        self.invalid_elements = ['||']
 
     def get_user_defined_files(self):
         for user_defined_file in cst.user_defined_files:
@@ -879,6 +880,8 @@ class DependencyResolver(object):
                     if d in options: 
                         options.remove(d)
                 for dyn_dep in dyn_packages:
+                    if dyn_dep in self.invalid_elements:
+                        continue
                     if key == "conflict":
                         dyn_package_data = self.parse_package_name(dyn_dep, instdb=True)
                         if not dyn_package_data:
@@ -896,6 +899,8 @@ class DependencyResolver(object):
 
             if static_deps:
                 for stc_dep in parse_depend_line(static_deps):
+                    if stc_dep in self.invalid_elements:
+                        continue
                     if key == "conflict":
                         stc_package_data = self.parse_package_name(stc_dep, instdb=True)
                         if not stc_package_data:
