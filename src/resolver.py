@@ -434,6 +434,7 @@ class DependencyResolver(object):
         self.should_upgrade = []
         self.active = None
         self.invalid_elements = ['||']
+        self.removal = {}
 
     def get_user_defined_files(self):
         for user_defined_file in cst.user_defined_files:
@@ -719,10 +720,25 @@ class DependencyResolver(object):
                 out.error("%s -- ']' not found in package name" % "".join(data))
                 lpms.terminate()
 
+            opts = []
             opt = "".join(data[first_index+1:end_index])
-            opt = [i.strip() for i in opt.split(",")]
-            return "".join(data[:first_index]), utils.internal_opts(opt, self.global_options)
-        
+            pkgname = "".join(data[:first_index])
+            for atomic_opt in opt.split(","):
+                atomic_opt = atomic_opt.strip()
+                if atomic_opt.startswith("-"):
+                    if not pkgname in self.removal:
+                        self.removal.update({pkgname: [atomic_opt[1:]]})
+                    else:
+                        if not atomic_opt[1:] in self.removal[pkgname]:
+                            self.removal[pkgname].append(atomic_opt[1:])
+                    if not atomic_opt[1:] in opts:
+                        opts.append(atomic_opt[1:])
+                    continue
+                if not atomic_opt in opts:
+                    opts.append(atomic_opt[1:])
+
+            return pkgname, utils.internal_opts(opts, self.global_options)
+    
         return "".join(data)
 
     def fix_dynamic_deps(self, data, options):
@@ -836,6 +852,10 @@ class DependencyResolver(object):
                 for iopt in inst_options[version].split(" "):
                     if iopt in self.global_options and not iopt in options:
                         options.append(iopt)
+
+        if category+"/"+name in self.removal:
+            for key in self.removal[category+"/"+name]:
+                options.remove(key)
 
         # FIXME: WHAT THE FUCK IS THAT??
         if not dependencies:
@@ -1004,6 +1024,7 @@ class DependencyResolver(object):
 
                 data = self.instdb.find_pkg(name, pkg_category = category)
                 if data:
+                    # the package is installed
                     irepo = self.instdb.get_repo(category, name, version)
                     db_options = self.instdb.get_options(irepo, category, name)
                     if version in db_options:
@@ -1012,7 +1033,11 @@ class DependencyResolver(object):
                                 if self.use_new_opts or pkg in self.modified_by_package:
                                     if not pkg in plan:
                                         plan.append(pkg)
+                            if category+"/"+name in self.removal:
+                                if not pkg in plan:
+                                    plan.append(pkg)
                     else:
+                        # new version
                         if lpms.getopt("-U") or lpms.getopt("--upgrade") or lpms.getopt("--force-upgrade") \
                                 or (category, name) in self.should_upgrade:
                             if not pkg in plan:
@@ -1021,6 +1046,7 @@ class DependencyResolver(object):
                             if not pkg in packages and pkg in self.operation_data: 
                                 del self.operation_data[pkg] 
                 else:
+                    # fresh install
                     if not pkg in plan:
                         plan.append(pkg)
 
