@@ -69,6 +69,10 @@ def configure_pending(packages, instruct):
 
 def update_repository(cmdline):
     '''Runs repository update operation'''
+    print utils.is_lpms_running()
+    if utils.is_lpms_running():
+        out.warn("Ehmm... Seems like another lpms process is still going on. Please try again later.")
+        lpms.terminate()
     update.main(cmdline)
 
 def syncronize(cmdline, instruct):

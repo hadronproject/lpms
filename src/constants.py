@@ -48,6 +48,7 @@ spec_dir = "/usr/lpms"
 config_file = "lpms.conf"
 distfiles = "/usr/portage/distfiles"
 extract_dir = "/var/tmp/lpms/"
+lock_file = extract_dir+"lock"
 resume_file = extract_dir+"/"+"resume"
 src_cache = "/var/cache/lpms/sources"
 

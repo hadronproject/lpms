@@ -18,9 +18,9 @@
 # Main interpreter for build scripts.
 
 import os
+import time
 import traceback
 import cPickle as pickle
-
 
 import lpms
 
@@ -357,6 +357,15 @@ def run(script, env, operation_order=None, remove=False):
 
     # FIXME: we need more flow control
     for opr in operation_order:
+        if opr == ("merge", "remove"):
+            if shelltools.is_exists(cst.lock_file):
+                out.warn("Ehmm.. Seems like another lpms process is still going on. Waiting for it to finish.")
+                while True:
+                    if shelltools.is_exists(cst.lock_file):
+                        time.sleep(3)
+                    else: break
+            shelltools.touch(cst.lock_file)
+
         method = getattr(ipr, "run_"+opr)
         try:
             method()
