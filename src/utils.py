@@ -104,6 +104,36 @@ def valid_repos():
         return [repo[1:-1] for repo in repo_file.read().split("\n") \
                 if repo.startswith("[") and repo.endswith("]")]
 
+def is_lpms_running():
+    for _dir in os.listdir("/proc"):
+        if not _dir.isdigit():
+            continue
+        
+        if int(_dir) == os.getpid():
+            continue
+
+        if get_process_name(_dir) == "lpms":
+            return True
+    return False
+
+def get_process_name(pid):
+    f = open("/proc/%s/stat" % pid)
+    try:
+        name = f.read().split(' ')[1].replace('(', '').replace(')', '')
+    finally:
+        f.close()
+        # XXX - gets changed later and probably needs refactoring
+    return name
+
+def get_pid_list():
+    """Returns a list of PIDs currently running on the system."""
+    pids = [int(x) for x in os.listdir('/proc') if x.isdigit()]
+    return pids
+
+def pid_exists(pid):
+    """Checks For the existence of a unix pid."""
+    return pid in get_pid_list()
+
 def get_mimetype(path):
     if not os.access(path, os.R_OK):
         return False
