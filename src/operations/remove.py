@@ -148,3 +148,6 @@ def main(pkgname, real_root):
             if not os.listdir(os.path.dirname(os.path.dirname(xmlfile))):
                 # remove category dir, if it is empty
                 shelltools.remove_dir(os.path.dirname(os.path.dirname(xmlfile)))
+
+    if shelltools.is_exists(cst.lock_file):
+        shelltools.remove_file(cst.lock_file)

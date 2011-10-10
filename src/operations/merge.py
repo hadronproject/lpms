@@ -413,3 +413,6 @@ def main(environment):
     if opr.backup:
         out.warn_notify("%s configuration file changed. Use %s to fix these files." % 
                 (len(opr.backup), out.color("merge-conf", "red")))
+
+    if shelltools.is_exists(cst.lock_file):
+        shelltools.remove_file(cst.lock_file)
