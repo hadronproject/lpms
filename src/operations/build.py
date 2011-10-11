@@ -413,7 +413,7 @@ def show_plan(repo, category, name, version, valid_options, options):
                     if slot in item[-1]:
                         pkgdata = item
                         break
-            if version in repovers[slot]:
+            if version in repovers[repo_slot]:
                 instver = pkgdata[-1][slot][0]
                 cmpres = utils.vercmp(version, instver)
                 if cmpres == 1:
