@@ -226,6 +226,28 @@ class Merge(internals.InternalFuncs):
 
                                 target = target+".lpms-backup" 
                                 self.backup.append(target)
+                                
+                    if os.path.exists(target) and is_reserve():
+                        #FIXME: Code duplication!!!
+                        # the file is reserved. Use existing version and create necessary XML stuff
+                        if not os.path.islink(target):
+                            shelltools.set_id(target, perms["uid"], perms["gid"])
+                            shelltools.set_mod(target, perms["mod"])
+
+                        file_tag = iks.SubElement(root, "file")
+                        sha1sum = utils.sha1sum(target)
+                        for key in perms.keys():
+                            file_tag.set(key, str(perms[key]))
+
+                        if sha1sum is not False:
+                            file_tag.set("sha1sum", sha1sum)
+                        size = utils.get_size(target)
+                        self.total += size
+                        file_tag.set("size", str(size))
+                        file_tag.text = f
+                    
+                        # We don't need the following operations
+                        continue
 
                 if os.path.islink(source):
                     realpath = os.readlink(source)
@@ -238,7 +260,7 @@ class Merge(internals.InternalFuncs):
                     perms = get_perms(source)
                     shelltools.move(source, target)
 
-                #perms = get_perms(source)
+                #FIXME: Code duplication!!!
 
                 if not os.path.islink(source):
                     shelltools.set_id(target, perms["uid"], perms["gid"])
