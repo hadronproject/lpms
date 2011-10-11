@@ -111,7 +111,7 @@ class Update(internals.InternalFuncs):
                 if 'conflict' in deps:
                     conflict.extend(deps['conflict'])
 
-            for opt in ('opt_common', 'opt_conflict', 'opt_runtime', 'opt_build'):
+            for opt in ('opt_common', 'opt_conflict', 'opt_postmerge', 'opt_runtime', 'opt_build'):
                 try:
                     deps = utils.parse_opt_deps(getattr(self.env, opt))
                     if opt.split("_")[1] == "runtime":
