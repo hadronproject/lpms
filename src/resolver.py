@@ -735,7 +735,7 @@ class DependencyResolver(object):
                         opts.append(atomic_opt[1:])
                     continue
                 if not atomic_opt in opts:
-                    opts.append(atomic_opt[1:])
+                    opts.append(atomic_opt)
 
             return pkgname, utils.internal_opts(opts, self.global_options)
     
