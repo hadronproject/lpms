@@ -24,3 +24,6 @@ class BuiltinError(Exception):
 
 class MakeError(Exception):
     pass
+
+class NotInstalled(Exception):
+    pass
