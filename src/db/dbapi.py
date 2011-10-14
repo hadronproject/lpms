@@ -22,6 +22,62 @@ from lpms import utils
 from lpms import constants as const
 
 from lpms.db import db
+from lpms.db import filesdb
+
+from lpms.exceptions import NotInstalled
+
+class FilesAPI(object):
+    '''This class defines a simple abstraction layer for files database'''
+    def __init__(self, real_root=None, suffix=None):
+        self.instdb = InstallDB()
+        self.real_root = real_root 
+        self.suffix = suffix
+
+    def cursor(self, repo, category, name, version):
+        '''Connects files database'''
+        self.repo = repo; self.category = category
+        self.name = name; self.version = version
+        filesdb_obj = filesdb.FilesDB(repo, category, name, \
+                version, self.real_root, self.suffix)
+        filesdb_obj.import_xml()
+        return filesdb_obj
+
+    def is_installed(self, repo, category, name, version):
+        '''Checks package status'''
+        result = self.instdb.get_version(name, pkg_category=category, \
+                repo_name=repo)
+        if result:
+            for slot in result:
+                if version in result[slot]:
+                    return True
+        return False
+
+    def get_package(self, path):
+        '''Returns package name or package names for the given path'''
+        result = []
+        for package in self.instdb.get_all_names():
+            repo, category, name = package
+            raw_versions = self.instdb.get_version(name, pkg_category=category, \
+                    repo_name=repo)
+            versions = []
+            map(lambda ver: versions.extend(ver), raw_versions.values())
+            for version in versions:
+                filesdb_cursor = self.cursor(repo, category, \
+                        name, version)
+                if filesdb_cursor.has_path(path):
+                    del filesdb_cursor
+                    if not (repo, category, name, version) in result:
+                        result.append((repo, category, name, version))
+        if result:
+            return result
+        return False
+
+    def list_files(self, repo, category, name, version):
+        '''Returns content for the given package'''
+        if not self.is_installed(repo, category, name, version):
+            raise NotInstalled("%s/%s/%s-%s is not installed." % (repo, category, name, version))
+        filesdb_cursor = self.cursor(repo, category, name, version)
+        return filesdb_cursor.content
 
 class API(object):
     def __init__(self, db_path):
@@ -231,3 +287,9 @@ class RepositoryDB(API):
 class InstallDB(API):
     def __init__(self):
         super(InstallDB, self).__init__(fix_path(const.installdb_path))
+
+class FilesDB(FilesAPI):
+    def __init__(self, real_root=None, suffix=None):
+        super(FilesDB, self).__init__(real_root, suffix)
+
+
