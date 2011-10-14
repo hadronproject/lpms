@@ -79,6 +79,13 @@ class FilesAPI(object):
         filesdb_cursor = self.cursor(repo, category, name, version)
         return filesdb_cursor.content
 
+    def has_path(self, repo, category, name, version, path):
+        '''Checks given package for given path'''
+        if not self.is_installed(repo, category, name, version):
+            raise NotInstalled("%s/%s/%s-%s is not installed." % (repo, category, name, version))
+        filesdb_cursor = self.cursor(repo, category, name, version)
+        return filesdb_cursor.has_path(path)
+
 class API(object):
     def __init__(self, db_path):
         self.db = db.PackageDatabase(db_path)
