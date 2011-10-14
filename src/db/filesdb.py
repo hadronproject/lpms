@@ -40,10 +40,6 @@ class FilesDB:
         self.xml_file = os.path.join(real_root, cst.db_path[1:], cst.filesdb,
                 self.category, self.name, self.name)+"-"+self.version+suffix
 
-    #def is_installed(self, ):
-    #    return (self.repo, self.category, 
-    #            self.name) in self.instdb.get_all_names()
-        
     def import_xml(self):
         if not os.path.isfile(self.xml_file):
             print("%s could not found." % self.xml_file)
@@ -58,7 +54,6 @@ class FilesDB:
 
     def has_path(self, path):
         if not os.path.exists(path):
-            print("%s could not found." % path)
             return False
         
         if os.path.isdir(path):
