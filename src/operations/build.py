@@ -16,6 +16,7 @@
 # along with lpms.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+import re
 import glob
 import random
 import cPickle as pickle
@@ -49,6 +50,8 @@ class Build(internals.InternalFuncs):
         self.spec_file = None
         self.config = conf.LPMSConfig()
         utils.set_environment_variables()
+        self.revisioned = False
+        self.revision = None
 
     def options_info(self):
         # FIXME: This is no good.
@@ -126,9 +129,22 @@ class Build(internals.InternalFuncs):
             for short in ('$url_prefix', '$src_url', '$slot', '$my_slot', '$name', '$version', \
                     '$fullname', '$my_fullname', '$my_name', '$my_version'):
                 try:
-                    data = data.replace(short, self.env.__dict__[short[1:]])
-                except KeyError:
-                    pass
+                    interphase = re.search(r'-r[0-9][0-9]', self.env.__dict__[short[1:]])
+                    if not interphase:
+                        interphase = re.search(r'-r[0-9]', self.env.__dict__[short[1:]])
+                        if not interphase:
+                            data = data.replace(short, self.env.__dict__[short[1:]])
+                        else:
+                            if short == "$version": self.revisioned = True; self.revision = interphase.group()
+                            result = "".join(self.env.__dict__[short[1:]].split(interphase.group()))
+                            if not short in ("$name", "$my_slot", "$slot"): setattr(self.env, "raw_"+short[1:], result)
+                            data = data.replace(short, result)
+                    else:
+                        if short == "$version": self.revisioned = True; self.revision = interphase.group()
+                        result = "".join(self.env.__dict__[short[1:]].split(interphase.group()))
+                        if not short in ("$name", "$my_slot", "$slot"): setattr(self.env, "raw_"+short[1:], result)
+                        data = data.replace(short, result)
+                except KeyError: pass
             if opt:
                 self.urls.append((opt, data))
             else:
@@ -330,7 +346,14 @@ def main(raw_data, instruct):
 
         # fetch packages which are in download_plan list
         if opr.env.src_url is not None:
+            # preprocess url tags such as $name, $version and etc
             opr.parse_url_tag()
+            # if the package is revisioned, override build_dir and install_dir. remove revision number from these variables.
+            if opr.revisioned:
+                for variable in ("build_dir", "install_dir"):
+                    new_variable = "".join(os.path.basename(getattr(opr.env, variable)).split(opr.revision))
+                    setattr(opr.env, variable, os.path.join(os.path.dirname(getattr(opr.env, \
+                            variable)), new_variable))
 
             utils.xterm_title("lpms: downloading %s/%s/%s-%s" % (opr.env.repo, opr.env.category,
                 opr.env.name, opr.env.version))
@@ -352,7 +375,9 @@ def main(raw_data, instruct):
             out.notify("applied options: %s" % 
                     " ".join(opr.env.valid_opts))
         
+
         os.chdir(opr.env.build_dir)
+        
         if not interpreter.run(opr.env.spec_file, opr.env):
             lpms.terminate("errors occured :(")
             
@@ -360,12 +385,12 @@ def main(raw_data, instruct):
             opr.env.name, opr.env.version))
 
         utils.xterm_title("lpms: %s/%s finished" % (opr.env.category, opr.env.pkgname))
-        #merge.main(opr.env)
+
         out.notify("cleaning build directory...\n")
         shelltools.remove_dir(os.path.dirname(opr.env.install_dir))
         catdir = os.path.dirname(os.path.dirname(opr.env.install_dir))
-        if catdir:
-            shelltools.remove_file(catdir)
+        if not os.listdir(catdir):
+            shelltools.remove_dir(catdir)
 
 
         # resume feature
@@ -393,10 +418,6 @@ def show_plan(repo, category, name, version, valid_options, options):
     repodb = dbapi.RepositoryDB()
 
     pkgdata = instdb.find_pkg(name, pkg_category=category)
-
-    #ivers = []
-    #if pkgdata:
-    #    map(lambda ver: ivers.extend(ver), pkgdata[-1].values())
 
     if pkgdata:
         repovers = repodb.get_version(name, pkg_category = category)
