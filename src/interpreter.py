@@ -357,7 +357,7 @@ def run(script, env, operation_order=None, remove=False):
 
     # FIXME: we need more flow control
     for opr in operation_order:
-        if opr == ("merge", "remove"):
+        if opr in ("merge", "remove"):
             if shelltools.is_exists(cst.lock_file):
                 out.warn("Ehmm.. Seems like another lpms process is still going on. Waiting for it to finish.")
                 while True:
