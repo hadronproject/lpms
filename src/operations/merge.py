@@ -236,7 +236,8 @@ class Merge(internals.InternalFuncs):
 
                         file_tag = iks.SubElement(root, "file")
                         sha1sum = utils.sha1sum(target)
-                        for key in perms.keys():
+
+                        for key in perms:
                             file_tag.set(key, str(perms[key]))
 
                         if sha1sum is not False:
@@ -250,6 +251,7 @@ class Merge(internals.InternalFuncs):
                         continue
 
                 if os.path.islink(source):
+                    sha1sum = False
                     realpath = os.readlink(source)
                     if self.env.install_dir in realpath:
                         realpath = realpath.split(self.env.install_dir)[1]
@@ -257,6 +259,7 @@ class Merge(internals.InternalFuncs):
                         shelltools.remove_file(target)
                     shelltools.make_symlink(realpath, target)
                 else:
+                    sha1sum = utils.sha1sum(source)
                     perms = get_perms(source)
                     shelltools.move(source, target)
 
@@ -267,8 +270,8 @@ class Merge(internals.InternalFuncs):
                     shelltools.set_mod(target, perms["mod"])
 
                 file_tag = iks.SubElement(root, "file")
-                sha1sum = utils.sha1sum(source)
-                for key in perms.keys():
+
+                for key in perms:
                     file_tag.set(key, str(perms[key]))
 
                 if sha1sum is not False:
