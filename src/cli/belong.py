@@ -43,7 +43,7 @@ def main(keywords):
         versions = []
         map(lambda x: versions.extend(x), idb.get_version(name, repo ,category).values())
         for version in versions:
-            fdb = filesdb.FilesDB(repo, category, name, version, "/")
+            fdb = filesdb.FilesDB(category, name, version, "/")
             fdb.import_xml()
             
             for tag in ('dirs', 'file'):
