@@ -120,7 +120,7 @@ class Merge(internals.InternalFuncs):
         conflict_check = False
         previous_vers = self.instdb.get_version(self.env.name, pkg_category = self.env.category)
         if previous_vers and self.env.slot in previous_vers:
-            fdb = filesdb.FilesDB(self.env.repo, self.env.category, self.env.name, \
+            fdb = filesdb.FilesDB(self.env.category, self.env.name, \
                     previous_vers[self.env.slot][0])
             fdb.import_xml()
             conflict_check = True
@@ -395,11 +395,11 @@ class Merge(internals.InternalFuncs):
 
     def comparison(self, new_ver, old_ver):
         obsolete_dirs = []; obsolete_files = []
-        new = filesdb.FilesDB(self.env.repo, self.env.category, 
+        new = filesdb.FilesDB(self.env.category, 
                 self.env.name, new_ver, self.env.real_root, suffix=".xml.new")
         new.import_xml()
 
-        old = filesdb.FilesDB(self.env.repo, self.env.category,
+        old = filesdb.FilesDB(self.env.category,
                 self.env.name, old_ver, self.env.real_root)
         old.import_xml()
 
