@@ -27,3 +27,6 @@ class MakeError(Exception):
 
 class NotInstalled(Exception):
     pass
+
+class FileNotFound(Exception):
+    pass
