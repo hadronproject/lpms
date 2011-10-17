@@ -41,7 +41,7 @@ class Remove:
         self.real_root = real_root
         if self.real_root is None:
             self.real_root = cst.root
-        self.fdb = filesdb.FilesDB(repo, category, 
+        self.fdb = filesdb.FilesDB(category, 
                 name, version, self.real_root)
         self.fdb.import_xml()
 

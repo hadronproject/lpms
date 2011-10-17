@@ -39,7 +39,7 @@ def main(pkgname):
 
         for version in versions:
             # create the filesdb object.
-            fdb = filesdb.FilesDB(repo, category, 
+            fdb = filesdb.FilesDB(category, 
                     name, version, "/")
             # load the content file
             fdb.import_xml()
