@@ -359,12 +359,16 @@ def run(script, env, operation_order=None, remove=False):
     for opr in operation_order:
         if opr in ("merge", "remove"):
             if shelltools.is_exists(cst.lock_file):
-                out.warn("Ehmm.. Seems like another lpms process is still going on. Waiting for it to finish.")
-                while True:
-                    if shelltools.is_exists(cst.lock_file):
-                        time.sleep(3)
-                    else: break
-            shelltools.touch(cst.lock_file)
+                with open(cst.lock_file) as _file:
+                    if not _file.readline() in utils.get_pid_list():
+                        shelltools.remove_file(cst.lock_file)
+                    else:
+                        out.warn("Ehmm.. Seems like another lpms process is still going on. Waiting for it to finish.")
+                        while True:
+                            if shelltools.is_exists(cst.lock_file):
+                                time.sleep(3)
+                            else: break
+            shelltools.echo(os.getpid(), cst.lock_file)
 
         method = getattr(ipr, "run_"+opr)
         try:
