@@ -25,9 +25,8 @@ from lpms import constants as cst
 #from lpms.db import dbapi
 
 class FilesDB:
-    def __init__(self, repo, category, name, version, real_root=None, suffix=None):
+    def __init__(self, category, name, version, real_root=None, suffix=None):
         self.content = {"dirs":[], "file": []}
-        self.repo = repo
         self.category = category
         self.name = name
         self.version = version
@@ -67,3 +66,12 @@ class FilesDB:
                 if _dir == path:
                     return True
             return False
+
+    def get_attributes(self, path):
+        data = iks.parse(self.xml_file)
+        for node in data.findall("node"):
+            for _file in node.findall("file"):
+                if path == node.attrib["path"]+"/"+_file.text:
+                    return _file.attrib
+
+
