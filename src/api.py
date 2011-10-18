@@ -114,17 +114,29 @@ def get_pkg(pkgname, repositorydb=True):
     
     valid_repos = utils.valid_repos()
     def collect_versions(version_data):
-        i = []
-        map(lambda x: i.extend(x), version_data.values())
-        return  i
+        vers = []
+        map(lambda ver: vers.extend(ver), version_data.values())
+        return vers
 
     def select_version(data):
-        versions = []
-        map(lambda ver: versions.extend(ver), data.values())
-        return utils.best_version(versions)
-    
+        if slot:
+            if slot in data:
+                return utils.best_version(data[slot])
+            else:
+                out.error("%s not found in database." % out.color(pkgname+":"+slot, "brightred"))
+                lpms.terminate()
+        else:
+            versions = []
+            map(lambda ver: versions.extend(ver), data.values())
+            return utils.best_version(versions)
+        
     def get_name(data):
         return utils.parse_pkgname(data)
+
+    # handle package slot
+    slot = None
+    if len(pkgname.split(":")) > 1:
+        pkgname, slot = pkgname.split(":")
 
     db = dbapi.RepositoryDB()
     if not repositorydb:
