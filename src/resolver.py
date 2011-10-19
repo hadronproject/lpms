@@ -670,7 +670,7 @@ class DependencyResolver(object):
                 
                 if lt:
                     if dec != 1 and not (category, name) in self.should_upgrade:
-                        self.should_upgrade((category, name))
+                        self.should_upgrade.append((category, name))
                 elif gte:
                     if dec == 1 and not (category, name) in self.should_upgrade:
                         self.should_upgrade.append((category, name))
