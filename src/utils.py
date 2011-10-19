@@ -425,9 +425,10 @@ def pkg_selection_dialog(data):
             out.warn("%s seems invalid.\n" % out.color(answer, "red"))
             continue
 
-def metadata_parser(data):
+def metadata_parser(data, keys=None):
     metadata = collections.OrderedDict()
-    keys = ('summary', 'src_url', 'license', 'arch', 'homepage', 'options', 'slot')
+    if not keys:
+        keys = ('summary', 'src_url', 'license', 'arch', 'homepage', 'options', 'slot')
     lines = data.strip().split('\n')
     subtotal = []
     for line in lines:
@@ -444,7 +445,7 @@ def metadata_parser(data):
             last_item = list(metadata)[-1]
             metadata[last_item] = metadata[last_item]+" "+"@".join(line).strip()
     
-    if not "options" in metadata:
+    if not keys and not "options" in metadata:
         metadata["options"] = None
 
     return metadata
