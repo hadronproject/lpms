@@ -117,6 +117,8 @@ def is_lpms_running():
     return False
 
 def get_process_name(pid):
+    if not os.path.isfile("/proc/%s/stat" % pid):
+        return
     f = open("/proc/%s/stat" % pid)
     try:
         name = f.read().split(' ')[1].replace('(', '').replace(')', '')
