@@ -51,6 +51,7 @@ extract_dir = "/var/tmp/lpms/"
 lock_file = extract_dir+"lock"
 resume_file = extract_dir+"/"+"resume"
 src_cache = "/var/cache/lpms/sources"
+news_dir = "news"
 
 # lpms.conf is unhealty in this case.
 with open(config_dir+"/"+config_file) as data:
