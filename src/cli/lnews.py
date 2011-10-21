@@ -24,6 +24,7 @@ from lpms import news
 from lpms import utils
 from lpms import constants as cst
 
+__version__ = "0.1"
 
 class News(object):
     def __init__(self, command_line):
