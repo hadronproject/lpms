@@ -113,6 +113,7 @@ class Build(internals.InternalFuncs):
             if os.path.isfile(unpack_file):
                 if lpms.getopt("--force-unpack"):
                     shelltools.remove_file(unpack_file)
+                    shelltools.remove_file(os.path.join(os.path.dirname(target), ".prepared"))
                 else:
                     out.notify("%s seems already unpacked." % os.path.basename(archive_path))
                     continue
