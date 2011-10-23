@@ -271,7 +271,6 @@ class Merge(internals.InternalFuncs):
 
                 file_tag = iks.SubElement(root, "file")
 
-                print sha1sum, target, source
                 for key in perms:
                     file_tag.set(key, str(perms[key]))
 
