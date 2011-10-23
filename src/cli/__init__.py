@@ -62,6 +62,7 @@ build_help = (('--pretend', '-p', 'Shows operation steps'),
         ('--no-configure', 'Does not run configuration functions.'),
         ('--resume-build', 'Resumes the most recent build operation.'),
         ('--change-root', 'Changes installation target.'),
+        ('--no-strip', 'No strip files'),
         ('--no-merge', 'Does not merge the package.'),
         ('--ask-repo', 'Shows repo selection dialog if necessary.'),
         ('--show-opts', 'Shows available options for given packages.'),
@@ -112,7 +113,7 @@ def usage():
 nevermind = ('--ignore-depends', '--quiet', '--verbose', '--force-upgrade', '--reset', \
         '--ignore-sandbox', '--force-unpack', '--enable-sandbox', '--ignore-conflicts', 
         '--no-configure', '--ignore-reserve-files', '--reload-previous-repodb',
-        '--list-repos')
+        '--list-repos', '--no-strip')
 
 exceptions = ('change-root', 'opts', 'stage')
 
