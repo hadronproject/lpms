@@ -49,7 +49,8 @@ class Build(internals.InternalFuncs):
         self.env.__dict__.update({"get": self.get, "cmd_options": [], "options": []})
         self.spec_file = None
         self.config = conf.LPMSConfig()
-        utils.set_environment_variables()
+        if not lpms.getopt("--unset-env-variables"):
+            utils.set_environment_variables()
         self.revisioned = False
         self.revision = None
 
