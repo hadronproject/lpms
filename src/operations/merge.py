@@ -271,6 +271,7 @@ class Merge(internals.InternalFuncs):
 
                 file_tag = iks.SubElement(root, "file")
 
+                print sha1sum, target, source
                 for key in perms:
                     file_tag.set(key, str(perms[key]))
 
@@ -296,7 +297,8 @@ class Merge(internals.InternalFuncs):
             shelltools.remove_file(self.myfile)
         shelltools.echo(iks.tostring(xml_root, encoding='UTF-8'), self.myfile)
         
-        lpms.logger.info("merged to %s" % self.env.real_root)
+        lpms.logger.info("%s/%s merged to %s" % (self.env.category, self.env.fullname, \
+                self.env.real_root))
 
         # it may be too big
         del xml_root
@@ -361,9 +363,28 @@ class Merge(internals.InternalFuncs):
 
         # write build info. flags, build time and etc.
         #self.instdb.drop_buildinfo(self.env.repo, self.env.category, self.env.name, self.env.version)
+        if "HOST" in os.environ:
+            host = os.environ["HOST"]
+        else:
+            host = ""
+
+        if "CFLAGS" in os.environ:
+            cflags = os.environ["CFLAGS"]
+        else:
+            cflags = ""
+         
+        if "CXXFLAGS" in os.environ:
+            cxxflags = os.environ["CXXFLAGS"]
+        else:
+            cxxflags = ""
+
+        if "LDFLAGS" in os.environ:
+            ldflags = os.environ["LDFLAGS"]
+        else:
+            ldflags = ""
+
         data = (self.env.repo, self.env.category, self.env.name, self.env.version, time.time(), 
-                os.environ["HOST"], os.environ["CFLAGS"], os.environ["CXXFLAGS"], 
-                os.environ["LDFLAGS"], " ".join(self.env.valid_opts), self.total)
+                host, cflags, cxxflags, ldflags, " ".join(self.env.valid_opts), self.total)
         self.instdb.add_buildinfo(data)
 
     def clean_previous(self):

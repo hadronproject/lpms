@@ -65,7 +65,7 @@ build_help = (('--pretend', '-p', 'Shows operation steps'),
         ('--no-strip', 'No strip files'),
         ('--no-merge', 'Does not merge the package.'),
         ('--ask-repo', 'Shows repo selection dialog if necessary.'),
-        ('--show-opts', 'Shows available options for given packages.'),
+        ('--unset-env-variables', 'Unsets environment variables that are defined in lpms.conf'),
         ('--opts', 'Determines options of the package.'))
 
 def version():
@@ -113,7 +113,7 @@ def usage():
 nevermind = ('--ignore-depends', '--quiet', '--verbose', '--force-upgrade', '--reset', \
         '--ignore-sandbox', '--force-unpack', '--enable-sandbox', '--ignore-conflicts', 
         '--no-configure', '--ignore-reserve-files', '--reload-previous-repodb',
-        '--list-repos', '--no-strip')
+        '--list-repos', '--no-strip', '--unset-env-variables')
 
 exceptions = ('change-root', 'opts', 'stage')
 

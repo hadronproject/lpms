@@ -29,6 +29,12 @@ from lpms.fetcher import URLFetcher
 
 from lpms import constants as cst
 
+def unset_env_variables():
+    return utils.unset_env_variables()
+
+def unset_env_variable(variable):
+    return utils.unset_env_variable(variable)
+
 def addflag(fn):
     def wrapped(flag):
         name = fn.__name__.split("_")[1].upper()

@@ -117,8 +117,6 @@ def is_lpms_running():
     return False
 
 def get_process_name(pid):
-    if not os.path.isfile("/proc/%s/stat" % pid):
-        return
     f = open("/proc/%s/stat" % pid)
     try:
         name = f.read().split(' ')[1].replace('(', '').replace(')', '')
@@ -241,6 +239,22 @@ def check_root(msg=True):
             lpms.catch_error("you must be root!")
         else:
             return False
+    return True
+
+def unset_env_variables():
+    for variable in ("HOST", "CFLAGS", "CXXFLAGS", \
+            "LDFLAGS", "JOBS", "CC", "CXX"):
+        try:
+            del os.environ[variable]
+        except KeyError:
+            pass
+    return True
+
+def unset_env_variable(variable):
+    try:
+        del os.environ[variable]
+    except KeyError:
+        pass
     return True
 
 def set_environment_variables():
