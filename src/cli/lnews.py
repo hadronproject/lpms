@@ -24,12 +24,12 @@ from lpms import news
 from lpms import utils
 from lpms import constants as cst
 
-__version__ = "0.1"
 
 class News(object):
     def __init__(self, command_line):
         self.command_line = command_line
         self.cursor = news.News()
+        self.read_items = self.cursor.get_read_items()
 
     def usage(self):
         out.normal("news reader for lpms")
@@ -42,9 +42,17 @@ class News(object):
             out.warn("no readable news.")
             return
         out.normal("readable messages listed:")
+        out.write("index   repo            priority     summary\n")
+        out.write("===============================================\n")
         for news in self.cursor.data:
             repo, metadata = news[:-1]
-            out.write("[%s] \t %s\n" % (out.color(str(i), "green"), metadata["summary"]))
+            if not "%s/%s" % (repo, metadata["summary"]) in self.read_items:
+                read = out.color("*", "brightgreen")
+            else:
+                read = ""
+
+            out.write("[%s]%s\t%-15s\t%-12s %s\n" % (out.color(str(i), "green"), read, repo, \
+                    metadata["priority"], metadata["summary"]))
             i += 1
 
     def read_news(self, news_id):
@@ -63,6 +71,8 @@ class News(object):
         out.write(out.color("date", "green")+": "+metadata["date"]+"\n")
         out.write(out.color("priority", "green")+": "+metadata["priority"]+"\n")
         out.write(message+"\n")
+
+        self.cursor.mark_as_read("%s/%s" % (repo, metadata["summary"]))
 
     def main(self):
         if not self.command_line:

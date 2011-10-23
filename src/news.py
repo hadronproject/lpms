@@ -16,9 +16,11 @@
 # along with lpms.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+import cPickle as pickle
 
 from lpms import out
 from lpms import utils
+from lpms import shelltools
 from lpms import constants as cst
 
 from collections import OrderedDict
@@ -27,6 +29,7 @@ metadata_keys = ('from', 'summary', 'date', 'priority')
 
 class News(object):
     def __init__(self):
+        self.news_read_file = os.path.join(cst.repos, cst.news_read)
         self.valid_repos = utils.valid_repos()
         self.data = []
 
@@ -41,7 +44,7 @@ class News(object):
             try:
                 metadata = utils.metadata_parser(local["metadata"], keys=metadata_keys)
             except IndexError:
-                out.warn("Syntax errors found in...")
+                out.warn("Syntax errors found in %s" % os.path.join(my_news_dir, news))
                 continue
             self.data.append((repo, metadata, local["message"]))
 
@@ -49,3 +52,26 @@ class News(object):
         '''Collects available news'''
         for repo in self.valid_repos:
             self.import_repo_news(repo)
+
+    def mark_as_read(self, item):
+        if not os.path.isfile(self.news_read_file):
+            with open(self.news_read_file, "wb") as raw_data:
+                pickle.dump([item], raw_data)
+        else:
+            with open(self.news_read_file, "rb") as raw_data:
+                data = pickle.load(raw_data)
+                if not item in data:
+                    data.append(item)
+            shelltools.remove_file(self.news_read_file)
+            with open(self.news_read_file, "wb") as raw_data:
+                if not item in data:
+                    data.append(item)
+                pickle.dump(data, raw_data)
+
+    def get_read_items(self):
+        result = []
+        if not os.path.isfile(self.news_read_file):
+            return result
+        with open(self.news_read_file, "rb") as raw_data:
+            result = pickle.load(raw_data)
+        return result
