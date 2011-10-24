@@ -30,3 +30,11 @@ class NotInstalled(Exception):
 
 class FileNotFound(Exception):
     pass
+
+class CycleError(Exception):
+    pass
+
+class UnmetDependency(Exception):
+    pass
+
+
