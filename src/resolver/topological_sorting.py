@@ -27,12 +27,7 @@ Tim Wegener -- doctesting, updating to current idioms, topsort_levels,
                find_cycles
 '''
 
-class CycleError(Exception):
-    """Cycle Error"""
-    pass
-
-class UnmetDependency(Exception):
-    pass
+from lpms.exceptions import CycleError
 
 def is_rotated(seq1, seq2):
     """Return true if the first sequence is a rotation of the second sequence.
