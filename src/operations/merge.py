@@ -104,7 +104,7 @@ class Merge(internals.InternalFuncs):
 
     def merge_pkg(self):
         isstrip = True
-        if lpms.getopt("--no-strip") or "debug" in self.env.valid_opts or utils.check_cflags("-g") \
+        if (hasattr(self.env, "no_strip") and self.env.no_strip) or lpms.getopt("--no-strip") or "debug" in self.env.valid_opts or utils.check_cflags("-g") \
                 or utils.check_cflags("-ggdb") or utils.check_cflags("-g3"):
                     isstrip = False
 
