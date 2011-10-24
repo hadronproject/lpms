@@ -170,3 +170,7 @@ def autoheader(*parameters):
     if not system("autoheader %s" % command):
         lpms.catch_error("autoheader failed.")
 
+def installd(*params, **kwargs):
+    '''Runs raw_install with standard parameters'''
+    arg = kwargs.get("arg", "install")
+    raw_install("DESTDIR=%s %s" % (install_dir, " ".join(params)), arg)
