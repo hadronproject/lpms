@@ -25,7 +25,8 @@ from lpms import utils
 from lpms import constants as cst
 
 from lpms.db import dbapi
-from lpms.resolver.topological_sorting import topsort
+from lpms.exceptions import CycleError, UnmetDependency
+from lpms.resolver.topological_sorting import topsort, find_cycles
 
 class DependencyResolver(object):
     def __init__(self):
