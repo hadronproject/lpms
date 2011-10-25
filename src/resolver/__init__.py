@@ -420,6 +420,13 @@ class DependencyResolver(object):
             category, name, version = data[:-1]
             return self.repodb.get_repo(category, name, version)
 
+    def get_valid_options(self, options, valid_options):
+        result = []
+        for option in options:
+            if option in valid_options:
+                result.append(option)
+        return result
+
     def collect(self, repo, category, name, version, use_new_opts, recursive=True):
         self.active = os.path.join(repo, category, name)+"-"+version
         dependencies = self.repodb.get_depends(repo, category, name, version)
@@ -528,6 +535,10 @@ class DependencyResolver(object):
                     if key == "conflict":
                         local_plan[key].append([dyn_dep_repo, dcategory, dname, dversion])
                         continue
+                    repo_options = self.repodb.get_options(dyn_dep_repo, dcategory, dname)
+                    if dversion in repo_options:
+                        dopt = self.get_valid_options(dopt, repo_options)
+                    else: dopt = []
                     local_plan[key].append([dyn_dep_repo, dcategory, dname, dversion, dopt])
                      
             static_deps = " ".join([dep for dep in dependencies[key] if isinstance(dep, str)])
@@ -547,6 +558,10 @@ class DependencyResolver(object):
                     if key == "conflict":
                         local_plan[key].append([stc_dep_repo, scategory, sname, sversion])
                         continue
+                    repo_options = self.repodb.get_options(stc_dep_repo, scategory, sname)
+                    if sversion in repo_options:
+                        sopt = self.get_valid_options(sopt, repo_options)
+                    else: sopt = []
                     local_plan[key].append([stc_dep_repo, scategory, sname, sversion, sopt])
 
         self.operation_data.update({(repo, category, name, version): [local_plan, options]})
