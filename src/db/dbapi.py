@@ -95,18 +95,18 @@ class FilesAPI(object):
                 perms[key] = attributes[key]
         return perms
 
-    def list_files(self, repo, category, name, version):
+    def list_files(self, category, name, version):
         '''Returns content for the given package'''
         if not self.is_installed(category, name, version):
-            raise NotInstalled("%s/%s/%s-%s is not installed." % ("repo", category, name, version))
-        filesdb_cursor = self.cursor("repo", category, name, version)
+            raise NotInstalled("%s/%s-%s is not installed." % (category, name, version))
+        filesdb_cursor = self.cursor(category, name, version)
         return filesdb_cursor.content
 
     def has_path(self, category, name, version, path):
         '''Checks given package for given path'''
         if not self.is_installed(category, name, version):
-            raise NotInstalled("%s/%s/%s-%s is not installed." % ("repo", category, name, version))
-        filesdb_cursor = self.cursor("repo", category, name, version)
+            raise NotInstalled("%s/%s-%s is not installed." % (category, name, version))
+        filesdb_cursor = self.cursor(category, name, version)
         return filesdb_cursor.has_path(path)
 
 class API(object):
