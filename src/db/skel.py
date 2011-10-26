@@ -85,9 +85,25 @@ def repo_schema():
         );
     """
 
+def file_relations_schema():
+    return """
+        create table file_relations (
+            repo text,
+            category text,
+            name text,
+            version text,
+            file_path text,
+            depend text
+        );
+    """
+
 def schema(db_path):
     if len(db_path.split(const.repositorydb_path)) == 2:
         return repo_schema()
     
     if len(db_path.split(const.installdb_path)) == 2:
         return installed_schema()
+    
+    if len(db_path.split(const.file_relationsdb_path)) == 2:
+        return file_relations_schema()
+
