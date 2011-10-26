@@ -23,6 +23,7 @@ from lpms import constants as cst
 
 from lpms.db import db
 from lpms.db import filesdb
+from lpms.db import file_relationsdb
 
 from lpms.exceptions import NotInstalled, FileNotFound
 
@@ -320,5 +321,9 @@ class InstallDB(API):
 class FilesDB(FilesAPI):
     def __init__(self, real_root=None, suffix=None):
         super(FilesDB, self).__init__(real_root, suffix)
+
+class FileRelationsDB(file_relationsdb.FileRelationsDatabase):
+    def __init__(self, real_root=None, suffix=None):
+        super(FileRelationsDB, self).__init__(fix_path(cst.file_relationsdb_path))
 
 
