@@ -78,7 +78,38 @@ class FileRelationsDatabase(object):
         self.cursor.execute('''select repo, category, name, version from \
                 file_relations where file_path=(?)''', (file_path,))
         return self.cursor.fetchall()
+
+    def get_file_paths_by_package(self, name, repo=None, category=None, version=None):
+        '''Gets file_paths by package name'''
+        if repo is None and category is None:
+            self.cursor.execute('''select file_path from file_relations where name=(?)''', (name,))
+        elif category is None and repo is not None:
+            self.cursor.execute('''select file_path from file_relations where name=(?) and \
+                    repo=(?)''', (name, repo,))
+        elif category is not None and repo is None:
+            if version is None:
+                self.cursor.execute('''select file_path from file_relations where name=(?) and \
+                        category=(?)''', (name, category,))
+            else:
+                self.cursor.execute('''select file_path from file_relations where name=(?) and \
+                        category=(?) and version=(?)''', (name, category, version,))
+        else:
+            if version is None:
+                self.cursor.execute('''select file_path from file_relations where repo=(?) and \
+                        name=(?) and category=(?)''', (repo, name, category,))
+            else:
+                self.cursor.execute('''select file_path from file_relations where repo=(?) and \
+                        name=(?) and category=(?) and version=(?)''', (repo, name, category, version,))
+        return self.cursor.fetchall()
     
+    def delete_item_by_pkgdata_and_file_path(self, pkgdata, file_path, commit=False):
+        '''Deletes item by package data and file_path'''
+        repo, category, name, version = pkgdata
+        self.cursor.execute('''delete from file_relations where repo=(?) and \
+                category=(?) and name=(?) and version=(?) and file_path=(?)''',
+                (repo, category, name, version, file_path,))
+        if commit: self.commit()
+
     def delete_item_by_pkgdata(self, pkgdata, commit=False):
         '''Deletes item by package data'''
         repo, category, name, version = pkgdata

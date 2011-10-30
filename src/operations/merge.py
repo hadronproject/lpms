@@ -28,6 +28,7 @@ from lpms import utils
 from lpms import conf
 from lpms import internals
 from lpms import shelltools
+from lpms import file_relations
 from lpms import constants as cst
 
 from lpms.db import dbapi
@@ -47,6 +48,8 @@ class Merge(internals.InternalFuncs):
         self.instdb = dbapi.InstallDB()
         self.conf = conf.LPMSConfig()
         self.merge_conf_data = []
+        self.file_relationsdb = dbapi.FileRelationsDB()
+        self.reverse_dependsdb = dbapi.ReverseDependsDB()
 
         # set installation target
         if self.env.real_root is None:
@@ -189,7 +192,15 @@ class Merge(internals.InternalFuncs):
             for f in files:
                 source = os.path.join(self.env.install_dir, root_path[1:], f)
                 target = os.path.join(self.env.real_root, root_path[1:], f)
-
+                
+                # file relations db
+                self.file_relationsdb.delete_item_by_pkgdata_and_file_path((self.env.repo, \
+                        self.env.category, self.env.name, self.env.version), target)
+                if os.path.exists(target) and os.access(target, os.X_OK):
+                    if utils.get_mimetype(target) in ('application/x-executable', 'application/x-archive', \
+                            'application/x-sharedlib'):
+                        self.file_relationsdb.add_file((self.env.repo, self.env.category, self.env.name, \
+                                self.env.version, target, file_relations.get_depends(target)))
 
                 if conflict_check and os.path.isfile(target) and not fdb.has_path(target):
                     # FIXME: Use an exception to exit
@@ -296,6 +307,7 @@ class Merge(internals.InternalFuncs):
             shelltools.remove_file(self.myfile)
         shelltools.echo(iks.tostring(xml_root, encoding='UTF-8'), self.myfile)
         
+        self.file_relationsdb.commit()
         lpms.logger.info("%s/%s merged to %s" % (self.env.category, self.env.fullname, \
                 self.env.real_root))
 
@@ -359,6 +371,22 @@ class Merge(internals.InternalFuncs):
         self.instdb.add_pkg(data, commit=True)
         self.instdb.add_depends((self.env.repo, self.env.category, self.env.name, 
                 self.env.version, builddeps, runtimedeps, postmerge, conflict), commit=True)
+        
+        # write reverse dependencies
+        i = 0
+        for key in (runtimedeps, builddeps, postmerge, conflict):
+            i += 1
+            for reverse_data in key:
+                reverse_repo, reverse_category, reverse_name, reverse_version = reverse_data[:-1]
+                if i == 2:
+                    self.reverse_dependsdb.add_reverse_depend((self.env.repo, self.env.category, \
+                            self.env.name, self.env.version, reverse_repo, reverse_category, \
+                            reverse_name, reverse_version), build_dep=0)
+                else:
+                    self.reverse_dependsdb.add_reverse_depend((self.env.repo, self.env.category, \
+                            self.env.name, self.env.version, reverse_repo, reverse_category, \
+                            reverse_name, reverse_version))
+        self.reverse_dependsdb.commit()
 
         # write build info. flags, build time and etc.
         #self.instdb.drop_buildinfo(self.env.repo, self.env.category, self.env.name, self.env.version)

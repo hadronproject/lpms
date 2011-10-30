@@ -21,9 +21,14 @@ import subprocess
 import lpms
 from lpms import out
 from lpms import utils
+from lpms import shelltools
+
+from lpms.db import dbapi
 from lpms.exceptions import FileNotFound
 
 ldd_path = "/usr/bin/ldd"
+
+def remove_duplications(data): return list(set(data))
 
 def get_depends(file_path):
     '''Parses ldd's output and returns depends of shared lib or executable file'''
@@ -46,6 +51,18 @@ def get_depends(file_path):
         if len(data) == 2:
             parsed = data[1].split(" ")
             if parsed[1] != "":
-                depends.append(parsed[1])
-    
+                if shelltools.is_link(parsed[1]):
+                    depends.append(shelltools.real_path(parsed[1]))
+                else:
+                    depends.append(parsed[1])
     return depends
+
+def get_packages(category, name, version):
+    relationsdb = dbapi.FileRelationsDB()
+    files = relationsdb.get_file_paths_by_package(name, category=category, version=version)
+    broken_packages = []
+    for _file in remove_duplications(files):
+        broken_packages.extend(relationsdb.get_package_by_depend(_file[0]))
+    return remove_duplications(broken_packages)
+
+                        
