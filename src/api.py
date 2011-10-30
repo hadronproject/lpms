@@ -29,6 +29,7 @@ from lpms import internals
 from lpms import initpreter
 from lpms import shelltools
 from lpms import interpreter
+from lpms import file_relations
 from lpms import constants as cst
 
 from lpms.db import dbapi
@@ -240,6 +241,30 @@ def remove_package(pkgnames, instruct):
     '''Triggers remove operation for given packages'''
     packages = [get_pkg(pkgname, repositorydb=False) for pkgname in pkgnames]
     instruct['count'] = len(packages); i = 0;
+    if instruct["show-reverse-depends"]:
+        instruct["ask"] = True
+        # WARNING: the mechanism only shows directly reverse dependencies
+        # supposing that if A is a reverse dependency of B and C is depends on A.
+        # when the user removes B, A and C will be broken. But lpms will warn the user about A.
+        broken_packages = []
+        reversedb = dbapi.ReverseDependsDB()
+        out.normal("resolving primary reverse dependencies...\n")
+        for package in packages:
+            category, name, version = package[1:]
+            if lpms.getopt("--use-file-relations"):
+                broken_packages.extend(file_relations.get_packages(category, name, version))
+            else:
+                broken_packages.extend(reversedb.get_reverse_depends(category, name))
+
+        if broken_packages:
+            out.warn("the following packages will be broken:\n")
+            for broken_package in broken_packages:
+                broken_repo, broken_category, broken_name, broken_version = broken_package
+                out.write(" %s %s/%s/%s-%s\n" % (out.color(">", "brightred"), broken_repo, broken_category, \
+                        broken_name, broken_version))
+        else:
+            out.warn("no reverse dependency found.")
+
     if instruct['ask']:
         out.write("\n")
         for package in packages:
@@ -253,7 +278,6 @@ def remove_package(pkgnames, instruct):
             out.write("quitting...\n")
             utils.xterm_title_reset()
             lpms.terminate()
-
     for package in packages:
         i += 1;
         instruct['i'] = i

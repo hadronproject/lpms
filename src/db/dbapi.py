@@ -24,7 +24,7 @@ from lpms import constants as cst
 from lpms.db import db
 from lpms.db import filesdb
 from lpms.db import file_relationsdb
-
+from lpms.db import reverse_dependsdb
 from lpms.exceptions import NotInstalled, FileNotFound
 
 class FilesAPI(object):
@@ -323,7 +323,11 @@ class FilesDB(FilesAPI):
         super(FilesDB, self).__init__(real_root, suffix)
 
 class FileRelationsDB(file_relationsdb.FileRelationsDatabase):
-    def __init__(self, real_root=None, suffix=None):
+    def __init__(self):
         super(FileRelationsDB, self).__init__(fix_path(cst.file_relationsdb_path))
+
+class ReverseDependsDB(reverse_dependsdb.ReverseDependsDatabase):
+    def __init__(self):
+        super(ReverseDependsDB, self).__init__(fix_path(cst.reverse_dependsdb_path))
 
 

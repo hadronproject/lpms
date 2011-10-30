@@ -41,6 +41,7 @@ help_output = (('--help', '-h', 'Shows this message.'),
         ('--content', '-c', 'Lists files of given package.'),
         ('--list-repos', 'Lists all repositories.'),
         ('--force-upgrade', 'Forces lpms to use latest versions.'),
+        ('--show-reverse-depends', 'Shows reverse dependencies of given package. It is a sub command of remove.'),
         ('--configure-pending', 'Configures pending packages if they were not configured at installation time.'),
         ('--reload-previous-repodb', 'Reloads previous repository database backup.'),
         ('--verbose', 'Prints more output if possible.'),
@@ -113,13 +114,12 @@ def usage():
 nevermind = ('--ignore-depends', '--quiet', '--verbose', '--force-upgrade', '--reset', \
         '--ignore-sandbox', '--force-unpack', '--enable-sandbox', '--ignore-conflicts', 
         '--no-configure', '--ignore-reserve-files', '--reload-previous-repodb',
-        '--list-repos', '--no-strip', '--unset-env-variables')
-
+        '--list-repos', '--no-strip', '--unset-env-variables', '--use-file-relations')
 exceptions = ('change-root', 'opts', 'stage')
 
 toinstruct = ('ask', 'a', 'resume-build', 'resume', 'pretend', 'p', 'fetch-only', 'F', \
         'no-merge', 'remove', 'r', 'upgrade', 'U',  'skip-first', 'sync', 'S', 'update', 'u', \
-        'configure-pending', 'category-install', 'C', 'use-new-opts', 'N')
+        'configure-pending', 'category-install', 'C', 'use-new-opts', 'N', 'show-reverse-depends')
 
 regular = ('help', 'h', 'version', 'v', 'belong', 'b', 'content', 'c', 'remove', 'r', \
         'no-color', 'n', 'update', 'u', 'search', 's', 'upgrade', 'U', 'ask-repo', 'C', 'show-deps')
@@ -129,7 +129,7 @@ instruct = {'ask': False, 'pretend': False, 'resume-build': False, 'resume': Fal
         'cmd_options': [], 'specials': {}, 'ignore-deps': False, 'sandbox': None,'stage': None, \
         'force': None, 'upgrade': None, 'remove': None, 'skip-first': False, 'sync': False, \
         'update': False, 'configure-pending': False, 'category-install': False,
-        "use-new-opts": False}
+        "use-new-opts": False, 'show-reverse-depends': False}
 
 def main():
     packages = []; invalid = []
@@ -273,7 +273,6 @@ def main():
         packages = []
 
     utils.check_root()
-    #lpms.logger.info(('=== command: %s ===' % ' '.join(sys.argv)))
 
     set_remove = []
 
