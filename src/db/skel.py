@@ -97,6 +97,21 @@ def file_relations_schema():
         );
     """
 
+def reverse_depends_schema():
+    return """
+        create table reverse_depends (
+            repo text,
+            category text,
+            name text,
+            version text,
+            reverse_repo text,
+            reverse_category text,
+            reverse_name text,
+            reverse_version text,
+            build_dep integer
+        );
+    """
+
 def schema(db_path):
     if len(db_path.split(const.repositorydb_path)) == 2:
         return repo_schema()
@@ -106,4 +121,7 @@ def schema(db_path):
     
     if len(db_path.split(const.file_relationsdb_path)) == 2:
         return file_relations_schema()
+    
+    if len(db_path.split(const.reverse_dependsdb_path)) == 2:
+        return reverse_depends_schema()
 
