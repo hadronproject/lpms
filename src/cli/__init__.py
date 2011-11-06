@@ -79,6 +79,7 @@ def usage():
     out.normal(('lpms -- %s Package Management System on %s' % (out.color('L', 'red'), conf.LPMSConfig().distribution)))
     out.write('\nIn order to build a package:\n')
     out.write(' # lpms <package-name> <extra-command>\n\n')
+    out.write('To see extra commands use --help parameter.\n\n')
     out.write('Build related commands:\n')
 
     for cmd in build_help:
@@ -114,7 +115,9 @@ def usage():
 nevermind = ('--ignore-depends', '--quiet', '--verbose', '--force-upgrade', '--reset', \
         '--ignore-sandbox', '--force-unpack', '--enable-sandbox', '--ignore-conflicts', 
         '--no-configure', '--ignore-reserve-files', '--reload-previous-repodb',
-        '--list-repos', '--no-strip', '--unset-env-variables', '--use-file-relations')
+        '--list-repos', '--no-strip', '--unset-env-variables', '--use-file-relations', 
+        '--in-name', '--in-summary', '--only-installed')
+
 exceptions = ('change-root', 'opts', 'stage')
 
 toinstruct = ('ask', 'a', 'resume-build', 'resume', 'pretend', 'p', 'fetch-only', 'F', \
