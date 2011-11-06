@@ -194,13 +194,13 @@ class Merge(internals.InternalFuncs):
                 target = os.path.join(self.env.real_root, root_path[1:], f)
                 
                 # file relations db
-                self.file_relationsdb.delete_item_by_pkgdata_and_file_path((self.env.repo, \
-                        self.env.category, self.env.name, self.env.version), target)
-                if os.path.exists(target) and os.access(target, os.X_OK):
-                    if utils.get_mimetype(target) in ('application/x-executable', 'application/x-archive', \
+                self.file_relationsdb.delete_item_by_pkgdata_and_file_path((self.env.category, \
+                        self.env.name, self.env.version), target)
+                if os.path.exists(source) and os.access(source, os.X_OK):
+                    if utils.get_mimetype(source) in ('application/x-executable', 'application/x-archive', \
                             'application/x-sharedlib'):
                         self.file_relationsdb.add_file((self.env.repo, self.env.category, self.env.name, \
-                                self.env.version, target, file_relations.get_depends(target)))
+                                self.env.version, target, file_relations.get_depends(source)))
 
                 if conflict_check and os.path.isfile(target) and not fdb.has_path(target):
                     # FIXME: Use an exception to exit
@@ -373,6 +373,8 @@ class Merge(internals.InternalFuncs):
                 self.env.version, builddeps, runtimedeps, postmerge, conflict), commit=True)
         
         # write reverse dependencies
+        self.reverse_dependsdb.delete_item(self.env.category, self.env.name, \
+                self.env.version, commit=True)
         i = 0
         for key in (runtimedeps, builddeps, postmerge, conflict):
             i += 1
