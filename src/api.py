@@ -239,6 +239,8 @@ def upgrade_system(instruct):
 
 def remove_package(pkgnames, instruct):
     '''Triggers remove operation for given packages'''
+    file_relationsdb = dbapi.FileRelationsDB()
+    reverse_dependsdb = dbapi.ReverseDependsDB()
     packages = [get_pkg(pkgname, repositorydb=False) for pkgname in pkgnames]
     instruct['count'] = len(packages); i = 0;
     if instruct["show-reverse-depends"]:
@@ -265,6 +267,7 @@ def remove_package(pkgnames, instruct):
         else:
             out.warn("no reverse dependency found.")
 
+
     if instruct['ask']:
         out.write("\n")
         for package in packages:
@@ -284,6 +287,10 @@ def remove_package(pkgnames, instruct):
         if not initpreter.InitializeInterpreter(package, instruct, ['remove'], remove=True).initialize():
             repo, category, name, version = package 
             out.warn("an error occured during remove operation: %s/%s/%s-%s" % (repo, category, name, version))
+        else:
+            category, name, version = package[1:]
+            file_relationsdb.delete_item_by_pkgdata(category, name, version, commit=True)
+            reverse_dependsdb.delete_item(category, name, version, commit=True)
 
 def resolve_dependencies(data, cmd_options, use_new_opts, specials=None):
     '''Resolve dependencies using fixit object. This function

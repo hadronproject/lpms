@@ -104,18 +104,17 @@ class FileRelationsDatabase(object):
     
     def delete_item_by_pkgdata_and_file_path(self, pkgdata, file_path, commit=False):
         '''Deletes item by package data and file_path'''
-        repo, category, name, version = pkgdata
-        self.cursor.execute('''delete from file_relations where repo=(?) and \
+        category, name, version = pkgdata
+        self.cursor.execute('''delete from file_relations where \
                 category=(?) and name=(?) and version=(?) and file_path=(?)''',
-                (repo, category, name, version, file_path,))
+                (category, name, version, file_path,))
         if commit: self.commit()
 
-    def delete_item_by_pkgdata(self, pkgdata, commit=False):
+    def delete_item_by_pkgdata(self, category, name, version, commit=False):
         '''Deletes item by package data'''
-        repo, category, name, version = pkgdata
-        self.cursor.execute('''delete from file_relations where repo=(?) and \
+        self.cursor.execute('''delete from file_relations where \
                 category=(?) and name=(?) and version=(?)''',
-                (repo, category, name, version,))
+                (category, name, version,))
         if commit: self.commit()
 
     def delete_item_by_file_path(self, file_path, commit=False):

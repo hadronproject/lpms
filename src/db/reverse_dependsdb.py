@@ -98,6 +98,5 @@ class ReverseDependsDatabase(object):
 
     def delete_item(self, category, name, version, commit=False):
         '''Deletes all entries of given item'''
-        self.cursor.execute('''delete item from reverse_depends where category=(?) \
-                and name=(?) and version=(?)''', (category, name, version))
+        self.cursor.execute('''delete from reverse_depends where category=(?) and name=(?) and version=(?)''', (category, name, version,))
         if commit: self.commit()
