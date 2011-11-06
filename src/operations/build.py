@@ -116,7 +116,7 @@ class Build(internals.InternalFuncs):
                     shelltools.remove_file(unpack_file)
                     shelltools.remove_file(os.path.join(os.path.dirname(target), ".prepared"))
                 else:
-                    out.notify("%s seems already unpacked." % os.path.basename(archive_path))
+                    out.warn("%s seems already unpacked." % os.path.basename(archive_path))
                     continue
             if hasattr(self.env, "partial"):
                 partial = [atom.strip() for atom in self.env.partial.split(" ") 
@@ -124,7 +124,7 @@ class Build(internals.InternalFuncs):
                 archive.extract(str(archive_path), str(target), partial)
             else:
                 archive.extract(str(archive_path), str(target))
-        shelltools.touch(unpack_file)
+            shelltools.touch(unpack_file)
 
     def parse_url_tag(self):
         def set_shortening(data, opt=False):
