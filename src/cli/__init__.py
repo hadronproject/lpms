@@ -27,7 +27,7 @@ from lpms import utils
 from lpms.operations import remove
 from lpms.operations import update
 
-cli = sys.argv[1:]
+commands = sys.argv[1:]
 
 lpms_version = '1.0'
 
@@ -72,8 +72,6 @@ build_help = (('--pretend', '-p', 'Shows operation steps'),
 def version():
     out.write(('lpms %s\n' % lpms_version))
     lpms.terminate()
-
-
 
 def usage():
     out.normal(('lpms -- %s Package Management System on %s' % (out.color('L', 'red'), conf.LPMSConfig().distribution)))
@@ -136,104 +134,103 @@ instruct = {'ask': False, 'pretend': False, 'resume-build': False, 'resume': Fal
 
 def main():
     packages = []; invalid = []
-    for l in cli:
-        if (l.startswith('-') and (not l.startswith('--'))):
-            for h in l[1:]:
-                if (h == 'h'):
+    for command in commands:
+        if command.startswith('-') and not command.startswith('--'):
+            for cmd in command[1:]:
+                if (cmd == 'h'):
                     usage()
-                elif (h == 'v'):
+                elif (cmd == 'v'):
                     version()
-                elif (h == 'b'):
+                elif (cmd == 'b'):
                     from lpms.cli import belong
-                    belong.main(cli[(cli.index(l) + 1):])
+                    commands.remove("-"+cmd)
+                    belong.main(commands)
                     return
-                elif (h == 'i'):
+                elif (cmd == 'i'):
                     from lpms.cli import info
-                    info.Info(cli[(cli.index(l) + 1):]).run()
+                    commands.remove("-"+cmd)
+                    info.Info(commands).run()
                     return
-                elif (h == 'c'):
+                elif (cmd == 'c'):
                     from lpms.cli import list_files
-                    try:
-                        list_files.main(cli[(cli.index(l) + 1)])
-                        return
-                    except IndexError:
+                    commands.remove("-"+cmd)
+                    if not commands:
                         out.error('please give a package name.')
                         lpms.terminate()
-                elif (h == 's'):
+                    for name in commands:
+                        list_files.main(name)
+                elif (cmd == 's'):
                     from lpms.cli import search
-                    search.Search(cli[(cli.index(l) + 1):]).search()
+                    commands.remove("-"+cmd)
+                    search.Search(commands).search()
                     return
-                #elif (h == 'u'):
-                #    utils.check_root()
-                #    api.update_database()
-                #    try:
-                #        update.main(cli[(cli.index(l) + 1):])
-                #    except IndexError:
-                #        update.main()
-                #    return
                 else:
-                    if ((h not in regular) and (h not in toinstruct)):
-                        invalid.append(('-' + h))
+                    if cmd not in regular and cmd not in toinstruct:
+                        invalid.append(('-' + cmd))
 
-        elif l.startswith('--'):
-            if (l[2:] == 'help'):
+        elif command.startswith('--'):
+            if command[2:] == 'help':
                 usage()
-            elif (l[2:] == 'version'):
+            elif command[2:] == 'version':
                 version()
-            elif l[2:] == 'list-repos':
+            elif command[2:] == 'list-repos':
                 from lpms.cli import list_repos
                 list_repos.main()
                 return
-            elif (l[2:] == 'info'):
+            elif command[2:] == 'info':
                 from lpms.cli import info
-                info.Info(cli[(cli.index(l) + 1):]).run()
+                commands.remove(command)
+                info.Info(commands).run()
                 return
-            elif (l[2:] == 'belong'):
+            elif command[2:] == 'belong':
                 from lpms.cli import belong
-                belong.main(cli[(cli.index(l) + 1):])
+                commands.remove(command)
+                belong.main(commands)
                 return
-            elif (l[2:] == 'content'):
+            elif command[2:] == 'content':
                 from lpms.cli import list_files
-                try:
-                    list_files.main(cli[(cli.index(l) + 1)])
-                    return
-                except IndexError:
+                commands.remove(command)
+                if not commands:
                     out.error('please give a package name.')
                     lpms.terminate()
-            elif (l[2:] == 'search'):
-                from lpms.cli import search
-                search.Search(cli[(cli.index(l) + 1):]).search()
+                for name in commands:
+                    list_files.main(name)
                 return
-            elif l in nevermind:
+            elif command[2:] == 'search':
+                from lpms.cli import search
+                commands.remove(command)
+                search.Search(commands).search()
+                return
+            elif command in nevermind:
                 pass
             else:
-                if l[2:] not in regular and l[2:] not in toinstruct and \
-                        l[2:].split('=')[0] not in exceptions and \
-                        not l[2:].startswith("opts"):
-                    invalid.append(l)
+                if command[2:] not in regular and command[2:] not in toinstruct and \
+                        command[2:].split('=')[0] not in exceptions and \
+                        not command[2:].startswith("opts"):
+                    invalid.append(command)
         else:
-            packages.append(unicode(l))
+            packages.append(unicode(command))
 
-    for c in cli:
-        if c.startswith('-') and not c.startswith('--'):
-            for x in c[1:]:
-                if x in toinstruct:
-                    instruct[toinstruct[(toinstruct.index(x) - 1)]] = True
+    for command in commands:
+        if command.startswith('-') and not command.startswith('--'):
+            for cmd in command[1:]:
+                if cmd in toinstruct:
+                    instruct[toinstruct[(toinstruct.index(cmd) - 1)]] = True
 
         else:
-            if c[2:] in toinstruct or c[2:].split('=')[0] in exceptions or \
-                    c[2:].split("=")[0].split("-")[0] in exceptions:
-                if c[2:].startswith('change-root'):
-                    instruct['real_root'] = c[2:].split('=')[1]
-                if c[2:].startswith('opts-'):
-                    data = c[2:].split("opts-", 1)[1]
+            if command[2:] in toinstruct or command[2:].split('=')[0] in exceptions or \
+                    command[2:].split("=")[0].split("-")[0] in exceptions:
+                if command[2:].startswith('change-root'):
+                    instruct['real_root'] = command[2:].split('=')[1]
+                if command[2:].startswith('opts-'):
+                    data = command[2:].split("opts-", 1)[1]
                     name, opts = data.split("=", 1)
                     instruct["specials"].update({name: opts.split(" ")})
-                if c[2:].startswith('opts='):
-                    instruct['cmd_options'] = c[2:].split('=')[1].split(' ')
-                if c[2:].startswith('stage'):
-                    instruct['stage'] = c[2:].split('=')[1].strip()
-                instruct[c[2:]] = True
+                if command[2:].startswith('opts='):
+                    instruct['cmd_options'] = command[2:].split('=')[1].split(' ')
+                if command[2:].startswith('stage'):
+                    instruct['stage'] = command[2:].split('=')[1].strip()
+                instruct[command[2:]] = True
 
     if invalid:
         out.warn("invalid: "+", ".join(invalid))
