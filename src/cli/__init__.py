@@ -29,7 +29,7 @@ from lpms.operations import update
 
 cli = sys.argv[1:]
 
-lpms_version = '0.9_alpha2'
+lpms_version = '1.0'
 
 help_output = (('--help', '-h', 'Shows this message.'),
         ('--version', '-v', 'Shows version.'),
