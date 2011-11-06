@@ -16,16 +16,27 @@
 # along with lpms.  If not, see <http://www.gnu.org/licenses/>.
 
 import re
+import sqlite3
+import cPickle as pickle
 
 import lpms
 from lpms import out
 from lpms.db import dbapi
+from lpms import constants as cst
 
-help_output = (('--mark', 'use markers to highlight the matching strings.'),)
+help_output = (('--only-installed', 'Shows installed packages for given keyword.'),
+        ('--in-name', 'Searchs given keyword in package names.'),
+        ('--in-summary', 'Searchs given keyword in package summaries.'))
 
 class Search(object):
-    def __init__(self, patterns):
-        self.patterns = patterns
+    def __init__(self, keyword):
+        self.keyword = ""
+        for key in keyword:
+            if not key in ('--only-installed', '--in-name', '--in-summary'):
+                self.keyword += key+" "
+        self.keyword = self.keyword.strip()
+        self.connection = sqlite3.connect(cst.repositorydb_path)
+        self.cursor = self.connection.cursor()
         self.repodb = dbapi.RepositoryDB()
         self.instdb = dbapi.InstallDB()
 
@@ -36,42 +47,61 @@ class Search(object):
         out.write("\nOther options:\n")
         for h in help_output:
             if len(h) == 2:
-                out.write("%-15s: %s\n" % (out.color(h[0],"green"), h[1]))
+                out.write("%-28s: %s\n" % (out.color(h[0],"green"), h[1]))
         lpms.terminate()
 
     def search(self):
-        if lpms.getopt("--help") or len(self.patterns) == 0:
+        if lpms.getopt("--help") or len(self.keyword) == 0:
             self.usage()
 
-        replace = re.compile("(%s)" % "|".join(self.patterns), re.I)
-        for repo, category, name in self.repodb.get_all_names():
-            summary = self.repodb.get_summary(name, repo, category)[0]
-            if replace.search(name) is not None or replace.match(name) is not None or \
-                replace.search(summary) is not None:
-                
-                versions = []
-                map(lambda x: versions.extend(x), self.repodb.get_version(name, repo, category).values())
-                
-                pkg_status = ""
-                other_repo = ""
-                instdb_repo_query = self.instdb.get_repo(category, name) 
-                if  instdb_repo_query == repo:
-                    pkg_status = "["+out.color("I", "brightgreen")+"] "
-                else:
-                    if instdb_repo_query and isinstance(instdb_repo_query, list):
-                        other_repo = "%s installed from %s" % (out.color("=>", "red"), \
-                                ",".join(instdb_repo_query))
+        results = []
+        if not lpms.getopt("--in-summary") and not lpms.getopt("--in-name"):
+            name_query = self.cursor.execute('''SELECT * FROM metadata WHERE name LIKE (?)''', ("%"+self.keyword+"%",))
+            results.extend(name_query.fetchall())
+            summary_query = self.cursor.execute('''SELECT * FROM metadata WHERE summary LIKE (?)''', ("%"+self.keyword+"%",))
+            results.extend(summary_query.fetchall())
+        elif lpms.getopt("--in-summary"):
+            summary_query = self.cursor.execute('''SELECT * FROM metadata WHERE summary LIKE (?)''', ("%"+self.keyword+"%",))
+            results.extend(summary_query.fetchall())
+        else:
+            name_query = self.cursor.execute('''SELECT * FROM metadata WHERE name LIKE (?)''', ("%"+self.keyword+"%",))
+            results.extend(name_query.fetchall())
 
-                if lpms.getopt("--mark"):
-                    out.write("%s%s/%s/%s (%s) %s\n    %s" %(pkg_status, repo, category, 
-                        replace.sub(out.color(r"\1", "red"), name),
-                        " ".join(versions),
-                        other_repo,
-                        replace.sub(out.color(r"\1", "red"), summary))+'\n')
+        if not results:
+            # if no result, search given keyword in installed packages database
+            connection = sqlite3.connect(cst.installdb_path)
+            cursor = connection.cursor()
+            name_query = self.cursor.execute('''SELECT * FROM metadata WHERE name LIKE (?)''', ("%"+self.keyword+"%",))
+            results.extend(name_query.fetchall())
+            summary_query = self.cursor.execute('''SELECT * FROM metadata WHERE summary LIKE (?)''', ("%"+self.keyword+"%",))
+            results.extend(summary_query.fetchall())
+            if results: out.notify("these packages are no longer available.")
+
+        for result in results:
+            repo, category, name, version_data, summary = result[:5]
+            version_data = pickle.loads(str(version_data))
+            version = ""
+            for slot in version_data:
+                if slot != "0":
+                    version += slot+": "+", ".join(version_data[slot])+" "
                 else:
-                    out.write("%s%s/%s/%s (%s) %s\n    %s" % (pkg_status, out.color(repo, "green"),  
-                        out.color(category, "green"),
-                        out.color(name, "green"),
-                        " ".join(versions),
-                        other_repo,
-                        summary+'\n'))
+                    version += ", ".join(version_data[slot])+" "
+            version = version.strip()
+            pkg_status = ""; other_repo = ""
+            instdb_repo_query = self.instdb.get_repo(category, name) 
+            if  instdb_repo_query == repo:
+                pkg_status = "["+out.color("I", "brightgreen")+"] "
+            else:
+                if instdb_repo_query and isinstance(instdb_repo_query, list):
+                    other_repo = "%s installed from %s" % (out.color("=>", "red"), \
+                            ",".join(instdb_repo_query))
+
+            if lpms.getopt("--only-installed") and pkg_status == "":
+                continue
+
+            out.write("%s%s/%s/%s (%s) %s\n    %s" % (pkg_status, out.color(repo, "green"),  
+                out.color(category, "green"),
+                out.color(name, "green"),
+                version,
+                other_repo,
+                summary+'\n'))
