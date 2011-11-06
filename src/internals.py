@@ -21,12 +21,11 @@ import sys
 from lpms import constants as cst 
 
 class Environment(object):
+    '''Main object container for lpms operations'''
     pass
-    #def __init__(self):
-    #    pass
-        #self.__dict__["pkgname"] = pkgname
 
 class InternalFuncs(object):
+    '''The starting point of an lpms operation'''
     def __init__(self):
         self.env = Environment()
         self.env.libraries = []
@@ -35,15 +34,16 @@ class InternalFuncs(object):
         self.env.config = ""
         self.env.sandbox_valid_dirs = []
         self.env.backup = []
-        self.env.__setattr__("standard_procedure", True)
- 
+
+        setattr(self.env, "standard_procedure", True)
+
         # FIXME: use a better method for environment functions.
         builtin_funcs = {"get": self.get}
         for key in builtin_funcs:
             setattr(self.env, key, builtin_funcs[key])
 
-        for f in cst.builtin_files:
-            self.import_script(os.path.join(cst.lpms_path, f))
+        for builtin_file in cst.builtin_files:
+            self.import_script(os.path.join(cst.lpms_path, builtin_file))
 
     def import_script(self, script_path):
         exec compile(open(script_path).read(), "error", "exec") in self.env.__dict__
