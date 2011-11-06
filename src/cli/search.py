@@ -54,31 +54,40 @@ class Search(object):
         if lpms.getopt("--help") or len(self.keyword) == 0:
             self.usage()
 
+        available = True
         results = []
         if not lpms.getopt("--in-summary") and not lpms.getopt("--in-name"):
-            name_query = self.cursor.execute('''SELECT * FROM metadata WHERE name LIKE (?)''', ("%"+self.keyword+"%",))
+            name_query = self.cursor.execute('''SELECT repo, category, name, version, summary FROM \
+                    metadata WHERE name LIKE (?)''', ("%"+self.keyword+"%",))
             results.extend(name_query.fetchall())
-            summary_query = self.cursor.execute('''SELECT * FROM metadata WHERE summary LIKE (?)''', ("%"+self.keyword+"%",))
+            summary_query = self.cursor.execute('''SELECT repo, category, name, version, summary FROM \
+                    metadata WHERE summary LIKE (?)''', ("%"+self.keyword+"%",))
             results.extend(summary_query.fetchall())
         elif lpms.getopt("--in-summary"):
-            summary_query = self.cursor.execute('''SELECT * FROM metadata WHERE summary LIKE (?)''', ("%"+self.keyword+"%",))
+            summary_query = self.cursor.execute('''SELECT repo, category, name, version, summary FROM \
+                    metadata WHERE summary LIKE (?)''', ("%"+self.keyword+"%",))
             results.extend(summary_query.fetchall())
         else:
-            name_query = self.cursor.execute('''SELECT * FROM metadata WHERE name LIKE (?)''', ("%"+self.keyword+"%",))
+            name_query = self.cursor.execute('''SELECT repo, category, name, version, summary FROM \
+                    metadata WHERE name LIKE (?)''', ("%"+self.keyword+"%",))
             results.extend(name_query.fetchall())
 
         if not results:
             # if no result, search given keyword in installed packages database
             connection = sqlite3.connect(cst.installdb_path)
             cursor = connection.cursor()
-            name_query = self.cursor.execute('''SELECT * FROM metadata WHERE name LIKE (?)''', ("%"+self.keyword+"%",))
+            name_query = cursor.execute('''SELECT repo, category, name, version, summary FROM \
+                    metadata WHERE name LIKE (?)''', ("%"+self.keyword+"%",))
             results.extend(name_query.fetchall())
-            summary_query = self.cursor.execute('''SELECT * FROM metadata WHERE summary LIKE (?)''', ("%"+self.keyword+"%",))
+            summary_query = cursor.execute('''SELECT repo, category, name, version, summary FROM \
+                    metadata WHERE summary LIKE (?)''', ("%"+self.keyword+"%",))
             results.extend(summary_query.fetchall())
-            if results: out.notify("these packages are no longer available.")
+            if results: 
+                out.notify("these packages are installed but no longer available.")
+                available = False
 
         for result in results:
-            repo, category, name, version_data, summary = result[:5]
+            repo, category, name, version_data, summary = result
             version_data = pickle.loads(str(version_data))
             version = ""
             for slot in version_data:
@@ -89,7 +98,7 @@ class Search(object):
             version = version.strip()
             pkg_status = ""; other_repo = ""
             instdb_repo_query = self.instdb.get_repo(category, name) 
-            if  instdb_repo_query == repo:
+            if instdb_repo_query == repo or not available:
                 pkg_status = "["+out.color("I", "brightgreen")+"] "
             else:
                 if instdb_repo_query and isinstance(instdb_repo_query, list):
