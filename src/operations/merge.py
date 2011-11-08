@@ -192,7 +192,7 @@ class Merge(internals.InternalFuncs):
                                 None, 
                                 None, 
                                 None, 
-                                os.path.realpath(path)
+                                os.path.realpath(source)
                             )
                     )
 
