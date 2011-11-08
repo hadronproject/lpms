@@ -283,6 +283,7 @@ class Interpreter(internals.InternalFuncs):
                     self.env.name, self.env.version)
 
             pending_file = os.path.join(self.env.real_root, cst.configure_pending_file)
+            shelltools.makedirs(os.path.dirname(pending_file))
             if not os.path.exists(pending_file):
                 with open(pending_file, "wb") as _data:
                     pickle.dump([pkg_data], _data)
