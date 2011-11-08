@@ -25,7 +25,6 @@ from lpms import shelltools
 from lpms import constants as cst
 
 from lpms.db import dbapi
-from lpms.db import filesdb
 
 # TODO:
 # (-) config protect
@@ -41,22 +40,21 @@ class Remove:
         self.real_root = real_root
         if self.real_root is None:
             self.real_root = cst.root
-        self.fdb = filesdb.FilesDB(category, 
-                name, version, self.real_root)
-        self.fdb.import_xml()
+        self.filesdb = dbapi.FilesDB()
 
-    def remove_files(self):
-        for _file in self.fdb.content['file']:
+    def remove_content(self):
+        dirs = []
+        for _file in self.filesdb.get_paths_by_package(self.name, category=self.category, version=self.version):
+            _file = _file[0]
             target = os.path.join(self.real_root, _file[1:])
             if os.path.islink(target):
                 os.unlink(target)
-            else:
+            elif os.path.isfile(target):
                 if os.path.exists(target):
                     shelltools.remove_file(target)
+            else:
+                dirs.append(target)
 
-
-    def remove_dirs(self):
-        dirs = self.fdb.content['dirs']
         dirs.reverse()
         for _dir in dirs:
             target = os.path.join(self.real_root, _dir[1:])
@@ -121,6 +119,7 @@ def main(pkgname, real_root):
         return result
 
     instdb = dbapi.InstallDB()
+    filesdb = dbapi.FilesDB()
 
     # start remove operation
     repo, category, name, version = pkgname
@@ -132,22 +131,12 @@ def main(pkgname, real_root):
     out.normal("removing %s/%s/%s-%s from %s" % \
             (repo, category, name, version, rmpkg.real_root))
     
-    # remove files
-    rmpkg.remove_files()
-    # remove empty dirs
-    rmpkg.remove_dirs()
+    # remove the package content
+    rmpkg.remove_content()
     # remove entries from metadata table
     instdb.remove_pkg(repo, category, name, version)
-    xmlfile = os.path.join(rmpkg.real_root, cst.db_path[1:], 
-            cst.filesdb, category, name, name)+"-"+version+cst.xmlfile_suffix
-    if os.path.isfile(xmlfile):
-        shelltools.remove_file(xmlfile)
-        if not os.listdir(os.path.dirname(xmlfile)):
-            # remove package dir, if it is empty
-            shelltools.remove_dir(os.path.dirname(xmlfile))
-            if not os.listdir(os.path.dirname(os.path.dirname(xmlfile))):
-                # remove category dir, if it is empty
-                shelltools.remove_dir(os.path.dirname(os.path.dirname(xmlfile)))
-
+    # remove paths from files table
+    filesdb.delete_item_by_pkgdata(category, name, version, commit=True)
+    # unlock
     if shelltools.is_exists(cst.lock_file):
         shelltools.remove_file(cst.lock_file)
