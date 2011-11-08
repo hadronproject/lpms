@@ -144,7 +144,7 @@ def main():
                 elif (cmd == 'b'):
                     from lpms.cli import belong
                     commands.remove("-"+cmd)
-                    belong.main(commands)
+                    belong.Belong(commands[0]).main()
                     return
                 elif (cmd == 'i'):
                     from lpms.cli import info
@@ -158,7 +158,8 @@ def main():
                         out.error('please give a package name.')
                         lpms.terminate()
                     for name in commands:
-                        list_files.main(name)
+                        list_files.ListFiles(name).main()
+                    return
                 elif (cmd == 's'):
                     from lpms.cli import search
                     commands.remove("-"+cmd)
@@ -185,7 +186,7 @@ def main():
             elif command[2:] == 'belong':
                 from lpms.cli import belong
                 commands.remove(command)
-                belong.main(commands)
+                belong.Belong(commands[0]).main()
                 return
             elif command[2:] == 'content':
                 from lpms.cli import list_files
@@ -194,7 +195,7 @@ def main():
                     out.error('please give a package name.')
                     lpms.terminate()
                 for name in commands:
-                    list_files.main(name)
+                    list_files.ListFiles(name).main()
                 return
             elif command[2:] == 'search':
                 from lpms.cli import search

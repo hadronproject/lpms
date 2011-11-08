@@ -15,63 +15,150 @@
 # You should have received a copy of the GNU General Public License
 # along with lpms.  If not, see <http://www.gnu.org/licenses/>.
 
-# XML based database implementation
+import sqlite3
+import cPickle as pickle
 
-import os
-import xml.etree.cElementTree as iks
+import lpms
+from lpms.db import skel
+from lpms.exceptions import NoSize
 
-from lpms import constants as cst
+class FilesDatabase(object):
+    '''This class defines a database to store files from packages'''
+    def __init__(self, db_path):
+        self.db_path = db_path
+        try:
+            self.connection = sqlite3.connect(self.db_path)
+        except sqlite3.OperationalError:
+            lpms.terminate("lpms could not connected to the database (%s)" % self.db_path)
 
-#from lpms.db import dbapi
+        self.cursor = self.connection.cursor()
+        table = self.cursor.execute('select * from sqlite_master where type = "table"')
+        if table.fetchone() is None:
+            self.initialize_db()
 
-class FilesDB:
-    def __init__(self, category, name, version, real_root=None, suffix=None):
-        self.content = {"dirs":[], "file": []}
-        self.category = category
-        self.name = name
-        self.version = version
-        if real_root is None:
-            real_root = cst.root
+    def initialize_db(self):
+        '''Initializes database, create the table if it does not exist'''
+        tablelist = self.cursor.execute('select * from sqlite_master where type="table"')
+        tablelist = self.cursor.fetchall()
+        content = []
+        for i in tablelist:
+            content += list(i)
 
-        if suffix is None:
-            suffix = cst.xmlfile_suffix
+        # get list of tables and drop them
+        for t in content:
+            try:
+                self.cursor.execute('drop table %s' % (t,))
+            except sqlite3.OperationalError:
+                # skip, can not drop table...
+                continue
+        self.cursor.executescript(skel.schema(self.db_path))
 
-        self.xml_file = os.path.join(real_root, cst.db_path[1:], cst.filesdb,
-                self.category, self.name, self.name)+"-"+self.version+suffix
+    def commit(self):
+        '''Commits changes to database'''
+        try:
+            return self.connection.commit()
+        except sqlite3.OperationalError as err:
+            print(err)
+            lpms.terminate()
 
-    def import_xml(self):
-        if not os.path.isfile(self.xml_file):
-            print("%s could not found." % self.xml_file)
-            return False
+    def add_path(self, data, commit=False):
+        '''Adds given path with given data'''
+        repo, category, name, version, path, _type, \
+                size, gid, mod, uid, sha1sum, realpath  = data
+        self.cursor.execute('''insert into files values(?, ?, ?, ?, ?, ?, \
+                ?, ?, ?, ?, ?, ?)''', (repo, category, name, version, path, _type, \
+                sqlite3.Binary(pickle.dumps(size, 1)), gid, mod, uid, sha1sum, realpath))
+        if commit: self.commit()
 
-        raw_data = iks.parse(self.xml_file)
-        for node in raw_data.findall("node"):
-            self.content["dirs"].append(node.attrib['path'])
-            for files in node.findall("file"):
-                self.content["file"].append(os.path.join(
-                    node.attrib['path'], files.text))
+    def get_package_by_path(self, path):
+        '''Gets package data by the path'''
+        self.cursor.execute('''select repo, category, name, version from \
+                files where path=(?)''', (path,))
+        return self.cursor.fetchall()
 
-    def has_path(self, path):
-        if not os.path.exists(path):
-            return False
-        
-        if os.path.isdir(path):
-            for _dir in self.content['dirs']:
-                if _dir == path:
-                    return True
-            return False
-        
-        elif os.path.isfile(path):
-            for _dir in self.content['file']:
-                if _dir == path:
-                    return True
-            return False
+    def get_type_by_path(self, path):
+        '''Gets item type by the path'''
+        self.cursor.execute('''select type from files where path=(?)''', (path,))
+        return self.cursor.fetchall()
 
-    def get_attributes(self, path):
-        data = iks.parse(self.xml_file)
-        for node in data.findall("node"):
-            for _file in node.findall("file"):
-                if path == node.attrib["path"]+"/"+_file.text:
-                    return _file.attrib
+    def get_perms_by_path(self, path):
+        '''Gets permissions of the path'''
+        self.cursor.execute('''select gid, mod, uid from files where path=(?)''',
+                (path,))
+        return self.cursor.fetchall()
 
+    def get_size_by_path(self, path):
+        '''Get size of path'''
+        self.cursor.execute('''select size from files where type='file' and path=(?)''', (path,))
+        size = self.cursor.fetchall()
+        if not size:
+            raise NoSize("no size. %s is a directory or symlink" % path)
+        return size
 
+    def get_dirs_by_package(self, category, name, version):
+        '''Gets directories of the package'''
+        self.cursor.execute('''select path from files where type="dir" and category=(?) \
+                and name=(?) and version=(?)''', (category, name, version,))
+        return self.cursor.fetchall()
+
+    def get_files_by_package(self, category, name, version):
+        '''Gets files of the package'''
+        self.cursor.execute('''select path from files where type="file" and category=(?) \
+                and name=(?) and version=(?)''', (category, name, version,))
+        return self.cursor.fetchall()
+
+    def get_links_by_package(self, category, name, version):
+        '''Gets links of the package'''
+        self.cursor.execute('''select path from files where type="link" and category=(?) \
+                and name=(?) and version=(?)''', (category, name, version,))
+        return self.cursor.fetchall()
+
+    def get_sha1sum_by_path(self, path):
+        '''Gets sha1sum of path'''
+        self.cursor.execute('''select sha1sum from files where path=(?)''',
+                (path,))
+        return self.cursor.fetchall()
+
+    def get_paths_by_package(self, name, repo=None, category=None, version=None):
+        '''Gets paths by package name'''
+        if repo is None and category is None:
+            self.cursor.execute('''select path from files where name=(?)''', (name,))
+        elif category is None and repo is not None:
+            self.cursor.execute('''select path from files where name=(?) and \
+                    repo=(?)''', (name, repo,))
+        elif category is not None and repo is None:
+            if version is None:
+                self.cursor.execute('''select path from files where name=(?) and \
+                        category=(?)''', (name, category,))
+            else:
+                self.cursor.execute('''select path from files where name=(?) and \
+                        category=(?) and version=(?)''', (name, category, version,))
+        else:
+            if version is None:
+                self.cursor.execute('''select path from files where repo=(?) and \
+                        name=(?) and category=(?)''', (repo, name, category,))
+            else:
+                self.cursor.execute('''select path from files where repo=(?) and \
+                        name=(?) and category=(?) and version=(?)''', (repo, name, category, version,))
+        return self.cursor.fetchall()
+    
+    def delete_item_by_pkgdata_and_path(self, pkgdata, path, commit=False):
+        '''Deletes item by package data and path'''
+        category, name, version = pkgdata
+        self.cursor.execute('''delete from files where \
+                category=(?) and name=(?) and version=(?) and path=(?)''',
+                (category, name, version, path,))
+        if commit: self.commit()
+
+    def delete_item_by_pkgdata(self, category, name, version, commit=False):
+        '''Deletes item by package data'''
+        self.cursor.execute('''delete from files where \
+                category=(?) and name=(?) and version=(?)''',
+                (category, name, version,))
+        if commit: self.commit()
+
+    def delete_item_by_path(self, path, commit=False):
+        '''Deletes item by file path'''
+        self.cursor.execute('''delete from files where path=(?)''',
+                (path,))
+        if commit: self.commit()

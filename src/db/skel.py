@@ -112,6 +112,24 @@ def reverse_depends_schema():
         );
     """
 
+def files_schema():
+    return """
+        create table files (
+            repo text,
+            category text,
+            name text,
+            version text,
+            path text,
+            type text,
+            size blob,
+            gid text,
+            mod text,
+            uid text,
+            sha1sum text,
+            realpath text
+        );
+    """
+
 def schema(db_path):
     if len(db_path.split(const.repositorydb_path)) == 2:
         return repo_schema()
@@ -124,4 +142,7 @@ def schema(db_path):
     
     if len(db_path.split(const.reverse_dependsdb_path)) == 2:
         return reverse_depends_schema()
+
+    if len(db_path.split(const.filesdb_path)) == 2:
+        return files_schema()
 

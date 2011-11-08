@@ -21,39 +21,34 @@ import lpms
 
 from lpms import out
 from lpms.db import dbapi
-from lpms.db import filesdb
 
+class Belong:
+    def __init__(self, keyword):
+        self.keyword = keyword
+        self.filesdb = dbapi.FilesDB()
+        self.installdb = dbapi.InstallDB()
 
-def main(keywords):
-    length = len(keywords)
-    if length == 0:
-        out.error("no keyword given")
-
+    def usage(self):
+        out.normal("Searchs given keyword in files database")
+        out.write("no extra command found\n")
         lpms.terminate()
 
-    if length > 1:
-        keywords = keywords[0:1]
+    def search(self):
+        self.filesdb.cursor.execute('''SELECT repo, category, name, version, path \
+                FROM files WHERE path LIKE (?)''', ('%'+self.keyword+'%',))
+        return self.filesdb.cursor.fetchall()
 
-    idb = dbapi.InstallDB()
+    def main(self):
+        if lpms.getopt("--help"):
+            self.usage()
 
-    out.normal("searching for %s\n" % keywords[0])
+        out.normal("searching for %s\n" % self.keyword)
 
-    for i in idb.get_all_names():
-        repo, category, name = i
-        versions = []
-        map(lambda x: versions.extend(x), idb.get_version(name, repo ,category).values())
-        for version in versions:
-            fdb = filesdb.FilesDB(category, name, version, "/")
-            fdb.import_xml()
-            
-            for tag in ('dirs', 'file'):
-                for text in fdb.content[tag]:
-                    if keywords[0]  in text:
-                        replace = re.compile("(%s)" % '|'.join(keywords), re.I)  
-                        out.write("%s/%s/%s-%s -- %s\n" % 
-                                (out.color(repo, "green"), 
-                                    out.color(category, "green"),
-                                    out.color(name, "green"), 
-                                    out.color(version, "green"), 
-                                    replace.sub(out.color(r"\1", "red"), text)))		
-
+        for (repo, category, name, version, path) in self.search():
+            replace = re.compile("(%s)" % '|'.join([self.keyword]), re.I)  
+            out.write("%s/%s/%s-%s -- %s\n" % 
+                    (out.color(repo, "green"), 
+                        out.color(category, "green"),
+                        out.color(name, "green"), 
+                        out.color(version, "green"), 
+                        replace.sub(out.color(r"\1", "brightred"), path)))

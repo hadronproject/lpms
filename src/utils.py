@@ -21,6 +21,7 @@ import sys
 import stat
 import glob
 import string
+import decimal
 import hashlib
 import collections
 
@@ -282,8 +283,10 @@ def get_uid(path):
 def get_mod(path):
     return stat.S_IMODE(os.stat(path)[stat.ST_MODE])
 
-def get_size(path):
+def get_size(path, dec=False):
     if os.path.isfile(path):
+        if dec:
+            return decimal.Decimal(os.path.getsize(path)/(1024*1024.0))
         return os.path.getsize(path)/(1024*1024.0)
     else:
         foldersize = 0
@@ -294,6 +297,8 @@ def get_size(path):
                     foldersize += os.path.getsize(filename)
                 except:
                     out.warn("file size not calculated: %s" % filename)
+        if dec:
+            return decimal.Decimal(foldersize/(1024*1024.0))
         return foldersize/(1024*1024.0)
 
 def get_mtime(path):

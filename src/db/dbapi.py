@@ -27,88 +27,6 @@ from lpms.db import file_relationsdb
 from lpms.db import reverse_dependsdb
 from lpms.exceptions import NotInstalled, FileNotFound
 
-class FilesAPI(object):
-    '''This class defines a simple abstraction layer for files database'''
-    def __init__(self, real_root=None, suffix=None):
-        self.real_root = real_root 
-        self.suffix = suffix
-
-    def cursor(self, category, name, version):
-        '''Connects files database'''
-        self.category = category
-        self.name = name; self.version = version
-        filesdb_obj = filesdb.FilesDB(category, name, \
-                version, self.real_root, self.suffix)
-        filesdb_obj.import_xml()
-        return filesdb_obj
-
-    def get_versions(self, category, name):
-        versions = []
-        if not os.path.isdir(os.path.join(cst.db_path, cst.filesdb, category, name)):
-            raise NotInstalled
-
-        for pkg in os.listdir(os.path.join(cst.db_path, cst.filesdb, category, name)):
-            versions.append(utils.parse_pkgname(pkg[:-4])[1])
-
-        if not versions:
-            raise NotInstalled
-        return versions
-
-    def get_all_names(self):
-        packages = []
-        for category in os.listdir(os.path.join(cst.db_path, cst.filesdb)):
-            for pkg in os.listdir(os.path.join(cst.db_path, cst.filesdb, category)):
-                packages.append((category, pkg))
-        return packages
-
-    def is_installed(self, category, name, version):
-        '''Checks package status'''
-        return version in self.get_versions(category, name)
-
-    def get_package(self, path):
-        '''Returns package name or package names for the given path'''
-        result = []
-        for package in self.get_all_names():
-            category, name = package
-            versions = self.get_versions(category, name)
-            for version in versions:
-                filesdb_cursor = self.cursor(category, \
-                        name, version)
-                if filesdb_cursor.has_path(path):
-                    del filesdb_cursor
-                    if not (category, name, version) in result:
-                        result.append((category, name, version))
-        if result:
-            return result
-        return False
-
-    def get_permissions(self, category, name, version, path):
-        '''Returns permissons of given package'''
-        # TODO: category, name and version will be optional
-        cursor = self.cursor(category, name, version)
-        attributes = cursor.get_attributes(path)
-        if not attributes:
-            raise FileNotFound("%s/%s-%s: %s" % (category, name, version, path))
-        perms = {}
-        for key in attributes:
-            if key in ('gid', 'mod', 'uid'):
-                perms[key] = attributes[key]
-        return perms
-
-    def list_files(self, category, name, version):
-        '''Returns content for the given package'''
-        if not self.is_installed(category, name, version):
-            raise NotInstalled("%s/%s-%s is not installed." % (category, name, version))
-        filesdb_cursor = self.cursor(category, name, version)
-        return filesdb_cursor.content
-
-    def has_path(self, category, name, version, path):
-        '''Checks given package for given path'''
-        if not self.is_installed(category, name, version):
-            raise NotInstalled("%s/%s-%s is not installed." % (category, name, version))
-        filesdb_cursor = self.cursor(category, name, version)
-        return filesdb_cursor.has_path(path)
-
 class API(object):
     def __init__(self, db_path):
         self.db = db.PackageDatabase(db_path)
@@ -318,9 +236,9 @@ class InstallDB(API):
     def __init__(self):
         super(InstallDB, self).__init__(fix_path(cst.installdb_path))
 
-class FilesDB(FilesAPI):
-    def __init__(self, real_root=None, suffix=None):
-        super(FilesDB, self).__init__(real_root, suffix)
+class FilesDB(filesdb.FilesDatabase):
+    def __init__(self):
+        super(FilesDB, self).__init__(fix_path(cst.filesdb_path))
 
 class FileRelationsDB(file_relationsdb.FileRelationsDatabase):
     def __init__(self):
@@ -329,5 +247,3 @@ class FileRelationsDB(file_relationsdb.FileRelationsDatabase):
 class ReverseDependsDB(reverse_dependsdb.ReverseDependsDatabase):
     def __init__(self):
         super(ReverseDependsDB, self).__init__(fix_path(cst.reverse_dependsdb_path))
-
-

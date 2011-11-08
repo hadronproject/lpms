@@ -34,6 +34,9 @@ class FileNotFound(Exception):
 class CycleError(Exception):
     pass
 
+class NoSize(Exception):
+    pass
+
 class UnmetDependency(Exception):
     pass
 

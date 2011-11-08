@@ -20,43 +20,41 @@ import lpms
 
 from lpms import out
 from lpms.db import dbapi
-from lpms.db import filesdb
 
-installdb = dbapi.InstallDB()
+class ListFiles:
+    def __init__(self, pkgname):
+        self.pkgname = pkgname
+        self.filesdb = dbapi.FilesDB()
+        self.installdb = dbapi.InstallDB()
 
-def main(pkgname):
-    pkgdata = installdb.find_pkg(pkgname)
-
-    if not pkgdata:
-        out.error("%s not installed." % pkgname)
+    def usage(self):
+        out.normal("Lists files of the given package")
+        out.write("no extra command found.\n")
         lpms.terminate()
-    
-    for pkg in pkgdata:
-        repo, category, name, version_data =  pkg
+
+    def main(self):
+        if lpms.getopt("--help"):
+            self.usage()
+
+        pkgdata = self.installdb.find_pkg(self.pkgname)
+
+        if not pkgdata:
+            out.error("%s not installed." % pkgname)
+            lpms.terminate()
         
-        versions = []
-        map(lambda x: versions.extend(x), version_data.values())
+        for pkg in pkgdata:
+            repo, cat, name, version_data =  pkg
+            
+            versions = []
+            map(lambda x: versions.extend(x), version_data.values())
 
-        for version in versions:
-            # create the filesdb object.
-            fdb = filesdb.FilesDB(category, 
-                    name, version, "/")
-            # load the content file
-            fdb.import_xml()
+            for ver in versions:
+                out.normal("%s/%s/%s-%s" % (repo, cat, name, ver))
 
-            out.normal("%s/%s/%s-%s" % (repo, category, name, version))
-
-            def press(tag):
-                # the content file a bit dirty
-                data = fdb.content[tag]
-                if tag == "dirs":
-                    data = data[1:]
-
-                for path in data:
-                    if os.path.islink(path):
-                        print("%s -> %s" % (path, os.path.realpath(path)))
+                content = self.filesdb.get_paths_by_package(name, category=cat, version=ver)
+                for item in content:
+                    item = item[0]
+                    if os.path.islink(item):
+                        print("%s -> %s" % (item, os.path.realpath(item)))
                     else:
-                        print(path)
-
-            for tag in ('dirs', 'file'):
-                press(tag)
+                        print(item)
