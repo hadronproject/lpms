@@ -107,6 +107,7 @@ class Build(internals.InternalFuncs):
                 os.makedirs(getattr(self.env, i))
 
     def extract_sources(self):
+        already_unpacked = False
         for url in self.env.extract_plan:
             archive_path = os.path.join(self.config.src_cache, os.path.basename(url))
             target = os.path.dirname(self.env.build_dir)
@@ -116,6 +117,7 @@ class Build(internals.InternalFuncs):
                     shelltools.remove_file(unpack_file)
                     shelltools.remove_file(os.path.join(os.path.dirname(target), ".prepared"))
                 else:
+                    already_unpacked = True
                     out.warn("%s seems already unpacked." % os.path.basename(archive_path))
                     continue
             if hasattr(self.env, "partial"):
@@ -124,6 +126,7 @@ class Build(internals.InternalFuncs):
                 archive.extract(str(archive_path), str(target), partial)
             else:
                 archive.extract(str(archive_path), str(target))
+        if not already_unpacked:
             shelltools.touch(unpack_file)
 
     def parse_url_tag(self):
