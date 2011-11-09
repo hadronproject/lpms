@@ -35,6 +35,7 @@ class FilesDatabase(object):
         table = self.cursor.execute('select * from sqlite_master where type = "table"')
         if table.fetchone() is None:
             self.initialize_db()
+        self.query = []
 
     def initialize_db(self):
         '''Initializes database, create the table if it does not exist'''
@@ -61,15 +62,21 @@ class FilesDatabase(object):
             print(err)
             lpms.terminate()
 
-    def add_path(self, data, commit=False):
-        '''Adds given path with given data'''
-        repo, category, name, version, path, _type, \
-                size, gid, mod, uid, sha1sum, realpath  = data
-        self.cursor.execute('''insert into files values(?, ?, ?, ?, ?, ?, \
-                ?, ?, ?, ?, ?, ?)''', (repo, category, name, version, path, _type, \
-                sqlite3.Binary(pickle.dumps(size, 1)), gid, mod, uid, sha1sum, realpath))
+    def insert_query(self, commit=False):
+        '''Inserts query items'''
+        self.cursor.execute('BEGIN TRANSACTION')
+        for data in self.query:
+            repo, category, name, version, path, _type, \
+                    size, gid, mod, uid, sha1sum, realpath  = data
+            self.cursor.execute('''insert into files values(?, ?, ?, ?, ?, ?, \
+                    ?, ?, ?, ?, ?, ?)''', (repo, category, name, version, path, _type, \
+                    sqlite3.Binary(pickle.dumps(size, 1)), gid, mod, uid, sha1sum, realpath))      
         if commit: self.commit()
 
+    def append_query(self, data):
+        '''Appends given path with given data to query'''
+        self.query.append(data)
+    
     def get_package_by_path(self, path):
         '''Gets package data by the path'''
         self.cursor.execute('''select repo, category, name, version from \
