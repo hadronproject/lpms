@@ -33,6 +33,7 @@ class FileRelationsDatabase(object):
         table = self.cursor.execute('select * from sqlite_master where type = "table"')
         if table.fetchone() is None:
             self.initialize_db()
+        self.query = []
 
     def initialize_db(self):
         '''Initializes database, create the table if it does not exist'''
@@ -59,13 +60,19 @@ class FileRelationsDatabase(object):
             print(err)
             lpms.terminate()
 
-    def add_file(self, data, commit=False):
-        '''Adds the file with its package data and depends'''
-        repo, category, name, version, file_path, depends = data
-        for depend in depends:
-            self.cursor.execute('''insert into file_relations values(?, ?, ?, ?, ?, ?)''', (
-                repo, category, name, version, file_path, depend,))
+    def insert_query(self, commit=True):
+        '''Inserts query'''
+        self.cursor.execute('BEGIN TRANSACTION')
+        for data in self.query:
+            repo, category, name, version, file_path, depends = data
+            for depend in depends:
+                self.cursor.execute('''insert into file_relations values(?, ?, ?, ?, ?, ?)''', (
+                    repo, category, name, version, file_path, depend,))
         if commit: self.commit()
+
+    def append_query(self, data):
+        '''Appends the file with its package data and depends to query'''
+        self.query.append(data)
 
     def get_package_by_depend(self, depend):
         '''Gets package data by depend'''

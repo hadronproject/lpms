@@ -23,8 +23,8 @@ import cPickle as pickle
 import lpms
 
 from lpms import out
-from lpms import utils
 from lpms import conf
+from lpms import utils
 from lpms import internals
 from lpms import shelltools
 from lpms import file_relations
@@ -112,12 +112,12 @@ class Merge(internals.InternalFuncs):
         return False
 
     def merge_pkg(self):
+        '''Merge the package to the system'''
         isstrip = True
         if (hasattr(self.env, "no_strip") and self.env.no_strip) or lpms.getopt("--no-strip") or "debug" in self.env.valid_opts or utils.check_cflags("-g") \
                 or utils.check_cflags("-ggdb") or utils.check_cflags("-g3"):
                     isstrip = False
 
-        '''Merge package to the system'''
         def get_perms(path):
             '''Get permissions of given path, it may be file or directory'''
             return {"uid": utils.get_uid(path),
@@ -130,10 +130,10 @@ class Merge(internals.InternalFuncs):
         if not self.previous_files:
             conflict_check = False
         self.filesdb.delete_item_by_pkgdata(self.env.category, self.env.name, \
-                self.env.version, commit=True)
+            self.env.version, commit=True)
 
         out.notify("merging the package to %s and creating database entries" % self.env.real_root)
-        
+
         # find content of the package
         for root_path, dirs, files in os.walk(self.env.install_dir, followlinks=True):
             root_path = root_path.split(self.env.install_dir)[1]
@@ -164,7 +164,7 @@ class Merge(internals.InternalFuncs):
                     shelltools.set_id(target, perms["uid"], perms["gid"])
                     shelltools.set_mod(target, perms["mod"])
 
-                    self.filesdb.add_path(
+                    self.filesdb.append_query(
                             (self.env.repo, 
                                 self.env.category, 
                                 self.env.name,
@@ -180,7 +180,7 @@ class Merge(internals.InternalFuncs):
                             )
                     )
                 else:
-                    self.filesdb.add_path(
+                    self.filesdb.append_query(
                             (self.env.repo, 
                                 self.env.category, 
                                 self.env.name,
@@ -195,6 +195,7 @@ class Merge(internals.InternalFuncs):
                                 os.path.realpath(source)
                             )
                     )
+
 
             # write regular files
             reserve_files = []
@@ -214,15 +215,15 @@ class Merge(internals.InternalFuncs):
             for f in files:
                 source = os.path.join(self.env.install_dir, root_path[1:], f)
                 target = os.path.join(self.env.real_root, root_path[1:], f)
-                
+
                 # file relations db
                 self.file_relationsdb.delete_item_by_pkgdata_and_file_path((self.env.category, \
                         self.env.name, self.env.version), target)
                 if os.path.exists(source) and os.access(source, os.X_OK):
                     if utils.get_mimetype(source) in ('application/x-executable', 'application/x-archive', \
                             'application/x-sharedlib'):
-                        self.file_relationsdb.add_file((self.env.repo, self.env.category, self.env.name, \
-                                self.env.version, target, file_relations.get_depends(source)))
+                        self.file_relationsdb.append_query((self.env.repo, self.env.category, self.env.name, \
+                                        self.env.version, target, file_relations.get_depends(source)))
 
                 #if conflict_check and os.path.isfile(target) and not fdb.has_path(target):
                 #    # FIXME: Use an exception to exit
@@ -268,7 +269,7 @@ class Merge(internals.InternalFuncs):
                             shelltools.set_mod(target, perms["mod"])
                             
                             sha1sum = utils.sha1sum(target)
-                            self.filesdb.add_path(
+                            self.filesdb.append_query(
                                     (self.env.repo, 
                                         self.env.category, 
                                         self.env.name,
@@ -284,7 +285,7 @@ class Merge(internals.InternalFuncs):
                                     )
                             )
                         else:
-                            self.filesdb.add_path(
+                            self.filesdb.append_query(
                                     (self.env.repo, 
                                         self.env.category, 
                                         self.env.name,
@@ -321,7 +322,7 @@ class Merge(internals.InternalFuncs):
                     shelltools.set_id(target, perms["uid"], perms["gid"])
                     shelltools.set_mod(target, perms["mod"])
 
-                    self.filesdb.add_path(
+                    self.filesdb.append_query(
                             (self.env.repo, 
                                 self.env.category, 
                                 self.env.name,
@@ -337,7 +338,7 @@ class Merge(internals.InternalFuncs):
                             )
                     )
                 else:
-                    self.filesdb.add_path(
+                    self.filesdb.append_query(
                             (self.env.repo, 
                                 self.env.category, 
                                 self.env.name,
@@ -352,13 +353,12 @@ class Merge(internals.InternalFuncs):
                                 os.path.realpath(source)
                             )
                     )
+        self.file_relationsdb.insert_query(commit=True)
+        self.filesdb.insert_query(commit=True)
 
-        self.file_relationsdb.commit()
         lpms.logger.info("%s/%s merged to %s" % (self.env.category, self.env.fullname, \
                 self.env.real_root))
-
-        self.filesdb.commit()
-
+        
     def write_db(self):
         # write metadata
         # FIXME: do we need a function called update_db or like this?
