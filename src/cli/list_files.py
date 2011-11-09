@@ -39,7 +39,7 @@ class ListFiles:
         pkgdata = self.installdb.find_pkg(self.pkgname)
 
         if not pkgdata:
-            out.error("%s not installed." % pkgname)
+            out.error("%s not installed." % self.pkgname)
             lpms.terminate()
         
         for pkg in pkgdata:
