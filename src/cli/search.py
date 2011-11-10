@@ -50,6 +50,13 @@ class Search(object):
                 out.write("%-28s: %s\n" % (out.color(h[0],"green"), h[1]))
         lpms.terminate()
 
+    def preprocess(self, results):
+        data = []
+        for result in results:
+            if not result in data:
+                data.append(result)
+        return data
+
     def search(self):
         if lpms.getopt("--help") or len(self.keyword) == 0:
             self.usage()
@@ -86,7 +93,7 @@ class Search(object):
                 out.notify("these packages are installed but no longer available.")
                 available = False
 
-        for result in results:
+        for result in self.preprocess(results):
             repo, category, name, version_data, summary = result
             version_data = pickle.loads(str(version_data))
             version = ""
