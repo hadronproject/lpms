@@ -142,6 +142,7 @@ class Merge(internals.InternalFuncs):
             for d in dirs:
                 source = os.path.join(self.env.install_dir, root_path[1:], d)
                 target = os.path.join(self.env.real_root, root_path[1:], d)
+                real_target = "/".join([root_path, d])
 
                 if os.path.islink(source):
                     realpath = os.path.realpath(source)
@@ -169,7 +170,7 @@ class Merge(internals.InternalFuncs):
                                 self.env.category, 
                                 self.env.name,
                                 self.env.version, 
-                                target, 
+                                real_target, 
                                 "dir", 
                                 None, 
                                 perms['gid'],
@@ -185,7 +186,7 @@ class Merge(internals.InternalFuncs):
                                 self.env.category, 
                                 self.env.name,
                                 self.env.version, 
-                                target, 
+                                real_target, 
                                 "link", 
                                 None, 
                                 None,
@@ -215,16 +216,19 @@ class Merge(internals.InternalFuncs):
             for f in files:
                 source = os.path.join(self.env.install_dir, root_path[1:], f)
                 target = os.path.join(self.env.real_root, root_path[1:], f)
+                real_target = "/".join([root_path, f])
 
                 # file relations db
-                self.file_relationsdb.delete_item_by_pkgdata_and_file_path((self.env.category, \
-                        self.env.name, self.env.version), target)
+                #self.file_relationsdb.delete_item_by_pkgdata_and_file_path((self.env.category, \
+                #        self.env.name, self.env.version), target)
+                #self.file_relationsdb.append_delete_query(((self.env.category, \
+                #        self.env.name, self.env.version), target))
                 if os.path.exists(source) and os.access(source, os.X_OK):
                     if utils.get_mimetype(source) in ('application/x-executable', 'application/x-archive', \
                             'application/x-sharedlib'):
                         self.file_relationsdb.append_query((self.env.repo, self.env.category, self.env.name, \
                                         self.env.version, target, file_relations.get_depends(source)))
-
+            
                 #if conflict_check and os.path.isfile(target) and not fdb.has_path(target):
                 #    # FIXME: Use an exception to exit
                 #    if self.conf.conflict_protect and not lpms.getopt("--ignore-conflicts"):
@@ -274,7 +278,7 @@ class Merge(internals.InternalFuncs):
                                         self.env.category, 
                                         self.env.name,
                                         self.env.version, 
-                                        target,
+                                        real_target,
                                         "file", 
                                         utils.get_size(source, dec=True), 
                                         perms['gid'],
@@ -290,7 +294,7 @@ class Merge(internals.InternalFuncs):
                                         self.env.category, 
                                         self.env.name,
                                         self.env.version, 
-                                        target, 
+                                        real_target, 
                                         "link", 
                                         None, 
                                         None,
@@ -327,7 +331,7 @@ class Merge(internals.InternalFuncs):
                                 self.env.category, 
                                 self.env.name,
                                 self.env.version, 
-                                target, 
+                                real_target, 
                                 "file", 
                                 utils.get_size(source, dec=True), 
                                 perms['gid'],
@@ -343,7 +347,7 @@ class Merge(internals.InternalFuncs):
                                 self.env.category, 
                                 self.env.name,
                                 self.env.version, 
-                                target, 
+                                real_target, 
                                 "link", 
                                 None, 
                                 None,
@@ -353,6 +357,7 @@ class Merge(internals.InternalFuncs):
                                 os.path.realpath(source)
                             )
                     )
+
         self.file_relationsdb.insert_query(commit=True)
         self.filesdb.insert_query(commit=True)
 
@@ -471,7 +476,9 @@ class Merge(internals.InternalFuncs):
                 out.normal("cleaning obsolete content")
                 dirs = []
                 for item in obsolete:
-                    target = os.path.join(self.env.real_root, item[1:])
+                    target = os.path.join(self.env.real_root, item[0][1:])
+                    if not os.path.exists(target):
+                        continue
                     if os.path.islink(target):
                         os.unlink(target)
                     elif os.path.isfile(target):
