@@ -68,6 +68,8 @@ class FileRelationsDatabase(object):
             for depend in depends:
                 self.cursor.execute('''insert into file_relations values(?, ?, ?, ?, ?, ?)''', (
                     repo, category, name, version, file_path, depend,))
+        del self.query
+        self.query = []
         if commit: self.commit()
 
     def append_query(self, data):
