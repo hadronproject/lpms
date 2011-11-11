@@ -51,21 +51,22 @@ class Merge(internals.InternalFuncs):
         self.filesdb = dbapi.FilesDB()
         self.file_relationsdb = dbapi.FileRelationsDB()
         self.reverse_dependsdb = dbapi.ReverseDependsDB()
-
         # set installation target
         if self.env.real_root is None:
             self.env.real_root = cst.root
-        
-        self.merge_conf_file = os.path.join(self.env.real_root, cst.merge_conf_file)
-
+        self.merge_conf_file = os.path.join(self.env.real_root, \
+                cst.merge_conf_file)
+        self.version_data = self.instdb.get_version(self.env.name, \
+                pkg_category = self.env.category)
+        self.previous_version = None
         self.get_previous_files()
 
     def get_previous_files(self):
-        version_data = self.instdb.get_version(self.env.name, pkg_category = self.env.category)
-        for slot in version_data:
+        for slot in self.version_data:
             if slot == self.env.slot:
+                self.previous_version = self.version_data[slot][0]
                 self.previous_files = self.filesdb.get_paths_by_package(self.env.name, \
-                        repo=self.env.repo, category=self.env.category, version=version_data[slot][0])
+                        repo=self.env.repo, category=self.env.category, version=self.previous_version)
 
     def load_merge_conf_file(self):
         if os.path.isfile(self.merge_conf_file):
@@ -132,7 +133,9 @@ class Merge(internals.InternalFuncs):
         self.filesdb.delete_item_by_pkgdata(self.env.category, self.env.name, \
             self.env.version, commit=True)
 
-        out.notify("merging the package to %s and creating database entries" % self.env.real_root)
+        out.notify("merging the package to %s and creating database entries..." % self.env.real_root)
+        
+        self.file_relationsdb.delete_item_by_pkgdata(self.env.category, self.env.name, self.previous_version, commit=True)
 
         # find content of the package
         for root_path, dirs, files in os.walk(self.env.install_dir, followlinks=True):
@@ -217,12 +220,7 @@ class Merge(internals.InternalFuncs):
                 source = os.path.join(self.env.install_dir, root_path[1:], f)
                 target = os.path.join(self.env.real_root, root_path[1:], f)
                 real_target = "/".join([root_path, f])
-
-                # file relations db
-                #self.file_relationsdb.delete_item_by_pkgdata_and_file_path((self.env.category, \
-                #        self.env.name, self.env.version), target)
-                #self.file_relationsdb.append_delete_query(((self.env.category, \
-                #        self.env.name, self.env.version), target))
+                
                 if os.path.exists(source) and os.access(source, os.X_OK):
                     if utils.get_mimetype(source) in ('application/x-executable', 'application/x-archive', \
                             'application/x-sharedlib'):
