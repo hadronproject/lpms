@@ -170,7 +170,7 @@ for pkg in installdb.get_all_names():
                 gid = utils.get_gid(path)
                 mod = utils.get_mod(path)
                 if not os.path.islink(path):
-                    _filesdb.add_path((repo, category, name, version, path, \
+                    _filesdb.append_query((repo, category, name, version, path, \
                             "dir", None, gid, mod, uid, None, None))
                 else:
                     _filesdb.append_query((repo, category, name, version, path, \
@@ -188,7 +188,7 @@ for pkg in installdb.get_all_names():
                     _filesdb.append_query((repo, category, name, version, path, \
                         "file", size, gid, mod, uid, sha1sum, None))
                 else:
-                    _filesdb.add_path((repo, category, name, version, path, \
+                    _filesdb.append_query((repo, category, name, version, path, \
                         "link", None, gid, mod, uid, None, None))
 
 _filesdb.insert_query(commit=True)
