@@ -80,8 +80,14 @@ def binutils_cmd(command):
     cmd = "%s-%s" % (host, command)
 
     if not shelltools.binary_isexists(cmd):
+        if not utils.check_path(command):
+            out.warn_notify("%s not found." % command)
+            return ''
+        else:
+            return command
         out.warn_notify("%s not found." % cmd)
         return ''
+
     return cmd
 
 def delflag(fn):
