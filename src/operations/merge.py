@@ -87,35 +87,32 @@ class Merge(internals.InternalFuncs):
     def is_fresh(self):
         status = self.instdb.find_pkg(self.env.name, 
             self.env.repo, self.env.category)
-        
         if isinstance(status, bool) or not status or \
-            not self.env.slot in status[-1].keys():
+            not self.env.slot in status[-1]:
                 return True
-      
         return False
 
     def is_reinstall(self):
-        result = self.instdb.find_pkg(self.env.name, self.env.repo, self.env.category)
-        version = result[-1]
-        if len(version) == 1 and self.env.version in version:
-            return True
-        elif len(version) != 1 and self.env.version in version:
-            return True
+        versions = self.instdb.get_version(self.env.name, \
+                self.env.repo, self.env.category)
+        for slot in versions:
+            if self.env.version in versions[slot]:
+                return True
         return False
 
     def is_different(self):
-        result = self.instdb.find_pkg(self.env.name, self.env.repo, self.env.category)
-        version = result[-1]
-        if len(self.versions) == 1 and not self.env.version in version:
-            return True
-        elif len(self.versions) != 1 and not self.env.version in version:
-            return True
-        return False
+        versions = self.instdb.get_version(self.env.name, \
+                self.env.repo, self.env.category)
+        for slot in versions:
+            if self.env.version in versions[slot]:
+                return False
+        return True
 
     def merge_pkg(self):
         '''Merge the package to the system'''
         isstrip = True
-        if (hasattr(self.env, "no_strip") and self.env.no_strip) or lpms.getopt("--no-strip") or "debug" in self.env.valid_opts or utils.check_cflags("-g") \
+        if (hasattr(self.env, "no_strip") and self.env.no_strip) or lpms.getopt("--no-strip") \
+                or "debug" in self.env.valid_opts or utils.check_cflags("-g") \
                 or utils.check_cflags("-ggdb") or utils.check_cflags("-g3"):
                     isstrip = False
 
