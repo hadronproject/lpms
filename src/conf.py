@@ -57,10 +57,14 @@ class ReadConfig(object):
 
 class LPMSConfig(ReadConfig):
     def __init__(self):
-        config_file = os.path.join(cst.config_dir, cst.config_file)
-        if not os.path.isfile(config_file):
-            out.error("%s not found.")
-            lpms.terminate()
-
-        with open(config_file) as data:
-            super(LPMSConfig, self).__init__(data.read().splitlines())
+        data = []
+        lpms_conf_file = os.path.join(cst.config_dir, cst.lpms_conf_file)
+        build_conf_file = os.path.join(cst.config_dir, cst.build_conf_file)
+        for path in (lpms_conf_file, build_conf_file):
+            if not os.path.isfile(path):
+                print("FATAL ERROR: %s not found." % path)
+                lpms.terminate()
+            else:
+                with open(path) as file_data:
+                    data.extend(file_data.read().splitlines())
+        super(LPMSConfig, self).__init__(data)
