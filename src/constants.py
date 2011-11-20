@@ -48,7 +48,8 @@ filesdb_path = "/var/db/lpms/filesdb.db"
 spec_suffix = ".py"
 sandbox_file = "sandbox.conf"
 spec_dir = "/usr/lpms"
-config_file = "lpms.conf"
+lpms_conf_file = "lpms.conf"
+build_conf_file = "build.conf"
 distfiles = "/usr/portage/distfiles"
 extract_dir = "/var/tmp/lpms/"
 lock_file = extract_dir+"lock"
@@ -58,7 +59,7 @@ news_dir = "news"
 news_read = "news.read"
 
 # lpms.conf is unhealty in this case.
-with open(config_dir+"/"+config_file) as data:
+with open(config_dir+"/"+lpms_conf_file) as data:
     for line in data.readlines():
         if line.startswith("userland") and line.split("=")[1].strip() == "GNU":
             doc = 'usr/share/doc'
