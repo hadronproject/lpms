@@ -115,7 +115,7 @@ nevermind = ('--ignore-depends', '--quiet', '--verbose', '--force-upgrade', '--r
         '--ignore-sandbox', '--force-unpack', '--enable-sandbox', '--ignore-conflicts', 
         '--no-configure', '--ignore-reserve-files', '--reload-previous-repodb',
         '--list-repos', '--no-strip', '--unset-env-variables', '--use-file-relations', 
-        '--in-name', '--in-summary', '--only-installed')
+        '--in-name', '--in-summary', '--only-installed', '--force-file-collision')
 
 exceptions = ('change-root', 'opts', 'stage')
 
