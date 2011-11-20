@@ -28,6 +28,7 @@ from lpms import utils
 from lpms import internals
 from lpms import shelltools
 from lpms import file_relations
+from lpms import file_collisions
 from lpms import constants as cst
 
 from lpms.db import dbapi
@@ -110,6 +111,23 @@ class Merge(internals.InternalFuncs):
 
     def merge_pkg(self):
         '''Merge the package to the system'''
+        out.normal("checking file collisions...")
+        collision_object = file_collisions.CollisionProtect(self.env.real_root, self.env.install_dir)
+        collision_object.handle_collisions()
+        if collision_object.collisions:
+            out.write(out.color(" > ", "brightyellow")+"file collisions detected:\n")
+        for item in collision_object.collisions:
+            packages, path = item
+            for package in packages:
+                category, name, version = package
+                if self.env.category != category and self.env.name != name:
+                    out.write(out.color(" -- ", "red")+category+"/"+name+"-"\
+                            +version+" -> "+path+"\n")
+        if collision_object.collisions and self.conf.collision_protect and not \
+                lpms.getopt('--force-file-collision'):
+                    out.write("quitting...\n")
+                    lpms.terminate()
+
         isstrip = True
         if (hasattr(self.env, "no_strip") and self.env.no_strip) or lpms.getopt("--no-strip") \
                 or "debug" in self.env.valid_opts or utils.check_cflags("-g") \
@@ -124,9 +142,6 @@ class Merge(internals.InternalFuncs):
             }
 
 
-        conflict_check = True
-        if not self.previous_files:
-            conflict_check = False
         self.filesdb.delete_item_by_pkgdata(self.env.category, self.env.name, \
             self.env.version, commit=True)
 
@@ -224,14 +239,6 @@ class Merge(internals.InternalFuncs):
                         self.file_relationsdb.append_query((self.env.repo, self.env.category, self.env.name, \
                                         self.env.version, target, file_relations.get_depends(source)))
             
-                #if conflict_check and os.path.isfile(target) and not fdb.has_path(target):
-                #    # FIXME: Use an exception to exit
-                #    if self.conf.conflict_protect and not lpms.getopt("--ignore-conflicts"):
-                #        out.error("file conflict: %s" % target)
-                #        lpms.terminate()
-                #    else:
-                #        out.warn("file conflict: %s" % target)
-
                 # strip binary files
                 if isstrip and utils.get_mimetype(source) in ('application/x-executable', 'application/x-archive', \
                         'application/x-sharedlib'):
