@@ -56,14 +56,16 @@ def getopt(opt):
 # FIXME-2: improve this for detalied debug output.
 def catch_error(err, stage=0):
     backtree = inspect.stack()
-    for i in backtree: 
-        if len(i[1].split("interpreter.py")) > 1:
-            for x in backtree:
-                if x[-1] is None and x[-2] is None:
-                    out.brightred("\n>> internal error:\n")
-                    index = backtree.index(x)+1
-                    out.write(" "+out.color(x[3]+" ("+"line "+str(backtree[index][2])+")", "red")+": "+str(err)+'\n\n')
-                    terminate()
+    for output in backtree: 
+        if len(output[1].split("interpreter.py")) <= 1:
+            continue
+        for item in backtree:
+            if item[-1] is None and item[-2] is None:
+                out.brightred("\n>> internal error:\n")
+                index = backtree.index(item)+1
+                out.write(" "+out.color(item[3]+" ("+"line "+str(backtree[index][2])+")", \
+                        "red")+": "+str(err)+'\n\n')
+                terminate()
     print(err)
     terminate()
 
