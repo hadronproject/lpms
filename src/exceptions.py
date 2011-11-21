@@ -19,6 +19,9 @@
 class ConfKeyError(Exception):
     pass
 
+class ConstError(TypeError):
+    pass
+ 
 class BuiltinError(Exception):
     pass
 
