@@ -21,8 +21,15 @@ import logging
 import inspect
 from ctypes import cdll, byref, create_string_buffer
 
+# firstly, override this for backward compatibility
+###################################################
+from lpms import declarations
+values = declarations.ConstantValues()
+constants = values.val
+del values
+###################################################
+
 from lpms import out
-from lpms import constants as cst
 
 def set_proc_name(newname):
     libc = cdll.LoadLibrary('libc.so.6')
@@ -64,14 +71,14 @@ def catch_error(err, stage=0):
 def init_logging():
     logger = None
     # create lpms.log file if it does not exist
-    if not os.access(cst.logfile, os.F_OK):
-        f = open(cst.logfile, 'w')
+    if not os.access(constants.logfile, os.F_OK):
+        f = open(constants.logfile, 'w')
         f.close()
 
     # initialize
-    if os.access(cst.logfile, os.W_OK):
+    if os.access(constants.logfile, os.W_OK):
         logger = logging.getLogger(__name__)
-        hdlr = logging.FileHandler(cst.logfile)
+        hdlr = logging.FileHandler(constants.logfile)
         formatter = logging.Formatter('%(created)f %(asctime)s %(levelname)s %(message)s')
         hdlr.setFormatter(formatter)
         logger.addHandler(hdlr)
