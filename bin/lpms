@@ -22,8 +22,7 @@ import signal
 def exit_handler(signum, frame):
     signal.signal(signal.SIGINT, signal.SIG_IGN)
     signal.signal(signal.SIGTERM, signal.SIG_IGN)
-#    lpms.logger("lpms terminated by the user.")
-    lpms.terminate("lpms terminated by the user. So this may be harmfull!")
+    lpms.terminate("lpms terminated by the user. So this may be harmful!")
 
 signal.signal(signal.SIGINT, exit_handler)
 signal.signal(signal.SIGTERM, exit_handler)
