@@ -90,6 +90,16 @@ def binutils_cmd(command):
 
     return cmd
 
+def current_linux_kernel():
+    return os.uname()[2]
+
+def current_python():
+    (major, minor) = sys.version_info[:2]
+    return 'python%s.%s' % (major, minor)
+
+def get_arch():
+    return os.uname()[-1]
+
 def delflag(fn):
     def wrapped(flag):
         name = fn.__name__.split("_")[1].upper()
