@@ -94,6 +94,11 @@ def raw_install(parameters = '', arg='install'):
     out.notify("running make %s %s" % (parameters, arg))
     if not system("make %s %s" % (parameters, arg)):
         lpms.catch_error("raw_install() function failed.")
+    else:
+        # remove /usr/share/info/dir file if it exists
+        dir_file = "%s/usr/share/info/dir" % install_dir
+        if os.path.isfile(dir_file):
+            shelltools.remove_file("%s/usr/share/info/dir" % install_dir)
 
 def linstall(parameters='', arg='install'):
     '''Runs standard installation function with given parameters and commands'''
@@ -120,6 +125,11 @@ def linstall(parameters='', arg='install'):
     out.notify("running %s" % args) 
     if not system(args):
         lpms.catch_error("linstall failed.")
+    else:
+        # remove /usr/share/info/dir file if it exists
+        dir_file = "%s/usr/share/info/dir" % install_dir
+        if os.path.isfile(dir_file):
+            shelltools.remove_file("%s/usr/share/info/dir" % install_dir)
 
 def aclocal(*parameters):
     '''Runs aclocal with given parameters'''
