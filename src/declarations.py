@@ -45,6 +45,7 @@ class ConstantValues:
     def __init__(self):
         # FIXME: values should be cleaned
         self.val.root = "/"
+        self.val.stages = ('extract', 'prepare', 'configure', 'build', 'install', 'merge', 'post_install', 'post_remove')
         self.val.config_dir = "/etc/lpms"
         self.val.xmlfile_suffix = ".xml"
         self.val.lpms_path = "/usr/lib/python%s.%s/site-packages/lpms" % (sys.version_info[0], sys.version_info[1])
