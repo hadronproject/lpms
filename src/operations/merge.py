@@ -17,6 +17,7 @@
 
 import os
 import time
+import gzip
 import shutil
 import cPickle as pickle
 
@@ -47,6 +48,7 @@ class Merge(internals.InternalFuncs):
         self.env = environment
         self.instdb = dbapi.InstallDB()
         self.conf = conf.LPMSConfig()
+        self.info_files = []
         self.previous_files = []
         self.merge_conf_data = []
         self.filesdb = dbapi.FilesDB()
@@ -500,11 +502,30 @@ class Merge(internals.InternalFuncs):
             if not item in current_files:
                 obsolete.append(item)
         return obsolete
+    
+    def create_info_archive(self):
+        info_path = os.path.join(self.env.install_dir, cst.info)
+        if not os.path.isdir(info_path): return
+        for item in os.listdir(os.path.join(self.env.install_dir, cst.info)):
+            info_file = os.path.join(info_path, item)
+            with open(info_file, 'rb') as content:
+                with gzip.open(info_file+".gz", 'wb') as output:
+                    output.writelines(content)
+                    self.info_files.append(os.path.join(self.env.real_root, cst.info, item)+".gz")
+            shelltools.remove_file(info_file)
+
+    def update_info_index(self):
+        for info_file in self.info_files:
+            if os.path.exists(info_file):
+                utils.update_info_index(info_file)
 
 def main(environment):
     opr = Merge(environment)
     
     opr.load_merge_conf_file()
+    
+    # create $info_file_name.gz archive and remove info file
+    opr.create_info_archive()
     
     # merge
     opr.merge_pkg()
@@ -517,6 +538,9 @@ def main(environment):
     # write to database
     opr.write_db()
     
+    # create or update /usr/share/info/dir 
+    opr.update_info_index()
+
     if opr.backup:
         out.warn_notify("%s configuration file changed. Use %s to fix these files." % 
                 (len(opr.backup), out.color("merge-conf", "red")))

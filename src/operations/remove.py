@@ -47,6 +47,10 @@ class Remove:
         for _file in self.filesdb.get_paths_by_package(self.name, category=self.category, version=self.version):
             _file = _file[0]
             target = os.path.join(self.real_root, _file[1:])
+            if os.path.dirname(_file[1:]) == cst.info:
+                print target
+                utils.update_info_index(target, dir_path=os.path.join(self.real_root, cst.info, "dir"), delete=True)
+
             if os.path.islink(target):
                 os.unlink(target)
             elif os.path.isfile(target):

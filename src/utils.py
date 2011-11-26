@@ -31,6 +31,23 @@ from lpms import conf
 from lpms import shelltools
 from lpms import constants as cst
 
+def update_info_index(info_path, dir_path="/usr/share/info/dir", delete=False):
+    '''Updates GNU Info file index'''
+    if os.access(info_path, os.R_OK):
+        if not os.access("/usr/bin/install-info", os.X_OK):
+            out.error("/usr/bin/install-info seems broken. please check sys-apps/texinfo")
+            return False
+        if delete:
+            command = "/usr/bin/install-info --delete %s %s" % (info_path, dir_path)
+        else:
+            command = "/usr/bin/install-info %s %s" % (info_path, dir_path)
+        if not shelltools.system(command):
+            out.error("%s not updated. info file: %s" % (dir_path, info_path))
+            return False
+    else:
+        out.error("%s not found" % info_path)
+        return False
+    return True
 
 def check_cflags(flag):
     return flag in [atom.strip() for \
