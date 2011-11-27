@@ -114,17 +114,17 @@ class Merge(internals.InternalFuncs):
     def merge_pkg(self):
         '''Merge the package to the system'''
         out.normal("checking file collisions...")
-        collision_object = file_collisions.CollisionProtect(self.env.real_root, self.env.install_dir)
+        collision_object = file_collisions.CollisionProtect(self.env.real_root, \
+                self.env.install_dir, self.env.category, self.env.name, self.env.slot)
         collision_object.handle_collisions()
         if collision_object.collisions:
             out.write(out.color(" > ", "brightyellow")+"file collisions detected:\n")
         for item in collision_object.collisions:
             packages, path = item
             for package in packages:
-                category, name, version = package
-                if self.env.category != category and self.env.name != name:
-                    out.write(out.color(" -- ", "red")+category+"/"+name+"-"\
-                            +version+" -> "+path+"\n")
+                category, name, slot, version = package
+                out.write(out.color(" -- ", "red")+category+"/"+name+"-"\
+                        +version+":"+slot+" -> "+path+"\n")
         if collision_object.collisions and self.conf.collision_protect and not \
                 lpms.getopt('--force-file-collision'):
                     out.write("quitting...\n")
@@ -194,7 +194,8 @@ class Merge(internals.InternalFuncs):
                                 perms['mod'], 
                                 perms['uid'], 
                                 None, 
-                                None
+                                None,
+                                self.env.slot
                             )
                     )
                 else:
@@ -210,7 +211,8 @@ class Merge(internals.InternalFuncs):
                                 None, 
                                 None, 
                                 None, 
-                                os.path.realpath(source)
+                                os.path.realpath(source),
+                                self.env.slot
                             )
                     )
 
@@ -289,7 +291,8 @@ class Merge(internals.InternalFuncs):
                                         perms['mod'], 
                                         perms['uid'], 
                                         sha1sum, 
-                                        None
+                                        None,
+                                        self.env.slot
                                     )
                             )
                         else:
@@ -305,7 +308,8 @@ class Merge(internals.InternalFuncs):
                                         None, 
                                         None, 
                                         None, 
-                                        os.path.realpath(path)
+                                        os.path.realpath(path),
+                                        self.env.slot
                                     )
                             )                   
                         # We don't need the following operations
@@ -342,7 +346,8 @@ class Merge(internals.InternalFuncs):
                                 perms['mod'], 
                                 perms['uid'], 
                                 sha1sum, 
-                                None
+                                None,
+                                self.env.slot
                             )
                     )
                 else:
@@ -358,7 +363,8 @@ class Merge(internals.InternalFuncs):
                                 None, 
                                 None, 
                                 None, 
-                                os.path.realpath(source)
+                                os.path.realpath(source),
+                                self.env.slot
                             )
                     )
 

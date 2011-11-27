@@ -67,10 +67,10 @@ class FilesDatabase(object):
         self.cursor.execute('BEGIN TRANSACTION')
         for data in self.query:
             repo, category, name, version, path, _type, \
-                    size, gid, mod, uid, sha1sum, realpath  = data
+                    size, gid, mod, uid, sha1sum, realpath, slot  = data
             self.cursor.execute('''insert into files values(?, ?, ?, ?, ?, ?, \
-                    ?, ?, ?, ?, ?, ?)''', (repo, category, name, version, path, _type, \
-                    sqlite3.Binary(pickle.dumps(size, 1)), gid, mod, uid, sha1sum, realpath))
+                    ?, ?, ?, ?, ?, ?, ?)''', (repo, category, name, version, path, _type, \
+                    sqlite3.Binary(pickle.dumps(size, 1)), gid, mod, uid, sha1sum, realpath, slot))
         del self.query
         self.query = []
         if commit: self.commit()
@@ -81,7 +81,7 @@ class FilesDatabase(object):
 
     def get_files_and_links(self):
         '''Gets all fiels and links in the files database'''
-        self.cursor.execute('''select category, name, version, path from files where type="file" or type="link"''')
+        self.cursor.execute('''select category, name, slot, version, path from files where type="file" or type="link"''')
         return self.cursor.fetchall()
 
     def get_package_by_path(self, path):

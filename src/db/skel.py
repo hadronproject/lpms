@@ -126,7 +126,8 @@ def files_schema():
             mod text,
             uid text,
             sha1sum text,
-            realpath text
+            realpath text,
+            slot text
         );
     """
 
