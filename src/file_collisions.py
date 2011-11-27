@@ -24,13 +24,16 @@ from lpms import constants as cst
 from lpms.db import dbapi
 
 class CollisionProtect:
-    def __init__(self, real_root, source_dir):
+    def __init__(self, real_root, source_dir, category, name, slot):
         self.real_root = real_root
         self.files_and_links = {}
         self.source_dir = source_dir
         self.filesdb = dbapi.FilesDB()
         self.prepare_files_and_links()
         self.collisions = []
+        self.name = name
+        self.category = category
+        self.slot = slot
 
     def prepare_files_and_links(self):
         for item in self.filesdb.get_files_and_links():
@@ -47,6 +50,9 @@ class CollisionProtect:
                 for item in files:
                     mypath = os.path.join(root_path, item)
                     if mypath in self.files_and_links:
-                        if len(self.files_and_links[mypath]) != 1:
-                            self.collisions.append((self.files_and_links[mypath], mypath))
+                        for package in self.files_and_links[mypath]:
+                            c_category, c_name, c_slot = package[:-1]
+                            if (self.category, self.name, self.slot) != (c_category, \
+                                    c_name, c_slot):
+                                self.collisions.append((self.files_and_links[mypath], mypath))
         del self.files_and_links
