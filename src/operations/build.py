@@ -176,7 +176,9 @@ def main(raw_data, instruct):
     if instruct["resume"]:
         if os.path.exists(cst.resume_file):
             with open(cst.resume_file, "rb") as _data:
-                operation_plan, operation_data = pickle.load(_data)
+                stored_data = pickle.load(_data)
+                operation_plan, operation_data = stored_data['raw_data']
+                instruct['real_root'] = stored_data['real_root']
                 if instruct["skip-first"]:
                     operation_plan = operation_plan[1:]
 
@@ -223,7 +225,7 @@ def main(raw_data, instruct):
         if os.path.exists(cst.resume_file):
             shelltools.remove_file(cst.resume_file)
         with open(cst.resume_file, "wb") as _data:
-            pickle.dump(raw_data, _data)
+            pickle.dump({'raw_data': raw_data, 'real_root': instruct['real_root']}, _data)
 
     if not os.path.ismount("/proc"):
         out.warn("/proc is not mounted. You have been warned.")
