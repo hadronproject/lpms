@@ -145,7 +145,7 @@ class Merge(internals.InternalFuncs):
 
 
         self.filesdb.delete_item_by_pkgdata(self.env.category, self.env.name, \
-            self.env.version, commit=True)
+            self.previous_version, commit=True)
 
         out.notify("merging the package to %s and creating database entries..." % self.env.real_root)
         
