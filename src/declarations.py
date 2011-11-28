@@ -79,7 +79,7 @@ class ConstantValues:
         self.val.distfiles = "/usr/portage/distfiles"
         self.val.extract_dir = "/var/tmp/lpms/"
         self.val.lock_file = self.val.extract_dir+"lock"
-        self.val.resume_file = self.val.extract_dir+"/"+"resume"
+        self.val.resume_file = self.val.extract_dir+"resume"
         self.val.src_cache = "/var/cache/lpms/sources"
         self.val.news_dir = "news"
         self.val.news_read = "news.read"
