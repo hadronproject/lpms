@@ -27,6 +27,10 @@ from lpms import utils
 from lpms.operations import remove
 from lpms.operations import update
 
+# TODO:
+# Command line interface is bad
+# it will be rewritten in the next milestone
+
 commands = sys.argv[1:]
 
 lpms_version = '1.0'
@@ -144,27 +148,31 @@ def main():
                     version()
                 elif (cmd == 'b'):
                     from lpms.cli import belong
-                    commands.remove("-"+cmd)
-                    belong.Belong(commands[0]).main()
+                    results = [command for command in commands if not \
+                            command.startswith("-")]
+                    belong.Belong(results[0]).main()
                     return
                 elif (cmd == 'i'):
                     from lpms.cli import info
-                    commands.remove("-"+cmd)
-                    info.Info(commands).run()
+                    results = [command for command in commands if not \
+                            command.startswith("-")]
+                    info.Info(results).run()
                     return
                 elif (cmd == 'c'):
                     from lpms.cli import list_files
-                    commands.remove("-"+cmd)
-                    if not commands:
+                    results = [command for command in commands if not \
+                            command.startswith("-")]
+                    if not results:
                         out.error('please give a package name.')
                         lpms.terminate()
-                    for name in commands:
+                    for name in results:
                         list_files.ListFiles(name).main()
                     return
                 elif (cmd == 's'):
                     from lpms.cli import search
-                    commands.remove("-"+cmd)
-                    search.Search(commands).search()
+                    results = [command for command in commands if not \
+                            command.startswith("-")]
+                    search.Search(results).search()
                     return
                 else:
                     if cmd not in regular and cmd not in toinstruct:
@@ -181,27 +189,32 @@ def main():
                 return
             elif command[2:] == 'info':
                 from lpms.cli import info
-                commands.remove(command)
-                info.Info(commands).run()
+                results = [command for command in commands if not \
+                            command.startswith("-")]
+                info.Info(results).run()
                 return
             elif command[2:] == 'belong':
                 from lpms.cli import belong
-                commands.remove(command)
-                belong.Belong(commands[0]).main()
+                results = [command for command in commands if not \
+                            command.startswith("-")]
+                belong.Belong(results[0]).main()
                 return
             elif command[2:] == 'content':
                 from lpms.cli import list_files
                 commands.remove(command)
-                if not commands:
+                results = [command for command in commands if not \
+                            command.startswith("-")]
+                if not results:
                     out.error('please give a package name.')
                     lpms.terminate()
-                for name in commands:
+                for name in results:
                     list_files.ListFiles(name).main()
                 return
             elif command[2:] == 'search':
                 from lpms.cli import search
-                commands.remove(command)
-                search.Search(commands).search()
+                results = [command for command in commands if not \
+                            command.startswith("-")]
+                search.Search(results).search()
                 return
             elif command in nevermind:
                 pass
