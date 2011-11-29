@@ -57,8 +57,13 @@ def configure_pending(packages, instruct):
     with open(pending_file, 'rb') as data:
         pending_packages = pickle.load(data)
         for package in pending_packages:
-            repo, category, name, version = package 
+            repo, category, name, version = package
+            spec = os.path.join(cst.repos, repo, category, name)+"/"+name+"-"+version+".py"
             out.normal("configuring %s/%s/%s-%s" % (repo, category, name, version))
+            if not os.access(spec, os.R_OK):
+                out.warn("%s seems not exist or not readable. skipping..." % spec)
+                failed.append(package)
+                continue
             if not initpreter.InitializeInterpreter(package, instruct, ['post_install']).initialize():
                 out.warn("%s/%s/%s-%s could not configured." % (repo, category, name, version))
                 failed.append(package)
