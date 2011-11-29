@@ -54,5 +54,6 @@ class CollisionProtect:
                             c_category, c_name, c_slot = package[:-1]
                             if (self.category, self.name, self.slot) != (c_category, \
                                     c_name, c_slot):
-                                self.collisions.append((self.files_and_links[mypath], mypath))
+                                if not (self.files_and_links[mypath], mypath) in self.collisions:
+                                    self.collisions.append((self.files_and_links[mypath], mypath))
         del self.files_and_links
