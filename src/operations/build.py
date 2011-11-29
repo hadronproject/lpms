@@ -171,10 +171,10 @@ class Build(internals.InternalFuncs):
 
 def main(raw_data, instruct):
     operation_plan, operation_data = raw_data
+    # resume previous operation_plan
+    # if skip_first returns True, skip first package
     resume_file =  os.path.join("/", cst.resume_file) if instruct['real_root'] \
             is None else os.path.join(instruct['real_root'], cst.resume_file)
-    # resume previous operation_plan
-    # if skip_first returns True, skip first package 
     if not os.path.isdir(os.path.dirname(resume_file)):
         os.makedirs(os.path.dirname(resume_file))
     if instruct["resume"]:
@@ -183,7 +183,6 @@ def main(raw_data, instruct):
                 stored_data = pickle.load(_data)
                 operation_plan, operation_data = stored_data['raw_data']
                 instruct['real_root'] = stored_data['real_root']
-                #operation_plan, operation_data = pickle.load(_data)
                 if instruct["skip-first"]:
                     operation_plan = operation_plan[1:]
 
@@ -408,17 +407,19 @@ def main(raw_data, instruct):
         # resume feature
         # delete package data, if it is installed successfully
         with open(resume_file, "rb") as _data:
-            resume_plan, resume_data = pickle.load(_data)
-        data = []
+            stored_data = pickle.load(_data)
+            resume_plan, resume_data = stored_data['raw_data']
+            resume_real_root = stored_data['real_root']
+        new_resume_plan = []
 
         for pkg in resume_plan:
             if pkg != (opr.env.repo, opr.env.category, 
                     opr.env.name, opr.env.version):
-                data.append(pkg)
+                new_resume_plan.append(pkg)
 
         shelltools.remove_file(resume_file)
         with open(resume_file, "wb") as _data:
-            pickle.dump({'raw_data': raw_data, 'real_root': instruct['real_root']}, _data)
+            pickle.dump({'raw_data': (new_resume_plan, resume_data), 'real_root': resume_real_root}, _data)
 
         opr.env.__dict__.clear()
         utils.xterm_title_reset()
