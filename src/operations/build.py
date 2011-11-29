@@ -171,14 +171,19 @@ class Build(internals.InternalFuncs):
 
 def main(raw_data, instruct):
     operation_plan, operation_data = raw_data
+    resume_file =  os.path.join("/", cst.resume_file) if instruct['real_root'] \
+            is None else os.path.join(instruct['real_root'], cst.resume_file)
     # resume previous operation_plan
     # if skip_first returns True, skip first package 
+    if not os.path.isdir(os.path.dirname(resume_file)):
+        os.makedirs(os.path.dirname(resume_file))
     if instruct["resume"]:
-        if os.path.exists(cst.resume_file):
-            with open(cst.resume_file, "rb") as _data:
+        if os.path.exists(resume_file):
+            with open(resume_file, "rb") as _data:
                 stored_data = pickle.load(_data)
                 operation_plan, operation_data = stored_data['raw_data']
                 instruct['real_root'] = stored_data['real_root']
+                #operation_plan, operation_data = pickle.load(_data)
                 if instruct["skip-first"]:
                     operation_plan = operation_plan[1:]
 
@@ -222,9 +227,9 @@ def main(raw_data, instruct):
     # create a resume list. write package data(repo, category, name, version) to 
     # /var/tmp/lpms/resume file.
     if not instruct["resume"] or instruct["skip-first"]:
-        if os.path.exists(cst.resume_file):
-            shelltools.remove_file(cst.resume_file)
-        with open(cst.resume_file, "wb") as _data:
+        if os.path.exists(resume_file):
+            shelltools.remove_file(resume_file)
+        with open(resume_file, "wb") as _data:
             pickle.dump({'raw_data': raw_data, 'real_root': instruct['real_root']}, _data)
 
     if not os.path.ismount("/proc"):
@@ -402,7 +407,7 @@ def main(raw_data, instruct):
 
         # resume feature
         # delete package data, if it is installed successfully
-        with open(cst.resume_file, "rb") as _data:
+        with open(resume_file, "rb") as _data:
             resume_plan, resume_data = pickle.load(_data)
         data = []
 
@@ -411,9 +416,9 @@ def main(raw_data, instruct):
                     opr.env.name, opr.env.version):
                 data.append(pkg)
 
-        shelltools.remove_file(cst.resume_file)
-        with open(cst.resume_file, "wb") as _data:
-            pickle.dump((data, resume_data), _data)
+        shelltools.remove_file(resume_file)
+        with open(resume_file, "wb") as _data:
+            pickle.dump({'raw_data': raw_data, 'real_root': instruct['real_root']}, _data)
 
         opr.env.__dict__.clear()
         utils.xterm_title_reset()
