@@ -55,8 +55,6 @@ class PackageDatabase:
             return self.connection.commit()
         except sqlite3.OperationalError as err:
             print(err)
-            if err == "database is locked":
-                print("another thing is going on...")
             lpms.terminate()
 
     def get_repos(self):
@@ -80,8 +78,8 @@ class PackageDatabase:
             self.cursor.execute('''select version from metadata where repo=(?) and category=(?) and name=(?)''', 
                     (repo, category, name,))
             
-            aq = self.cursor.fetchall()
-            return pickle.loads(str(aq[0][0]))
+            result = self.cursor.fetchall()
+            return pickle.loads(str(result[0][0]))
         
         def get_options():
             data = self.cursor.execute('''select options from metadata where repo=(?) and category=(?) and name=(?)''', 
@@ -102,8 +100,6 @@ class PackageDatabase:
                 repo, category, name, version_data, summary, homepage, _license, src_url, options_data, arch_data))
         else:
             current_versions = self.get_version(name, repo, category)
-            #current_versions = get_slot()
-            #print current_versions, repo, category, name, version
             if slot in current_versions:
                 current_versions[slot].append(version)
             else:
@@ -184,8 +180,6 @@ class PackageDatabase:
                     map(lambda x: versions.extend(x), iversion.values())
                     
                     if len(versions) >= 1:
-                        #result = versions
-                        #result.remove(version); new_version = " ".join(result)
                         self.cursor.execute('''update metadata set version=(?) where repo=(?) and category=(?) and name=(?)''', 
                                 (sqlite3.Binary(pickle.dumps(iversion, 1)), rname, category, name,))
                         drop_others()
@@ -227,10 +221,6 @@ class PackageDatabase:
 
     def get_depends(self, repo_name, category, name, version):
         #FIXME: remove magic numbers
-        #if version is not None:
-        #    self.cursor.execute('''select * from depends where repo=(?) and category=(?) and name=(?) and version=(?)''', 
-        #            (repo_name, category, name, version,))
-        #else:
         self.cursor.execute('''select * from depends where repo=(?) and category=(?) and name=(?) and version=(?)''', 
             (repo_name, category, name, version,))
 
