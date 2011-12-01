@@ -422,6 +422,9 @@ class DependencyResolver(object):
 
     def get_valid_options(self, options, valid_options):
         result = []
+        if isinstance(valid_options, basestring):
+            valid_options = [vo.strip() for vo in \
+                    valid_options.split(" ")]
         for option in options:
             if option in valid_options:
                 result.append(option)
@@ -537,7 +540,7 @@ class DependencyResolver(object):
                         continue
                     repo_options = self.repodb.get_options(dyn_dep_repo, dcategory, dname)
                     if dversion in repo_options:
-                        dopt = self.get_valid_options(dopt, repo_options)
+                        dopt = self.get_valid_options(dopt, repo_options[dversion])
                     else: dopt = []
                     local_plan[key].append([dyn_dep_repo, dcategory, dname, dversion, dopt])
                      
@@ -560,7 +563,7 @@ class DependencyResolver(object):
                         continue
                     repo_options = self.repodb.get_options(stc_dep_repo, scategory, sname)
                     if sversion in repo_options:
-                        sopt = self.get_valid_options(sopt, repo_options)
+                        sopt = self.get_valid_options(sopt, repo_options[sversion])
                     else: sopt = []
                     local_plan[key].append([stc_dep_repo, scategory, sname, sversion, sopt])
 
