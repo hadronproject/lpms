@@ -198,8 +198,9 @@ def unpack(*filenames, **kwargs):
         path = joinpath(cst.src_cache, filename)
         internal_extract(path, location, partial)
 
-def fetch(*urls):
-    if not URLFetcher().run(urls):
+def fetch(*urls, **params):
+    location = params.get("location", None)
+    if not URLFetcher().run(urls, location):
         error("download failed, please check your spec.")
         lpms.terminate()
 
