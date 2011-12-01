@@ -61,9 +61,13 @@ class PackageDatabase:
         self.cursor.execute('''select repo from metadata''')
         return list(set(self.cursor.fetchall()))
 
-    def get_slot(self, category, name, version):
-        self.cursor.execute('''select version from metadata where category=(?) and name=(?)''', 
-                (category, name,))
+    def get_slot(self, category, name, version, repo=None):
+        if repo:
+            self.cursor.execute('''select version from metadata where repo=(?) and category=(?) and name=(?)''', 
+                    (repo, category, name,))
+        else:
+            self.cursor.execute('''select version from metadata where category=(?) and name=(?)''', 
+                    (category, name,))
         
         items = self.cursor.fetchall()
         for item in items:
@@ -253,18 +257,18 @@ class PackageDatabase:
                 result.update(pickle.loads(str(d[0])))
             return result
         except TypeError:
-            return None
+            return
 
-    def get_arch(self, repo, category, name, version = None):
+    def get_arch(self, repo, category, name, version=None):
         self.cursor.execute('''select arch from metadata where repo=(?) and category=(?) and name=(?)''', 
                 (repo, category, name,))
         try:
             data = pickle.loads(str(self.cursor.fetchone()[0]))
-            if version is not None:
+            if version:
                 return data[version]
             return data
         except TypeError:
-            return None
+            return
     
     def get_version(self, name, repo, category):
         # FIXME
@@ -276,8 +280,7 @@ class PackageDatabase:
                     and name=(?)''', (category, name))
         
         results = self.cursor.fetchall()
-        if not results:
-            return None
+        if not results: return
         versions = {}
         for result in results:
             versions.update(pickle.loads(str(result[0])))
