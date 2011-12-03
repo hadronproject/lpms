@@ -120,11 +120,9 @@ class Merge(internals.InternalFuncs):
         if collision_object.collisions:
             out.write(out.color(" > ", "brightyellow")+"file collisions detected:\n")
         for item in collision_object.collisions:
-            packages, path = item
-            for package in packages:
-                category, name, slot, version = package
-                out.write(out.color(" -- ", "red")+category+"/"+name+"-"\
-                        +version+":"+slot+" -> "+path+"\n")
+            (category, name, slot, version), path = item
+            out.write(out.color(" -- ", "red")+category+"/"+name+"-"\
+                    +version+":"+slot+" -> "+path+"\n")
         if collision_object.collisions and self.conf.collision_protect and not \
                 lpms.getopt('--force-file-collision'):
                     out.write("quitting...\n")

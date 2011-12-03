@@ -46,14 +46,14 @@ class CollisionProtect:
         for root_path, dirs, files in os.walk(self.source_dir, \
                 followlinks=True):
             root_path = "".join(root_path.split(self.source_dir))
-            if files:
-                for item in files:
-                    mypath = os.path.join(root_path, item)
-                    if mypath in self.files_and_links:
-                        for package in self.files_and_links[mypath]:
-                            c_category, c_name, c_slot = package[:-1]
-                            if (self.category, self.name, self.slot) != (c_category, \
-                                    c_name, c_slot):
-                                if not (self.files_and_links[mypath], mypath) in self.collisions:
-                                    self.collisions.append((self.files_and_links[mypath], mypath))
+            if not files: continue
+            for item in files:
+                mypath = os.path.join(root_path, item)
+                if mypath in self.files_and_links:
+                    for package in self.files_and_links[mypath]:
+                        c_category, c_name, c_slot, c_version = package
+                        if (self.category, self.name, self.slot) != (c_category, \
+                                c_name, c_slot):
+                            if not ((c_category, c_name, c_slot, c_version), mypath) in self.collisions:
+                                self.collisions.append(((c_category, c_name, c_slot, c_version), mypath))
         del self.files_and_links
