@@ -39,30 +39,44 @@ class Info(object):
         lpms.terminate()
 
     def get_info(self, pkg):
-        # FIXME: iver is not necessary.
-        def show_options(iver):
-            options = self.repo_db.get_options(self.repo, self.category, self.name)
-            valid_opts = self.instdb.get_options(self.repo, self.category, self.name)
+        def show_options():
+            return self.repo_db.get_options(self.repo, self.category, self.name), \
+                    self.instdb.get_options(self.repo, self.category, self.name)
 
         self.repo, self.category, self.name, self.version = pkg
         repo_versions = []
         map(lambda x: repo_versions.extend(x), self.version.values())
-        #buildinfo = self.instdb.get_buildinfo(self.repo, self.category, self.name)
         out.write('%s/%s' % (out.color(self.category, "white"), out.color(self.name, 'brightgreen')+'\n'))
         out.write('    %-20s %s' % (out.color("available versions:", 'green'), " ".join(repo_versions)+'\n'))
         instvers = self.instdb.get_version(self.name, self.repo, self.category); inst_versions = []
         if not isinstance(instvers, bool) and instvers:
+            map(lambda x: inst_versions.extend(x), instvers.values())
+            repo_options, installed_options = show_options()
             out.write('    %-20s ' % (out.color('installed versions:', 'green')))
             if len(instvers) > 1:
                 for iver in instvers.items():
                     out.write("%s(%s) " % (out.color(iver[0], "backgroundwhite"), " ".join(iver[1])))
-                    #show_options(iver)
                 out.write('\n')
             else:
-                map(lambda x: inst_versions.extend(x), instvers.values())
                 out.write('%s' % " ".join(inst_versions)+'\n')
-                #for iver in inst_versions:
-                #    show_options(iver)
+        
+        repo_options, installed_options = show_options()
+        classified_options = {}
+        for repo_ver in repo_options:
+            if repo_options[repo_ver]:
+                classified_options[repo_ver] = []
+                if repo_ver in installed_options:
+                    for option in installed_options[repo_ver].split(" "):
+                        if option == "": continue
+                        classified_options[repo_ver].append(option+out.color("*", "brightgreen"))
+                    for option in repo_options[repo_ver].split(" "):
+                        if not option+out.color("*", "brightgreen") in classified_options[repo_ver]:
+                            classified_options[repo_ver].append(option)
+
+        for ver in classified_options:
+            if classified_options[ver]:
+                out.write('    %-15s %s {%s}\n' % (out.color('options:', 'green'), ver, " ".join(classified_options[ver])))
+
         for tag in ('summary', 'homepage', 'license'):
             data = getattr(self.repo_db, "get_"+tag)(self.name, self.repo, self.category)[0]
             if data is not None:
@@ -95,5 +109,3 @@ class Info(object):
             else:
                 for pkg in data:
                     self.get_info(pkg)
-
-
