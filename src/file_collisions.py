@@ -24,7 +24,8 @@ from lpms import constants as cst
 from lpms.db import dbapi
 
 class CollisionProtect:
-    def __init__(self, real_root, source_dir, category, name, slot):
+    def __init__(self, category, name, slot, version=None, \
+            real_root=None, source_dir=None):
         self.real_root = real_root
         self.files_and_links = {}
         self.source_dir = source_dir
@@ -34,6 +35,18 @@ class CollisionProtect:
         self.name = name
         self.category = category
         self.slot = slot
+        self.version = version
+
+    def catch_file(self, mypath):
+        if mypath in self.files_and_links:
+            for package in self.files_and_links[mypath]:
+                c_category, c_name, c_slot, c_version = package
+                if (self.category, self.name, self.slot) != (c_category, \
+                        c_name, c_slot):
+                    if not ((c_category, c_name, c_slot, c_version), mypath) \
+                            in self.collisions:
+                        self.collisions.append(((c_category, c_name, c_slot, \
+                                c_version), mypath))
 
     def prepare_files_and_links(self):
         for item in self.filesdb.get_files_and_links():
@@ -43,17 +56,17 @@ class CollisionProtect:
             self.files_and_links.update({item[-1]: [item[:-1]]})
 
     def handle_collisions(self):
-        for root_path, dirs, files in os.walk(self.source_dir, \
-                followlinks=True):
-            root_path = "".join(root_path.split(self.source_dir))
-            if not files: continue
-            for item in files:
-                mypath = os.path.join(root_path, item)
-                if mypath in self.files_and_links:
-                    for package in self.files_and_links[mypath]:
-                        c_category, c_name, c_slot, c_version = package
-                        if (self.category, self.name, self.slot) != (c_category, \
-                                c_name, c_slot):
-                            if not ((c_category, c_name, c_slot, c_version), mypath) in self.collisions:
-                                self.collisions.append(((c_category, c_name, c_slot, c_version), mypath))
+        if self.source_dir:
+            for root_path, dirs, files in os.walk(self.source_dir, \
+                    followlinks=True):
+                root_path = "".join(root_path.split(self.source_dir))
+                if not files: continue
+                for item in files:
+                    mypath = os.path.join(root_path, item)
+                    self.catch_file(mypath)
+        else:
+            for path in self.filesdb.get_files_and_links_by_package(self.category, \
+                    self.name, self.version):
+                mypath = path[0]
+                self.catch_file(mypath)
         del self.files_and_links
