@@ -115,6 +115,12 @@ class FilesDatabase(object):
                 and name=(?) and version=(?)''', (category, name, version,))
         return self.cursor.fetchall()
 
+    def get_files_and_links_by_package(self, category, name, version):
+        '''Gets files and links of the package'''
+        self.cursor.execute('''select path from files where (type="file" or type="link") and category=(?) \
+                and name=(?) and version=(?)''', (category, name, version,))
+        return self.cursor.fetchall()
+
     def get_files_by_package(self, category, name, version):
         '''Gets files of the package'''
         self.cursor.execute('''select path from files where type="file" and category=(?) \
