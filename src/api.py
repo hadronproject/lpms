@@ -23,6 +23,7 @@ import cPickle as pickle
 import lpms
 
 from lpms import out
+from lpms import conf
 from lpms import utils
 from lpms import resolver
 from lpms import internals
@@ -30,6 +31,7 @@ from lpms import initpreter
 from lpms import shelltools
 from lpms import interpreter
 from lpms import file_relations
+from lpms import file_collisions
 from lpms import constants as cst
 
 from lpms.db import dbapi
@@ -286,7 +288,25 @@ def remove_package(pkgnames, instruct):
             out.write("quitting...\n")
             utils.xterm_title_reset()
             lpms.terminate()
+    
+    config = conf.LPMSConfig()
+    instdb = dbapi.InstallDB()
     for package in packages:
+        repo, category, name, ver = package
+        slot = instdb.get_slot(name, category, ver)
+        fdb = file_collisions.CollisionProtect(category, name, slot, version=ver)
+        fdb.handle_collisions()
+        if fdb.collisions:
+            out.write(out.color(" > ", "brightyellow")+"file collisions detected while removing %s/%s/%s-%s\n\n" \
+                    % (repo, category, name, ver))
+        for (c_package, c_path) in fdb.collisions:
+            c_category, c_name, c_slot, c_version = c_package
+            out.write(out.color(" -- ", "red")+c_category+"/"+c_name+"-"\
+                    +c_version+":"+c_slot+" -> "+c_path+"\n")
+            if fdb.collisions and config.collision_protect and not \
+                    lpms.getopt('--force-file-collision'):
+                        out.write("\nquitting... use '--force-file-collision' to continue.\n")
+                        lpms.terminate()
         i += 1;
         instruct['i'] = i
         if not initpreter.InitializeInterpreter(package, instruct, ['remove'], remove=True).initialize():
