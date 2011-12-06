@@ -114,8 +114,8 @@ class Merge(internals.InternalFuncs):
     def merge_pkg(self):
         '''Merge the package to the system'''
         out.normal("checking file collisions...")
-        collision_object = file_collisions.CollisionProtect(self.env.real_root, \
-                self.env.install_dir, self.env.category, self.env.name, self.env.slot)
+        collision_object = file_collisions.CollisionProtect(self.env.category, self.env.name, \
+                self.env.slot, real_root=self.env.real_root, source_dir=self.env.install_dir)
         collision_object.handle_collisions()
         if collision_object.collisions:
             out.write(out.color(" > ", "brightyellow")+"file collisions detected:\n")
