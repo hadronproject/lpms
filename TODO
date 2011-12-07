@@ -1,22 +1,5 @@
 # TODO list for lpms-1.0 #
 ==========================
-
-(+) build libraries support will be improved.
-(+) terminal titles
-(+) dependency resolver will be coded again. options, version decisions and many others will be added.
-(-) more documentation
-(+) package sets(like repo components)
-(+) option definitions.
-(+) post_remove, pre_install, pre_remove functions will be added to interpreter.
-(+) database locking
-(-) we need more exception and error messages will be improved.
-(+) file collisions
-(-) improve file collision feature
-(+) config protect feature will be improved
-(-) review search and info commans
-
-# Further development #
-=======================
 (-) memory and speed optimizations
 (-) Write a new database module and api in orm style
 (-) re-write operations/build and operations/merge.py
