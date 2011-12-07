@@ -293,7 +293,7 @@ def remove_package(pkgnames, instruct):
     instdb = dbapi.InstallDB()
     for package in packages:
         repo, category, name, ver = package
-        slot = instdb.get_slot(name, category, ver)
+        slot = instdb.get_slot(category, name, ver)
         fdb = file_collisions.CollisionProtect(category, name, slot, version=ver)
         fdb.handle_collisions()
         if fdb.collisions:
