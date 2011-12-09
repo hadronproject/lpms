@@ -42,8 +42,8 @@ class InitializeInterpreter(internals.InternalFuncs):
         '''Registers some basic environmet variables and runs the interpreter'''
         repo, category, name, version = self.script
 
-        for key, data in {"repo": repo, "name": name, "version": version, \
-                "category": category, "pkgname": name}.items():
+        for key, data in {"repo": repo, "name": name, "version": version, "category": \
+                category, "pkgname": name, "fullname": name+"-"+version}.items():
             setattr(self.env, key, data)
 
         spec_file = os.path.join(cst.repos, repo, category, \
