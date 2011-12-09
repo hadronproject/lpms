@@ -31,6 +31,7 @@ class CollisionProtect:
         self.source_dir = source_dir
         self.filesdb = dbapi.FilesDB()
         self.prepare_files_and_links()
+        self.orphans = []
         self.collisions = []
         self.name = name
         self.category = category
@@ -47,6 +48,8 @@ class CollisionProtect:
                             in self.collisions:
                         self.collisions.append(((c_category, c_name, c_slot, \
                                 c_version), mypath))
+        else:
+            self.orphans.append(mypath)
 
     def prepare_files_and_links(self):
         for item in self.filesdb.get_files_and_links():

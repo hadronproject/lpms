@@ -117,6 +117,18 @@ class Merge(internals.InternalFuncs):
         collision_object = file_collisions.CollisionProtect(self.env.category, self.env.name, \
                 self.env.slot, real_root=self.env.real_root, source_dir=self.env.install_dir)
         collision_object.handle_collisions()
+        
+        if collision_object.orphans:
+            out.write(out.color(" > ", "brightyellow")+"these files are orphan. the package will adopt the files:\n")
+            index = 0
+            for orphan in collision_object.orphans:
+                out.notify(orphan)
+                index += 1
+                if index > 100:
+                    # FIXME: the files must be logged
+                    out.write(out.color(" > ", "brightyellow")+"...and many others.")
+                    break
+
         if collision_object.collisions:
             out.write(out.color(" > ", "brightyellow")+"file collisions detected:\n")
         for item in collision_object.collisions:
