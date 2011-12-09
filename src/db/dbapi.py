@@ -171,7 +171,7 @@ class API(object):
 
         return self.db.get_options(repo_name, pkgname, pkg_category)
 
-    def get_slot(self, pkgname, pkg_category, pkg_version):
+    def get_slot(self, pkg_category, pkgname, pkg_version):
         return self.db.get_slot(pkg_category, pkgname, pkg_version)
 
     def add_depends(self, data, commit=False):
