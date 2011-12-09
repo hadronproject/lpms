@@ -24,10 +24,13 @@ from lpms import out
 from lpms import shelltools
 from lpms import constants as cst
 
+from lpms.exceptions from InvalidURI
+
 class GITSync(object):
     def __init__(self, repo, remote):
         self.repo = repo
         self.remote = remote
+        self.git_binary = "/usr/bin/git"
         self.repo_path = os.path.join(cst.repos, repo)
 
     def git_repo(self):
@@ -35,23 +38,33 @@ class GITSync(object):
             if os.path.isdir(self.repo_path+"/"+".git"):
                 return True
         return False
+    
+    # parse_uri method is borrowed from pkgcore: sync/git.py
+    def parse_uri(self):                                                                                                                                                                 
+        if not self.remote.startswith("git+") and not self.remote.startswith("git://"):
+            raise InvalidURI(uri, "doesn't start with git+ nor git://")
+        if self.remote.startswith("git+"):
+            if self.remote.startswith("git+:"):
+                raise InvalidURI(self.remote, "need to specify the sub protocol if using git+")
+            self.remote = self.remote[4:]
 
     def sync(self):
         if self.git_repo():
             os.chdir(self.repo_path)
             if lpms.getopt("--reset"):
                 out.warn("forcing git to overwrite local files")
-                shelltools.system("git reset --hard HEAD")
-                shelltools.system("git clean -f -d")
-            shelltools.system("git pull -f -u origin")
+                shelltools.system("%s reset --hard HEAD" % self.git_binary)
+                shelltools.system("%s clean -f -d" % self.git_binary)
+            shelltools.system("%s pull -f -u origin" % self.git_binary)
         else:
             os.chdir(os.path.dirname(self.repo_path))
-            shelltools.system("git clone %s %s" % (self.remote, self.repo))
+            shelltools.system("%s clone %s %s" % (self.git_binary, self.remote, self.repo))
 
 
 def run(repo, remote):
-    if not os.access("/usr/bin/git", os.X_OK):
-        lpms.terminate("/usr/bin/git seems not executable or not exist. Please check dev-vcs/git.")
-
     obj = GITSync(repo, remote)
+    if not os.access("%s" obj.git_binary, os.X_OK):
+        lpms.terminate("%s seems not executable or not exist. Please check dev-vcs/git." % obj.git_binary)
+
+    obj.parse_uri()
     obj.sync()
