@@ -43,4 +43,7 @@ class NoSize(Exception):
 class UnmetDependency(Exception):
     pass
 
+class InvalidURI(Exception):
+    pass
+
 
