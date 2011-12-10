@@ -49,7 +49,8 @@ class CollisionProtect:
                         self.collisions.append(((c_category, c_name, c_slot, \
                                 c_version), mypath))
         else:
-            self.orphans.append(mypath)
+            if os.path.exists(mypath):
+                self.orphans.append(mypath)
 
     def prepare_files_and_links(self):
         for item in self.filesdb.get_files_and_links():
