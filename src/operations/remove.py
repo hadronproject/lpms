@@ -48,7 +48,6 @@ class Remove:
             _file = _file[0]
             target = os.path.join(self.real_root, _file[1:])
             if os.path.dirname(_file[1:]) == cst.info:
-                print target
                 utils.update_info_index(target, dir_path=os.path.join(self.real_root, cst.info, "dir"), delete=True)
 
             if os.path.islink(target):
