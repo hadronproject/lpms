@@ -63,7 +63,7 @@ class GITSync(object):
 
 def run(repo, remote):
     obj = GITSync(repo, remote)
-    if not os.access("%s" obj.git_binary, os.X_OK):
+    if not os.access("%s" % obj.git_binary, os.X_OK):
         lpms.terminate("%s seems not executable or not exist. Please check dev-vcs/git." % obj.git_binary)
 
     obj.parse_uri()
