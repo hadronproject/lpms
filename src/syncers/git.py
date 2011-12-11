@@ -24,7 +24,7 @@ from lpms import out
 from lpms import shelltools
 from lpms import constants as cst
 
-from lpms.exceptions from InvalidURI
+from lpms.exceptions import InvalidURI
 
 class GITSync(object):
     def __init__(self, repo, remote):
