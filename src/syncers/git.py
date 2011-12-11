@@ -42,7 +42,7 @@ class GITSync(object):
     # parse_uri method is borrowed from pkgcore: sync/git.py
     def parse_uri(self):                                                                                                                                                                 
         if not self.remote.startswith("git+") and not self.remote.startswith("git://"):
-            raise InvalidURI(uri, "doesn't start with git+ nor git://")
+            raise InvalidURI(self.remote, "doesn't start with git+ nor git://")
         if self.remote.startswith("git+"):
             if self.remote.startswith("git+:"):
                 raise InvalidURI(self.remote, "need to specify the sub protocol if using git+")
