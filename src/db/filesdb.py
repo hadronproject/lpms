@@ -68,6 +68,9 @@ class FilesDatabase(object):
         for data in self.query:
             repo, category, name, version, path, _type, \
                     size, gid, mod, uid, sha1sum, realpath, slot  = data
+            #FIXME:temporary fix for utf-8
+            path = path.decode('utf-8')
+            realpath = path.decode('utf-8')
             self.cursor.execute('''insert into files values(?, ?, ?, ?, ?, ?, \
                     ?, ?, ?, ?, ?, ?, ?)''', (repo, category, name, version, path, _type, \
                     sqlite3.Binary(pickle.dumps(size, 1)), gid, mod, uid, sha1sum, realpath, slot))
