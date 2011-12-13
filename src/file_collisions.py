@@ -66,11 +66,15 @@ class CollisionProtect:
                 root_path = "".join(root_path.split(self.source_dir))
                 if not files: continue
                 for item in files:
+                    if self.real_root != cst.root:
+                        root_path = os.path.join(self.real_root, root_path[1:])
                     mypath = os.path.join(root_path, item)
                     self.catch_file(mypath)
         else:
             for path in self.filesdb.get_files_and_links_by_package(self.category, \
                     self.name, self.version):
                 mypath = path[0]
+                if self.real_root != cst.root:
+                    mypath = os.path.join(self.real_root, mypath[1:])
                 self.catch_file(mypath)
         del self.files_and_links
