@@ -53,11 +53,15 @@ class CollisionProtect:
                 self.orphans.append(mypath)
 
     def prepare_files_and_links(self):
+        root_path = cst.root
+        if self.real_root != cst.root:
+            root_path = self.real_root
         for item in self.filesdb.get_files_and_links():
+            mypath = os.path.join(root_path, item[-1][1:])
             if item[-1] in self.files_and_links:
-                self.files_and_links[item[-1]].append(item[:-1])
+                self.files_and_links[mypath].append(item[:-1])
                 continue
-            self.files_and_links.update({item[-1]: [item[:-1]]})
+            self.files_and_links.update({mypath: [item[:-1]]})
 
     def handle_collisions(self):
         if self.source_dir:
