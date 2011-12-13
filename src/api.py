@@ -289,12 +289,13 @@ def remove_package(pkgnames, instruct):
             utils.xterm_title_reset()
             lpms.terminate()
     
+    realroot = instruct["real_root"] if instruct["real_root"] else cst.root
     config = conf.LPMSConfig()
     instdb = dbapi.InstallDB()
     for package in packages:
         repo, category, name, ver = package
         slot = instdb.get_slot(category, name, ver)
-        fdb = file_collisions.CollisionProtect(category, name, slot, version=ver)
+        fdb = file_collisions.CollisionProtect(category, name, slot, version=ver, real_root=realroot)
         fdb.handle_collisions()
         if fdb.collisions:
             out.write(out.color(" > ", "brightyellow")+"file collisions detected while removing %s/%s/%s-%s\n\n" \
