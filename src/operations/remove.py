@@ -59,9 +59,8 @@ class Remove:
                 dirs.append(target)
 
         dirs.reverse()
-        for _dir in dirs:
-            target = os.path.join(self.real_root, _dir[1:])
-            if os.path.isdir(target) and len(os.listdir(target)) == 0:
+        for target in dirs:
+            if os.path.isdir(target) and not os.listdir(target):
                 shelltools.remove_dir(target)
 
 def main(pkgname, real_root):
