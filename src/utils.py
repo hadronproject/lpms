@@ -369,18 +369,18 @@ def internal_opts(data, global_options):
     for opt in data:
         if not opt.startswith("-"):
             if opt.endswith("?") and opt[:-1] in global_options:
-                result.append(opt[:-1])
+                result.extend(opt[:-1].split(' '))
             elif opt.endswith("!?") and not opt[:-2] in global_options:
-                result.append(opt[:-2])
+                result.extend(opt[:-2].split(' '))
             elif not opt.endswith("?") and not opt.endswith("!?"):
-                result.append(opt)
+                result.extend(opt.split(' '))
         else:
             if opt.endswith("?") and not opt[1:-1] in global_options and \
                     check_alnum(opt[1:-1]):
-                result.append(opt[1:-1])
+                result.extend(opt[1:-1].split(' '))
             elif opt.endswith("!?") and opt[1:-2] in global_options:
-                result.append(opt[1:-2])
-
+                result.extend(opt[1:-2].split(' '))
+    
     return result
 
 
