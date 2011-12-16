@@ -1,6 +1,7 @@
 L Package Management System -- lpms
 ===================================
 
+
 About
 -------
 
@@ -10,26 +11,37 @@ Python scripts to build packages.
 
 lpms aims to be functional, user-friendly, fast and powerful.
 
+It is the heart of Hadron Project.
+
+
 Dependencies
 -------------
 
-* lpms is written in Python-2.7.1.
+* lpms is written in Python-2.7
 
-* Python-2.7.x must be compiled with sqlite support. So lpms depends on sqlite.
+* Python-2.7.x must be compiled with sqlite3 support. So lpms depends on sqlite3.
 
-* lpms uses 'catbox' as sandboxing application. You can find catbox in Hadron's main
-repository.
+* Uses 'fermion' as sandboxing application.
+ 
+ $ git clone git://gitorious.org/hadron/fermion.git
 
+ Note: If you don't want to use fermion, you must set sandbox as False in 
+ /etc/lpms/build.conf.
+
+* Uses 'magic' to check MIME types. The module is a part of file(sys-apps/file
+ in Hadron GNU/Linux) package.
 
 Installation
 -------------
+
 lpms runs as a standard Python module. So you should copy 'src' directory to Python's 
 site-packages directory. Note that, src directory is named as 'lpms'. For details, 
 see lpms' build script.
+
 
 Contact
 --------
 
 Web site: http://hadronproject.org
 E-mail: purak__at__hadronproject.org
-IRC Channel: #lpms on Freenode
+IRC Channel: #hadron, #lpms, #hadron-devel on Freenode
