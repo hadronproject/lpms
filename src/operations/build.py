@@ -12,7 +12,7 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #   
-# You should have received a copy of the GNU General Public License
+# You should have received a copy of the GNU General Public Licens
 # along with lpms.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
@@ -170,7 +170,7 @@ class Build(internals.InternalFuncs):
         self.import_script(self.env.spec_file)
 
 def main(raw_data, instruct):
-    operation_plan, operation_data = raw_data
+    operation_plan, operation_data, modified_by_package = raw_data
     # resume previous operation_plan
     # if skip_first returns True, skip first package
     resume_file =  os.path.join("/", cst.resume_file) if instruct['real_root'] \
@@ -181,7 +181,8 @@ def main(raw_data, instruct):
         if os.path.exists(resume_file):
             with open(resume_file, "rb") as _data:
                 stored_data = pickle.load(_data)
-                operation_plan, operation_data = stored_data['raw_data']
+                operation_plan, operation_data, modified_by_package \
+                        = stored_data['raw_data']
                 instruct['real_root'] = stored_data['real_root']
                 if instruct["skip-first"]:
                     operation_plan = operation_plan[1:]
@@ -201,7 +202,7 @@ def main(raw_data, instruct):
             data, valid_options = operation_data[atom]
             repo, category, name, version  = atom
             options = dbapi.RepositoryDB().get_options(repo, category, name)[version]
-            show_plan(repo, category, name, version, valid_options, options)
+            show_plan(repo, category, name, version, valid_options, options, modified_by_package)
             if data['conflict']:
                 for conflict in data['conflict']:
                     # the last item is options of the package
@@ -408,7 +409,7 @@ def main(raw_data, instruct):
         # delete package data, if it is installed successfully
         with open(resume_file, "rb") as _data:
             stored_data = pickle.load(_data)
-            resume_plan, resume_data = stored_data['raw_data']
+            resume_plan, resume_data, modified_by_package = stored_data['raw_data']
             resume_real_root = stored_data['real_root']
         new_resume_plan = []
 
@@ -419,12 +420,12 @@ def main(raw_data, instruct):
 
         shelltools.remove_file(resume_file)
         with open(resume_file, "wb") as _data:
-            pickle.dump({'raw_data': (new_resume_plan, resume_data), 'real_root': resume_real_root}, _data)
+            pickle.dump({'raw_data': (new_resume_plan, resume_data, modified_by_package), 'real_root': resume_real_root}, _data)
 
         opr.env.__dict__.clear()
         utils.xterm_title_reset()
 
-def show_plan(repo, category, name, version, valid_options, options):
+def show_plan(repo, category, name, version, valid_options, options, modified_by_package):
     result = []; status = [' ', '  ']; oldver= ""
 
     instdb = dbapi.InstallDB()
@@ -485,6 +486,11 @@ def show_plan(repo, category, name, version, valid_options, options):
                 result.insert(len(result)+1, "-"+o)
 
         out.write("("+" ".join(result)+")")
-
+        if (repo, category, name, version) in modified_by_package:
+            for item in modified_by_package[(repo, category, name, version)]:
+                interfere_repo, interfere_category, interfere_name, \
+                        interfere_version, wanted_options = item
+                out.red("\n       >> the package is modified by %s/%s/%s-%s (%s)" % (interfere_repo, interfere_category, \
+                        interfere_name, interfere_version, ",".join(wanted_options)))
     out.write("\n")
 
