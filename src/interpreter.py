@@ -75,17 +75,18 @@ class Interpreter(internals.InternalFuncs):
 
     def run_func(self, func_name):
         def run_with_sandbox(func_name):
+            # TODO: add user land switch here
             try:
-                import catbox
+                import fermion
             except ImportError as err:
-                lpms.catch_error("catbox could not imported, please check it!")
+                lpms.catch_error("dev-python/fermion could not imported, please check it!")
 
             self.env.sandbox_valid_dirs = utils.sandbox_dirs()
             self.env.sandbox_valid_dirs.append(self.config.build_dir)
             for i in ('build_dir', 'install_dir', 'src_cache'):
                 self.env.sandbox_valid_dirs.append(getattr(self.env, i))
-            # run in catbox
-            ret = catbox.run(getattr(self.env, func_name),
+            # run in fermion
+            ret = fermion.run(getattr(self.env, func_name),
                     self.env.sandbox_valid_dirs,
                     logger=self.sandbox_logger)
 
