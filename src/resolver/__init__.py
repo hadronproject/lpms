@@ -720,7 +720,7 @@ class DependencyResolver(object):
                                     out.error("this package was locked by system administrator.")
                                 lpms.terminate()
             plan.reverse()
-            return plan, self.operation_data
+            return plan, self.operation_data, self.modified_by_package
 
         except CycleError as err:
             # FIXME: We need more powerful output.
