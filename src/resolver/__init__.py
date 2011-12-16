@@ -30,7 +30,6 @@ from lpms.resolver.topological_sorting import topsort, find_cycles
 
 class DependencyResolver(object):
     def __init__(self):
-        self.modified_by_package = []
         self.repodb = dbapi.RepositoryDB()
         self.instdb = dbapi.InstallDB()
         self.operation_data = {}
@@ -48,6 +47,7 @@ class DependencyResolver(object):
         self.active = None
         self.invalid_elements = ['||']
         self.removal = {}
+        self.modified_by_package = {}
 
     def get_user_defined_files(self):
         for user_defined_file in cst.user_defined_files:
@@ -353,7 +353,7 @@ class DependencyResolver(object):
                     opts.append(atomic_opt)
 
             return pkgname, utils.internal_opts(opts, self.global_options)
-    
+
         return "".join(data)
 
     def fix_dynamic_deps(self, data, options):
@@ -393,7 +393,6 @@ class DependencyResolver(object):
         return depends, opts, no 
 
     def parse_package_name(self, data, instdb=False):
-        #try:
         try:
             name, opts = self.opt_parser(data)
         except ValueError:
@@ -406,8 +405,6 @@ class DependencyResolver(object):
             if not result:
                 return
             return result, opts
-        #except UnmetDependency as err:
-        #    print err
 
     def get_repo(self, data):
         if len(data) == 2:
@@ -441,7 +438,13 @@ class DependencyResolver(object):
         db_options = self.repodb.get_options(repo, category, name)
         inst_options  = self.instdb.get_options(repo, category, name)
         if not version in inst_options or use_new_opts or not self.instdb.get_version(name, \
-                pkg_category=category):
+                pkg_category=category) or (repo, category, name, version) in self.modified_by_package:
+
+            if (repo, category, name, version) in self.modified_by_package:
+                for item in self.modified_by_package[(repo, category, name, version)]:
+                    for i in item[-1]:
+                        if not i in options:
+                            options.append(i)
 
             for go in self.global_options:
                 if not db_options:
@@ -538,6 +541,11 @@ class DependencyResolver(object):
                     if key == "conflict":
                         local_plan[key].append([dyn_dep_repo, dcategory, dname, dversion])
                         continue
+                    if dopt and use_new_opts:
+                        if (stc_dep_repo, scategory, sname, sversion) in self.modified_by_package:
+                            self.modified_by_package.update({(dyn_dep_repo, dcategory, dname, dversion): [(repo, category, name, version, dopt)]})
+                        else:
+                            self.modified_by_package[(dyn_dep_repo, dcategory, dname, dversion)] = [(repo, category, name, version, dopt)]
                     repo_options = self.repodb.get_options(dyn_dep_repo, dcategory, dname)
                     if dversion in repo_options:
                         dopt = self.get_valid_options(dopt, repo_options[dversion])
@@ -561,6 +569,11 @@ class DependencyResolver(object):
                     if key == "conflict":
                         local_plan[key].append([stc_dep_repo, scategory, sname, sversion])
                         continue
+                    if sopt:
+                        if (stc_dep_repo, scategory, sname, sversion) in self.modified_by_package:
+                            self.modified_by_package.update({(stc_dep_repo, scategory, sname, sversion): [(repo, category, name, version, sopt)]})
+                        else:
+                            self.modified_by_package[(stc_dep_repo, scategory, sname, sversion)] = [(repo, category, name, version, sopt)]
                     repo_options = self.repodb.get_options(stc_dep_repo, scategory, sname)
                     if sversion in repo_options:
                         sopt = self.get_valid_options(sopt, repo_options[sversion])
@@ -587,12 +600,15 @@ class DependencyResolver(object):
                     self.collect(lrepo, lcategory, lname, lversion, self.use_new_opts)
                 else:
                     self.package_query.append(((repo, category, name, version), fullname))
+                
+                if (lrepo, lcategory, lname, lversion) in self.modified_by_package:
+                    self.collect(lrepo, lcategory, lname, lversion, self.use_new_opts)
+ 
                 if fullname in self.plan:
                     plan_version, plan_options = self.plan[fullname]
                     if (lrepo, lcategory, lname, lversion) in self.operation_data:
                         for plan_option in plan_options:
                             # FIXME: This is a bit problematic.
-                            self.modified_by_package.append(fullname)
                             if not plan_option in self.operation_data[fullname][-1]:
                                 self.operation_data[fullname][-1].append(plan_option)
                                 self.collect(lrepo, lcategory, lname, lversion, self.use_new_opts)
