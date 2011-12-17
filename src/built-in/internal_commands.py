@@ -55,6 +55,27 @@ def append_cxxflags(flag):
 def append_ldflags(flag):
     return flag
 
+def hasflag(fn):
+    def wrapped(flag):
+        name = fn.__name__.split("_")[1].upper()
+        my_env_var = get_env(name)
+        return flag in [item.strip() for item \
+                in my_env_var.split(" ")]
+    return wrapped
+
+@hasflag
+def has_cflags(flag):
+    return flag
+
+@hasflag
+def has_cxxflags(flag):
+    return flag
+
+@hasflag
+def has_ldflags(flag):
+    # FIXME: This may be problematic
+    return flag
+
 def append_config(option, positive, negative=None):
     if opt(option):
         config += positive+" "
