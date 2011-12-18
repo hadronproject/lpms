@@ -650,7 +650,7 @@ class DependencyResolver(object):
             self.package_query.extend(primary)
 
         if not self.package_query or lpms.getopt("--ignore-depends"):
-            return packages, self.operation_data
+            return packages, self.operation_data, self.modified_by_package
 
         plan = []
 
