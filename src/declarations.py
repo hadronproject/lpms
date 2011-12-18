@@ -54,7 +54,7 @@ class ConstantValues:
         self.val.user_defined_files = ('%s/lock' % self.val.user_dir, '%s/unlock' % self.val.user_dir,  \
                 '%s/options' % self.val.user_dir)
         self.val.local_env_variable_files = ('%s/ldflags' % self.val.user_dir, '%s/cflags' % self.val.user_dir, \
-                '%s/cxxflags' % self.val.user_dir)
+                '%s/cxxflags' % self.val.user_dir, '%s/env' % self.val.user_dir)
         self.val.protect_file = "reserve_files.conf"
         self.val.sets_dir = "sets"
         self.val.user_sets_dir = self.val.user_dir+"/"+self.val.sets_dir
