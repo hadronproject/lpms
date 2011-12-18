@@ -54,6 +54,56 @@ class Build(internals.InternalFuncs):
         self.revisioned = False
         self.revision = None
 
+    def set_local_environment_variables(self):
+        add = []; remove = []; global_flags = []
+        switches = ["ADD", "REMOVE", "GLOBAL"]
+        for item in cst.local_env_variable_files:
+            if not os.access(item, os.R_OK):
+                continue
+            variable_type = item.split("/")[-1].upper()
+            with open(item) as data:
+                for line in data.readlines():
+                    myline = [i.strip() for i in line.split(" ")]
+                    target = myline[0]
+                    if len(target.split("/")) == 2:
+                        if target != self.env.category+"/"+self.env.name:
+                            continue
+                    elif len(target.split("/")) == 1:
+                        if target != self.env.category:
+                            continue
+                    for switch in switches:
+                        if not switch in myline[1:]:
+                            continue
+                        switch_index = myline.index(switch)
+                        for word in myline[switch_index+1:]:
+                            if word in switches: 
+                                break
+                            if switch == "GLOBAL":
+                                global_flags.append(word)
+                            if switch == "ADD":
+                                add.append(word)
+                            elif switch == "REMOVE":
+                                remove.append(word)
+                    if global_flags:
+                        if variable_type in os.environ:
+                            del os.environ[variable_type]
+                            os.environ[variable_type] = " ".join(global_flags)
+                            break
+                    if add:
+                        if variable_type in os.environ:
+                            current = os.environ[variable_type]
+                            current += " "+" ".join(add)
+                            os.environ[variable_type] = current
+                        else:
+                            out.warn("%s not defined in your environment" % variable_type)
+                    if remove:
+                        if variable_type in os.environ:
+                            current = os.environ[variable_type]
+                            new = [atom for atom in current.split(" ") if not atom in remove]
+                            os.environ[variable_type] = " ".join(new)
+                        else:
+                            out.warn("%s not defined in your environment" % variable_type)
+
     def options_info(self):
         # FIXME: This is no good.
         if self.env.options is not None:
@@ -275,6 +325,10 @@ def main(raw_data, instruct):
         opr.env.__dict__.update(instruct)
         opr.env.default_options = opr.config.options.split(" ")
 
+        # set local environment variables
+        if not lpms.getopt("--unset-env-variables"):
+            opr.set_local_environment_variables()
+
         opr.compile_script()
         
         metadata = utils.metadata_parser(opr.env.metadata)
@@ -386,7 +440,6 @@ def main(raw_data, instruct):
         if opr.env.valid_opts is not None and len(opr.env.valid_opts) != 0:
             out.notify("applied options: %s" % 
                     " ".join(opr.env.valid_opts))
-        
 
         os.chdir(opr.env.build_dir)
         
