@@ -55,7 +55,6 @@ class Build(internals.InternalFuncs):
         self.revision = None
 
     def set_local_environment_variables(self):
-        add = []; remove = []; global_flags = []
         switches = ["ADD", "REMOVE", "GLOBAL"]
         for item in cst.local_env_variable_files:
             if not os.access(item, os.R_OK):
@@ -63,6 +62,9 @@ class Build(internals.InternalFuncs):
             variable_type = item.split("/")[-1].upper()
             with open(item) as data:
                 for line in data.readlines():
+                    add = []; remove = []; global_flags = []
+                    if line.startswith("#"):
+                        continue
                     myline = [i.strip() for i in line.split(" ")]
                     target = myline[0]
                     if len(target.split("/")) == 2:
@@ -71,9 +73,28 @@ class Build(internals.InternalFuncs):
                     elif len(target.split("/")) == 1:
                         if target != self.env.category:
                             if len(target.split("-")) == 1:
-                                out.warn("Warning: Invalid line found in %s:" % item)
+                                out.warn("warning: invalid line found in %s:" % item)
                                 out.red("   "+line)
                             continue
+                    else:
+                        if len(target.split("-")) == 1:
+                            out.warn("warning: invalid line found in %s:" % item)
+                            out.red("   "+line)
+                            continue
+
+                    if variable_type == "ENV":
+                        if myline[1] == "UNSET":
+                            variable = myline[2]
+                            if variable in os.environ:
+                                del os.environ[variable]
+                        else:
+                            try:
+                                variable, value = myline[1:]
+                            except ValueError:
+                                out.warn("warning: invalid line found in %s:" % item)
+                                out.red("   "+line)
+                            else:
+                                os.environ[variable] = value
 
                     for switch in switches:
                         if not switch in myline[1:]:
@@ -88,25 +109,26 @@ class Build(internals.InternalFuncs):
                                 add.append(word)
                             elif switch == "REMOVE":
                                 remove.append(word)
+                    
                     if global_flags:
                         if variable_type in os.environ:
                             del os.environ[variable_type]
                             os.environ[variable_type] = " ".join(global_flags)
-                            break
-                    if add:
-                        if variable_type in os.environ:
-                            current = os.environ[variable_type]
-                            current += " "+" ".join(add)
-                            os.environ[variable_type] = current
-                        else:
-                            out.warn("%s not defined in your environment" % variable_type)
-                    if remove:
-                        if variable_type in os.environ:
-                            current = os.environ[variable_type]
-                            new = [atom for atom in current.split(" ") if not atom in remove]
-                            os.environ[variable_type] = " ".join(new)
-                        else:
-                            out.warn("%s not defined in your environment" % variable_type)
+                    else:
+                        if add:
+                            if variable_type in os.environ:
+                                current = os.environ[variable_type]
+                                current += " "+" ".join(add)
+                                os.environ[variable_type] = current
+                            else:
+                                out.warn("%s not defined in your environment" % variable_type)
+                        if remove:
+                            if variable_type in os.environ:
+                                current = os.environ[variable_type]
+                                new = [atom for atom in current.split(" ") if not atom in remove]
+                                os.environ[variable_type] = " ".join(new)
+                            else:
+                                out.warn("%s not defined in your environment" % variable_type)
 
     def options_info(self):
         # FIXME: This is no good.
