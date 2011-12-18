@@ -70,7 +70,11 @@ class Build(internals.InternalFuncs):
                             continue
                     elif len(target.split("/")) == 1:
                         if target != self.env.category:
+                            if len(target.split("-")) == 1:
+                                out.warn("Warning: Invalid line found in %s:" % item)
+                                out.red("   "+line)
                             continue
+
                     for switch in switches:
                         if not switch in myline[1:]:
                             continue
