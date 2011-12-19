@@ -60,9 +60,9 @@ class UpgradeSystem(object):
                     continue
                 best = utils.best_version(repovers[slot])
                 result = utils.vercmp(best, instver[0]) 
-                
+
                 if result != 0:
-                    self.packages.append(os.path.join(category, name))
+                    self.packages.append(os.path.join(category, name)+":"+slot)
 
         if self.notfound_pkg:
             out.write("%s: the following packages were installed but they could not be found in the database:\n\n" 
