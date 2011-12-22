@@ -58,6 +58,16 @@ class Search(object):
         return data
 
     def search(self):
+        if not list(self.keyword) and lpms.getopt("--only-installed"):
+            for package in self.instdb.get_all_names():
+                repo, category, name = package
+                version_data = self.instdb.get_version(name, repo_name=repo, \
+                        pkg_category=category)
+                for slot in version_data:
+                    out.notify("%s/%s/%s [slot:%s] -> %s" % (repo, category, name, \
+                            slot, ", ".join(version_data[slot])))
+            lpms.terminate()
+
         if lpms.getopt("--help") or len(self.keyword) == 0:
             self.usage()
 
