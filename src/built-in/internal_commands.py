@@ -29,11 +29,6 @@ from lpms.fetcher import URLFetcher
 
 from lpms import constants as cst
 
-def fix_target_path(path):
-    if path.startswith("/"):
-        return os.path.join(install_dir, path[1:])
-    return os.path.join(install_dir, path)
-
 def unset_env_variables():
     return utils.unset_env_variables()
 
@@ -148,22 +143,33 @@ def del_ldflags(flag):
 
 def insdoc(*sources):
     if slot != "0":
-        target = fix_target_path("/usr/share/doc/%s" % fullname)
+        target = prepare_target("/usr/share/doc/%s" % fullname)
     else:
-        target = fix_target_path("/usr/share/doc/%s" % name)
+        target = prepare_target("/usr/share/doc/%s" % name)
 
     shelltools.makedirs(target)
     return shelltools.install_readable(sources, target)
 
 def insinfo(*sources):
-    target = fix_target_path("/usr/share/info")
+    target = prepare_target("/usr/share/info")
     shelltools.makedirs(os.path.dirname(target))
     return shelltools.install_readable(sources, target)
 
 def inslib(source, target='/usr/lib'):
-    target = fix_target_path(target)
+    target = prepare_target(target)
     shelltools.makedirs(os.path.dirname(target))
-    return shelltools.install_library(source, target, 0755)
+    return shelltools.install_library(source, prepare_target(target), 0755)
+
+def prepare_target(path):
+    if path[0] == "/":
+        return os.path.join(install_dir, "".join(list(path)[1:]))
+    else:
+        return os.path.join(install_dir, path)
+
+# FIXME: Is this good?
+#def gt(*libraries, env=False):
+#    import __builtin__
+#    __builtins__.update({"libraries": libraries})
 
 def opt(option):
     return utils.opt(option, cmd_options, default_options, valid_opts)
@@ -222,127 +228,105 @@ def fetch(*urls, **params):
 def get_env(value):
     return os.environ[value]
 
-def makedirs(target, ignore_fix_target=False):
-    if current_stage == "install" and not ignore_fix_target:
-        target = fix_target_path(target)
+def makedirs(target):
+    if current_stage == "install":
+        target = prepare_target(target)
     shelltools.makedirs(target)
 
-def touch(path, ignore_fix_target=False):
-    if current_stage == "install" and not ignore_fix_target:
-        path = fix_target_path(path)
+def touch(path):
+    if current_stage == "install":
+        path = prepare_target(path)
     shelltools.touch(path)
 
-def echo(content, target, ignore_fix_target=False):
-    if current_stage == "install" and not ignore_fix_target:
-        target = fix_target_path(target)
+def echo(content, target):
+    if current_stage == "install":
+        target = prepare_target(target)
     shelltools.echo(content, target)
 
-def isfile(target, ignore_fix_target=False):
-    if current_stage == "install" and not ignore_fix_target:
-        target = fix_target_path(target)
-    return shelltools.is_file(target)
+def isfile(path):
+    return shelltools.is_file(path)
 
-def isdir(target, ignore_fix_target=False):
-    if current_stage == "install" and not ignore_fix_target:
-        target = fix_target_path(target)
-    return shelltools.is_dir(target)
+def isdir(path):
+    return shelltools.is_dir(path)
 
-def realpath(target):
-    if current_stage == "install" and not ignore_fix_target:
-        target = fix_target_path(target)
-    return shelltools.real_path(target)
+def realpath(path):
+    return shelltools.real_path(path)
 
-def basename(target, ignore_fix_target=False):
-    if current_stage == "install" and not ignore_fix_target:
-        target = fix_target_path(target)
-    return shelltools.basename(target)
+def basename(path):
+    return shelltools.basename(path)
 
-def dirname(target, ignore_fix_target=False):
-    if current_stage == "install" and not ignore_fix_target:
-        target = fix_target_path(target)
-    return shelltools.dirname(target)
+def dirname(path):
+    return shelltools.dirname(path)
 
-def isempty(target, ignore_fix_target=False):
-    if current_stage == "install" and not ignore_fix_target:
-        target = fix_target_path(target)
-    return shelltools.is_empty(target)
+def isempty(path):
+    return shelltools.is_empty(path)
 
-def ls(target, ignore_fix_target=False):
-    if current_stage == "install" and not ignore_fix_target:
-        target = fix_target_path(target)
-    return shelltools.listdir(target)
+def ls(source):
+    return shelltools.listdir(source)
 
-def islink(target, ignore_fix_target=False):
-    if current_stage == "install" and not ignore_fix_target:
-        target = fix_target_path(target)
-    return shelltools.is_link(target)
+def islink(source):
+    return shelltools.is_link(source)
 
-def isfile(target, ignore_fix_target=False):
-    if current_stage == "install" and not ignore_fix_target:
-        target = fix_target_path(target)
-    return shelltools.is_file(target)
+def isfile(source):
+    return shelltools.is_file(source)
 
-def isexists(target, ignore_fix_target=False):
-    if current_stage == "install" and not ignore_fix_target:
-        target = fix_target_path(target)
-    return shelltools.is_exists(target)
+def isexists(source):
+    return shelltools.is_exists(source)
 
 def cd(target=None):
     shelltools.cd(target)
 
-def copytree(source, target, sym=True, ignore_fix_target=False):
-    if current_stage == "install" and not ignore_fix_target:
-        target = fix_target_path(target)
+def copytree(source, target, sym=True):
+    if current_stage == "install":
+        target = prepare_target(target)
     shelltools.copytree(source, target, sym)
 
-def copy(source, target, sym=True, ignore_fix_target=False):
-    if current_stage == "install" and not ignore_fix_target:
-        target = fix_target_path(target)
-    shelltools.copy(source, target, sym)
+def copy(source, target, sym=True):
+    if current_stage == "install":
+        shelltools.copy(source, prepare_target(target), sym)
+    else:
+        shelltools.copy(source, target, sym)
 
 def move(source, target):
-    if current_stage == "install" and not ignore_fix_target:
-        target = fix_target_path(target)
-    shelltools.move(source, fix_target_path(target))
+    shelltools.move(source, prepare_target(target))
 
 def insinto(source, target, target_file='', sym=True):
-    target = fix_target_path(target)
+    target = prepare_target(target)
     shelltools.makedirs(os.path.dirname(target))
     shelltools.insinto(source, target, install_dir, target_file, sym)
 
 def insfile(source, target):
-    target = fix_target_path(target)
+    target = prepare_target(target)
     shelltools.makedirs(os.path.dirname(target))
     return shelltools.install_readable([source], target)
 
-def makesym(source, target, ignore_fix_target=False):
-    if current_stage == "install" and not ignore_fix_target:
-        target = fix_target_path(target)
+def makesym(source, target):
+    if current_stage == "install":
+    #if inspect.stack()[1][3] == "install":
+        target = prepare_target(target)
     if len(target.split("/")) > 1:
         shelltools.makedirs(os.path.dirname(target))
     shelltools.make_symlink(source, target)
 
-def rename(source, target, ignore_fix_target=False):
-    if current_stage == "install" and not ignore_fix_target:
-        source = fix_target_path(source)
-        target = fix_target_path(target)
-    shelltools.rename(source, target)
+def rename(source, target):
+    shelltools.rename(prepare_target(source), 
+                prepare_target(os.path.join(os.path.dirname(source), target)))
 
-def rmfile(target, ignore_fix_target=False):
-    if current_stage == "install" and not ignore_fix_target:
-        target = fix_target_path(target)
+def rmfile(target):
+    if current_stage == "install":
+        target = prepare_target(target)
     src = glob.glob(target)
-    if not src:
+    if len(src) == 0:
         lpms.catch_error("no file matched pattern: %s" % target)
     
     for path in src:
         shelltools.remove_file(path)
 
-def rmdir(target, ignore_fix_target=False):
-    if current_stage == "install" and not ignore_fix_target:
-        target = fix_target_path(target)
+def rmdir(target):
+    if current_stage == "install":
+        target = prepare_target(target)
     src = glob.glob(target)
-    if not src:
+    if len(src) == 0:
         lpms.catch_error("no directory matched pattern: %s" % target)
     
     for path in src:
@@ -424,7 +408,7 @@ def patch(*args, **kwarg):
         lpms.catch_error("patch failed.")
 
 def insexe(source, target='/usr/bin'):
-    target = fix_target_path(target)
+    target = prepare_target(target)
     shelltools.makedirs(os.path.dirname(target))
     return shelltools.install_executable([source], target)
 
