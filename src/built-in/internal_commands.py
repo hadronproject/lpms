@@ -277,7 +277,9 @@ def cd(target=None):
     shelltools.cd(target)
 
 def copytree(source, target, sym=True):
-    shelltools.copytree(source, prepare_target(target), sym)
+    if current_stage == "install":
+        target = prepare_target(target)
+    shelltools.copytree(source, target, sym)
 
 def copy(source, target, sym=True):
     if current_stage == "install":
