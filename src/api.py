@@ -178,7 +178,17 @@ def get_pkg(pkgname, repositorydb=True):
         # check repository priority for given version
         data = db.find_pkg(name, repo_name = repo, pkg_category = category)
         if data:
-            repos = [r[0] for r in data]
+            for item in data:
+                if isinstance(item, basestring):
+                    # the first member of the list is repo name
+                    # if one repository in use.
+                    repos = [item]
+                    # FIXME: this waits a db fix
+                    data = [data]
+                    break
+                else:
+                    repos = [r[0] for r in data]
+                    break
             found = False
             for valid_repo in valid_repos:
                 if valid_repo in repos:
