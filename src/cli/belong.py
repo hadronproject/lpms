@@ -45,10 +45,19 @@ class Belong:
         out.normal("searching for %s\n" % self.keyword)
 
         for (repo, category, name, version, path) in self.search():
-            replace = re.compile("(%s)" % '|'.join([self.keyword]), re.I)  
-            out.write("%s/%s/%s-%s -- %s\n" % 
-                    (out.color(repo, "green"), 
-                        out.color(category, "green"),
-                        out.color(name, "green"), 
-                        out.color(version, "green"), 
-                        replace.sub(out.color(r"\1", "brightred"), path)))
+            try:
+                replace = re.compile("(%s)" % '|'.join([self.keyword]), re.I)  
+                out.write("%s/%s/%s-%s -- %s\n" % 
+                        (out.color(repo, "green"), 
+                            out.color(category, "green"),
+                            out.color(name, "green"), 
+                            out.color(version, "green"), 
+                            replace.sub(out.color(r"\1", "brightred"), path)))
+            except:
+                out.write("%s/%s/%s-%s -- %s\n" % 
+                        (out.color(repo, "green"), 
+                            out.color(category, "green"),
+                            out.color(name, "green"), 
+                            out.color(version, "green"), 
+                            path))
+
