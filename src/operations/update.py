@@ -83,11 +83,18 @@ class Update(internals.InternalFuncs):
             #sys.write.stdin("    %s-%s\r" % (self.env.name, self.env.version))
             if lpms.getopt("--verbose"):
                 out.write("    %s-%s\n" % (self.env.name, self.env.version))
-            data = (repo_name, category, metadata["name"], metadata["version"], 
-                    metadata["summary"], metadata["homepage"], metadata["license"], 
-                    metadata["src_url"], metadata["options"], 
-                    metadata['slot'], metadata['arch'])
-            
+            try:
+                data = (repo_name, category, metadata["name"], metadata["version"], 
+                        metadata["summary"], metadata["homepage"], metadata["license"], 
+                        metadata["src_url"], metadata["options"], 
+                        metadata['slot'], metadata['arch'])
+            except KeyError as err:
+                out.error("%s/%s/%s-%s: invalid metadata" % (repo_name, category, \
+                        self.env.name, self.env.version))
+                out.warn("repository update was failed and the repository database was removed.")
+                out.warn("you can run 'lpms --reload-previous-repodb' command to reload previous db version.")
+                lpms.terminate("good luck!")
+
             (repo, category, self.env.name, self.env.version, 
                     summary, homepage, _license, src_url, options, slot, arch) = data
             
