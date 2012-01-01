@@ -29,7 +29,6 @@ from lpms import utils
 from lpms import internals
 from lpms import shelltools
 from lpms import file_relations
-from lpms import file_collisions
 from lpms import constants as cst
 
 from lpms.db import dbapi
@@ -54,9 +53,6 @@ class Merge(internals.InternalFuncs):
         self.filesdb = dbapi.FilesDB()
         self.file_relationsdb = dbapi.FileRelationsDB()
         self.reverse_dependsdb = dbapi.ReverseDependsDB()
-        # set installation target
-        if self.env.real_root is None:
-            self.env.real_root = cst.root
         self.merge_conf_file = os.path.join(self.env.real_root, \
                 cst.merge_conf_file)
         self.version_data = self.instdb.get_version(self.env.name, \
@@ -113,33 +109,6 @@ class Merge(internals.InternalFuncs):
 
     def merge_pkg(self):
         '''Merge the package to the system'''
-        out.normal("checking file collisions...")
-        collision_object = file_collisions.CollisionProtect(self.env.category, self.env.name, \
-                self.env.slot, real_root=self.env.real_root, source_dir=self.env.install_dir)
-        collision_object.handle_collisions()
-        
-        if collision_object.orphans:
-            out.write(out.color(" > ", "brightyellow")+"these files are orphan. the package will adopt the files:\n")
-            index = 0
-            for orphan in collision_object.orphans:
-                out.notify(orphan)
-                index += 1
-                if index > 100:
-                    # FIXME: the files must be logged
-                    out.write(out.color(" > ", "brightyellow")+"...and many others.")
-                    break
-
-        if collision_object.collisions:
-            out.write(out.color(" > ", "brightyellow")+"file collisions detected:\n")
-        for item in collision_object.collisions:
-            (category, name, slot, version), path = item
-            out.write(out.color(" -- ", "red")+category+"/"+name+"-"\
-                    +version+":"+slot+" -> "+path+"\n")
-        if collision_object.collisions and self.conf.collision_protect and not \
-                lpms.getopt('--force-file-collision'):
-                    out.write("quitting...\n")
-                    lpms.terminate()
-
         isstrip = True
         if (hasattr(self.env, "no_strip") and self.env.no_strip) or lpms.getopt("--no-strip") \
                 or "debug" in self.env.valid_opts or utils.check_cflags("-g") \
