@@ -35,7 +35,7 @@ class Update(internals.InternalFuncs):
         self.packages_num = 0
 
     def update_repository(self, repo_name):
-        exceptions = ['news', 'info', 'libraries', '.git', '.svn']
+        exceptions = ['scripts', 'licenses', 'news', 'info', 'libraries', '.git', '.svn']
         # fistly, drop the repo
         self.repo_db.drop_repo(repo_name)
         repo_path = os.path.join(cst.repos, repo_name)
