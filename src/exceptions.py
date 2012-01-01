@@ -46,4 +46,6 @@ class UnmetDependency(Exception):
 class InvalidURI(Exception):
     pass
 
+class ItemNotFound(Exception):
+    pass
 

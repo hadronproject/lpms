@@ -20,6 +20,27 @@ import cPickle as pickle
 
 import lpms
 from lpms.db import skel
+from lpms.exceptions import ItemNotFound
+
+class LCollect(object):
+    def __init__(self, **kwargs):
+        for kwarg in kwargs:
+            setattr(self, kwarg, \
+                    kwargs[kwarg].decode("utf-8"))
+            
+    def __setattr__(self, item, value):
+        self.__dict__[item] = value.decode('utf-8')
+        
+    def __getattr__(self, item):
+        if not item in self.__dict__:
+            raise ItemNotFound("%s not found in LCollect object." % item)
+        return self.__dict__[item]
+    
+    def __delattr__(self, item):
+        if not item in self.__dict__:
+            raise ItemNotFound("%s not found in LCollect object." % item)
+        del self.__dict__[item]
+
 
 class PackageDatabase:
     def __init__(self, db_path):
