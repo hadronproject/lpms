@@ -29,7 +29,9 @@ from lpms import conf
 from lpms import utils
 from lpms import internals
 from lpms import shelltools
-from lpms.exceptions import *
+from lpms import file_collisions
+
+from lpms.exceptions import BuiltinError, MakeError
 from lpms.shelltools import touch
 from lpms.operations import merge
 from lpms.operations import remove
@@ -40,6 +42,8 @@ class Interpreter(internals.InternalFuncs):
         super(Interpreter, self).__init__()
         self.env = env
         self.env.__setattr__("get", self.get)
+        if self.env.real_root is None:
+            self.env.real_root = cst.root
         self.script = script
         self.config = conf.LPMSConfig()
         self.get_build_libraries()
@@ -222,59 +226,57 @@ class Interpreter(internals.InternalFuncs):
             self.env.version), self.env.real_root)
 
     def run_post_remove(self):
-        #if lpms.getopt("--no-configure") or self.env.real_root != cst.root:
-        #    out.warn_notify("post_install function skipping...")
-        #    pkg_data = (self.env.repo, self.env.category, \
-        #            self.env.name, self.env.version)
-
-        #    pending_file = os.path.join(self.env.real_root, cst.configure_pending_file)
-        #    if not os.path.exists(pending_file):
-        #        with open(pending_file, "wb") as _data:
-        #            pickle.dump([pkg_data], _data)
-        #    else:
-        #        data = []
-        #        with open(pending_file, "rb") as _data:
-        #            pending_packages = pickle.load(_data)
-        #            if not pkg_data in pending_packages:
-        #                data.append(pkg_data)
-
-        #            data.extend(pending_packages)
-        #        shelltools.remove_file(pending_file)
-        #        with open(pending_file, "wb") as _data:
-        #            pickle.dump(data, _data)
-        #    return
-
         # sandbox must be disabled
         self.env.sandbox = False
-
         self.run_stage("post_remove")
 
-    def run_pre_remove(self):
-        #if lpms.getopt("--no-configure") or self.env.real_root != cst.root:
-        #    out.warn_notify("post_install function skipping...")
-        #    pkg_data = (self.env.repo, self.env.category, \
-        #            self.env.name, self.env.version)
+    def run_collision_check(self):
+        out.normal("checking file collisions...")
+        lpms.logger.info("checking file collisions")
+        collision_object = file_collisions.CollisionProtect(self.env.category, self.env.name, \
+                self.env.slot, real_root=self.env.real_root, source_dir=self.env.install_dir)
+        collision_object.handle_collisions()
+        
+        if collision_object.orphans:
+            out.write(out.color(" > ", "brightyellow")+"these files are orphan. the package will adopt the files:\n")
+            index = 0
+            for orphan in collision_object.orphans:
+                out.notify(orphan)
+                index += 1
+                if index > 100:
+                    # FIXME: the files must be logged
+                    out.write(out.color(" > ", "brightyellow")+"...and many others.")
+                    break
 
-        #    pending_file = os.path.join(self.env.real_root, cst.configure_pending_file)
-        #    if not os.path.exists(pending_file):
-        #        with open(pending_file, "wb") as _data:
-        #            pickle.dump([pkg_data], _data)
-        #    else:
-        #        data = []
-        #        with open(pending_file, "rb") as _data:
-        #            pending_packages = pickle.load(_data)
-        #            if not pkg_data in pending_packages:
-        #                data.append(pkg_data)
+        if collision_object.collisions:
+            out.write(out.color(" > ", "brightyellow")+"file collisions detected:\n")
+        for item in collision_object.collisions:
+            (category, name, slot, version), path = item
+            out.write(out.color(" -- ", "red")+category+"/"+name+"-"\
+                    +version+":"+slot+" -> "+path+"\n")
+        if collision_object.collisions and self.config.collision_protect and not \
+                lpms.getopt('--force-file-collision'):
+                    out.write("quitting...\n")
+                    lpms.terminate()
 
-        #            data.extend(pending_packages)
-        #        shelltools.remove_file(pending_file)
-        #        with open(pending_file, "wb") as _data:
-        #            pickle.dump(data, _data)
-        #    return
+    def run_pre_merge(self):
+        out.normal("preparing system for the package...")
+        pre_merge_file = os.path.join(os.path.dirname(os.path.dirname(self.env.build_dir)), ".pre_merge")
+
+        if os.path.isfile(pre_merge_file): return True
+        
+        lpms.logger.info("running pre_merge function")
 
         # sandbox must be disabled
         self.env.sandbox = False
+        self.run_stage("pre_merge")
 
+        if not os.path.isfile(pre_merge_file):
+            touch(pre_merge_file)
+
+    def run_pre_remove(self):
+        # sandbox must be disabled
+        self.env.sandbox = False
         self.run_stage("pre_remove")
 
     def run_post_install(self):
@@ -337,7 +339,7 @@ def run(script, env, operation_order=None, remove=False):
     ipr = Interpreter(script, env)
     #firstly, prepare operation_order
     if not operation_order:
-        operation_order = ['configure', 'build', 'install', 'merge']
+        operation_order = ['configure', 'build', 'install', 'collision_check', 'merge']
 
     if not remove and 'extract' in env.__dict__:
         operation_order.insert(0, 'extract')
@@ -348,6 +350,10 @@ def run(script, env, operation_order=None, remove=False):
     if not remove and 'extract' in env.__dict__ and 'prepare' in env.__dict__:
         operation_order.insert(1, 'prepare')
     
+    if not remove and 'pre_merge' in env.__dict__ and not 'pre_merge' in operation_order:
+        merge_index = operation_order.index('merge')
+        operation_order.insert(merge_index, 'pre_merge')
+
     if not remove and 'post_install' in env.__dict__ and not 'post_install' in operation_order:
         operation_order.insert(len(operation_order), 'post_install')
 
