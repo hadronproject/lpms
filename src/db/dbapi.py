@@ -160,7 +160,7 @@ class API(object):
 
         #return self.db.get_version(pkgname, repo_name, pkg_category)
 
-    def get_options(self, repo_name, pkgname, pkg_category):
+    def get_options(self, repo_name, pkg_category, pkgname):
         #FIXME: get_repos returns a list sometimes if the package 
         # installed from a unavaiable repository.
         if not repo_name:
