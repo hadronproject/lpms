@@ -37,6 +37,12 @@ class CollisionProtect:
         self.category = category
         self.slot = slot
         self.version = version
+        self.symlinks = []
+
+    def is_parent_symlink(self, target):
+        for symlink in self.symlinks:
+            if target.startswith(symlink):
+                return True
 
     def catch_file(self, mypath):
         if mypath in self.files_and_links:
@@ -67,12 +73,19 @@ class CollisionProtect:
         if self.source_dir:
             for root_path, dirs, files in os.walk(self.source_dir, \
                     followlinks=True):
+                for __dir in dirs:
+                    target_dir = os.path.join(root_path, __dir)
+                    if os.path.islink(target_dir):
+                        target_dir = "".join(target_dir.split(self.source_dir))
+                        self.symlinks.append(target_dir+"/")
+
                 root_path = "".join(root_path.split(self.source_dir))
                 if not files: continue
                 for item in files:
                     if self.real_root != cst.root:
                         root_path = os.path.join(self.real_root, root_path[1:])
                     mypath = os.path.join(root_path, item)
+                    if self.is_parent_symlink(mypath): break
                     self.catch_file(mypath)
         else:
             for path in self.filesdb.get_files_and_links_by_package(self.category, \

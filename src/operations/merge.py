@@ -43,6 +43,7 @@ class Merge(internals.InternalFuncs):
         self.myfile = None
         self.filesdb_path = None
         self.versions = []
+        self.symlinks = []
         self.backup = []
         self.env = environment
         self.instdb = dbapi.InstallDB()
@@ -107,6 +108,11 @@ class Merge(internals.InternalFuncs):
                 return False
         return True
 
+    def is_parent_symlink(self, target):
+        for symlink in self.symlinks:
+            if target.startswith(symlink):
+                return True
+ 
     def merge_pkg(self):
         '''Merge the package to the system'''
         isstrip = True
@@ -138,9 +144,13 @@ class Merge(internals.InternalFuncs):
             for d in dirs:
                 source = os.path.join(self.env.install_dir, root_path[1:], d)
                 target = os.path.join(self.env.real_root, root_path[1:], d)
+                
                 real_target = "/".join([root_path, d])
+                
+                if self.is_parent_symlink(target): break
 
                 if os.path.islink(source):
+                    self.symlinks.append(target+"/")
                     realpath = os.path.realpath(source)
                     if os.path.islink(target):
                         shelltools.remove_file(target)
@@ -215,6 +225,8 @@ class Merge(internals.InternalFuncs):
                 source = os.path.join(self.env.install_dir, root_path[1:], f)
                 target = os.path.join(self.env.real_root, root_path[1:], f)
                 real_target = "/".join([root_path, f])
+                
+                if self.is_parent_symlink(target): break
                 
                 if os.path.exists(source) and os.access(source, os.X_OK):
                     if utils.get_mimetype(source) in ('application/x-executable', 'application/x-archive', \
