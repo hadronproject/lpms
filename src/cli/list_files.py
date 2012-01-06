@@ -48,6 +48,7 @@ class ListFiles:
             versions = []
             map(lambda x: versions.extend(x), version_data.values())
 
+            symdirs = {}
             for ver in versions:
                 out.normal("%s/%s/%s-%s" % (repo, cat, name, ver))
 
@@ -55,6 +56,14 @@ class ListFiles:
                 for item in content:
                     item = item[0]
                     if os.path.islink(item):
-                        print("%s -> %s" % (item, os.path.realpath(item)))
+                        out.write("%s -> %s\n" % (out.color(item, "green"), os.readlink(item)))
+                        if os.path.isdir(os.path.realpath(item)):
+                            symdirs[os.path.realpath(item)+"/"] = item+"/"
                     else:
-                        print(item)
+                        out.write(item+"\n")
+
+                    if symdirs:
+                        for symdir in symdirs:
+                            if item.startswith(symdir):
+                                out.write("%s -> %s\n" % (out.color(item.replace(symdir, \
+                                        symdirs[symdir]), "brightwhite"), out.color(item, "brightwhite")))
