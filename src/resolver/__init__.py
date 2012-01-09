@@ -48,6 +48,11 @@ class DependencyResolver(object):
         self.invalid_elements = ['||']
         self.removal = {}
         self.modified_by_package = {}
+        
+        self.locked_packages = []
+        if hasattr(self, "user_defined_lock"):
+            for line in self.user_defined_lock:
+                self.locked_packages.extend([self.parse_user_defined_file(line)])
 
     def get_user_defined_files(self):
         for user_defined_file in cst.user_defined_files:
@@ -69,97 +74,26 @@ class DependencyResolver(object):
             self.udo.update({(category, name):(versions, opts)})
 
     def parse_user_defined_file(self, data, opt=False):
-        user_defined_options = None
-        if opt:
-            data = data.split(" ", 1)
-            if len(data) > 1:
-                data, user_defined_options = data
-                user_defined_options = [atom.strip() for atom in \
-                        user_defined_options.strip().split(" ")]
-            else:
-                data = data[0]
-        affected = []
-        slot = None
-        slot_parsed = data.split(":")
-        if len(slot_parsed) == 2:
-            data, slot = slot_parsed
+        return utils.parse_user_defined_file(data, self.repodb, opt)
 
-        def parse(pkgname):
-            category, name = pkgname.split("/")
-            name, version = utils.parse_pkgname(name)
-            versions = []
-            map(lambda x: versions.extend(x), \
-                    self.repodb.get_version(name, pkg_category=category).values())
-            return category, name, version, versions
+    def remove_locked_versions(self, category, name, versions):
+        '''Removes locked versions from package bundle if it effected'''
+        for locked_package in self.locked_packages:
+            locked_category, locked_name, locked_version_data = locked_package
+            if locked_category != category and locked_name != name:
+                continue
+            if isinstance(locked_version_data, list):
+                result = []
+                for version in versions:
+                    if not version in locked_version_data:
+                        result.append(version)
+                return result
+            elif isinstance(locked_version_data, basestring):
+                if locked_version_data in versions:
+                    versions.remove(locked_version_data)
+                    return versions
+        return versions
 
-        if ">=" == data[:2]:
-            category, name, version, versions = parse(data[2:])
-
-            for ver in versions:
-                if utils.vercmp(ver, version) == 1:
-                    affected.append(ver)
-            affected.append(version)
-
-            if user_defined_options:
-                return category, name, affected, user_defined_options
-
-            return category, name, affected
-
-        elif "<=" == data[:2]:
-            category, name, version, versions = parse(data[2:])
-            for ver in versions:
-                if utils.vercmp(ver, version) == -1:
-                    affected.append(ver)
-            affected.append(version)
-            
-            if user_defined_options:
-                return category, name, affected, user_defined_options
-
-            return category, name, affected
-
-        elif "<" == data[:1]:
-            category, name, version, versions = parse(data[1:])
-            for ver in versions:
-                if utils.vercmp(ver, version) == -1:
-                    affected.append(ver)
-                    
-            if user_defined_options:
-                return category, name, affected, user_defined_options
-
-            return category, name, affected
-
-        elif ">" == data[:1]:
-            category, name, version, versions = parse(data[1:])
-
-            for ver in versions:
-                if utils.vercmp(ver, version) == 1:
-                    affected.append(ver)
-                    
-            if user_defined_options:
-                return category, name, affected, user_defined_options
-
-            return category, name, affected
-
-        elif "==" == data[:2]:
-            pkgname = data[2:]
-            category, name = pkgname.split("/")
-            name, version = utils.parse_pkgname(name)
-            
-            if user_defined_options:
-                return category, name, affected, user_defined_options
-
-            return category, name, version
-        else:
-            category, name = data.split("/")
-            versions = []
-            map(lambda x: versions.extend(x), \
-                    self.repodb.get_version(name, pkg_category=category).values())
-            
-            if user_defined_options:
-                return category, name, versions, user_defined_options
-
-            return category, name, versions
-        
     def get_versions(self, versions, slot=None):
         vers = []
         data = versions.values()
@@ -236,6 +170,12 @@ class DependencyResolver(object):
                             self.should_upgrade.append((category, name))
                     if versions: break
                 if versions: break
+            
+            versions = self.remove_locked_versions(category, name, versions)
+            
+            if not versions:
+                out.warn("this package seems locked by the system administrator: %s/%s" % (category, name))
+                lpms.terminate()
             return category, name, utils.best_version(versions)
 
         name, version = utils.parse_pkgname(pkgname)
@@ -314,6 +254,10 @@ class DependencyResolver(object):
                         result.append(rv)
                 elif et:
                     if vercmp == 0:
+                        result = self.remove_locked_versions(category, name, [rv])
+                        if not result:
+                            out.warn("this package seems locked by the system administrator: %s/%s" % (category, name))
+                            lpms.terminate()
                         return category, name, rv
 
             if result:
@@ -323,6 +267,10 @@ class DependencyResolver(object):
                 out.color(incoming, "red")))
             lpms.terminate()
 
+        result = self.remove_locked_versions(category, name, result)
+        if not result:
+            out.warn("this package seems locked by the system administrator: %s/%s" % (category, name))
+            lpms.terminate()
         return category, name, utils.best_version(result)
 
     def opt_parser(self, data):
@@ -699,26 +647,23 @@ class DependencyResolver(object):
                     if not pkg in plan:
                         plan.append(pkg)
 
-            locked_packages = []
-            if hasattr(self, "user_defined_lock"):
-                for line in self.user_defined_lock:
-                    locked_packages.extend([self.parse_user_defined_file(line)])
-
-            for item in plan:
-                plan_category = item[1]; plan_name = item[2]; plan_version = item[3]
-                for locked_package in locked_packages:
-                    if plan_category == locked_package[0] and \
-                            plan_name == locked_package[1] and \
-                            plan_version in locked_package[2]:
-                                out.write("\n")
-                                for v in locked_package[2]:
-                                    out.warn("%s-%s" % ("/".join(item[:-1]), v))
-                                out.write("\n")
-                                if len(locked_package[2]) > 1:
-                                    out.error("these packages were locked by system administrator.")
-                                else:
-                                    out.error("this package was locked by system administrator.")
-                                lpms.terminate()
+            # locked_packages = []
+            # for item in plan:
+            #     plan_category = item[1]; plan_name = item[2]; plan_version = item[3]
+            #     for locked_package in self.locked_packages:
+            #         if plan_category == locked_package[0] and \
+            #                 plan_name == locked_package[1] and \
+            #                 plan_version in locked_package[2]:
+            #                     out.write("\n")
+            #                     for v in locked_package[2]:
+            #                         out.warn("%s-%s" % ("/".join(item[:-1]), v))
+            #                     out.write("\n")
+            #                     if len(locked_package[2]) > 1:
+            #                         out.error("these packages were locked by system administrator.")
+            #                    else:
+            #                        out.error("this package was locked by system administrator.")
+            #                    lpms.terminate()
+            
             plan.reverse()
             return plan, self.operation_data, self.modified_by_package
 

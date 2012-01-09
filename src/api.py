@@ -120,15 +120,51 @@ def get_pkg(pkgname, repositorydb=True):
         =sys-devel/binutils-2.14
     '''
     
+    # FIXME: locked packages solutions is a temporary fix
+    locked_packages = []
+    if repositorydb:
+        db = dbapi.RepositoryDB()
+        lock_file = "/etc/lpms/user/lock"
+        if os.access(lock_file, os.R_OK):
+            with open(lock_file) as locked_packages_data:
+                for line in locked_packages_data.readlines():
+                    locked_packages.append(utils.parse_user_defined_file(line.strip(), \
+                            repodb=db))
+    else:
+        db = dbapi.InstallDB()
+    
     valid_repos = utils.valid_repos()
+
+    def remove_locked_versions(versions):
+        '''Removes locked versions from package bundle if it effected'''
+        for locked_package in locked_packages:
+            locked_category, locked_name, locked_version_data = locked_package
+            if locked_category != category and locked_name != name:
+                continue
+            if isinstance(locked_version_data, list):
+                result = []
+                for version in versions:
+                    if not version in locked_version_data:
+                        result.append(version)
+                return result
+            elif isinstance(locked_version_data, basestring):
+                if locked_version_data in versions:
+                    versions.remove(locked_version_data)
+                    return versions
+        return versions
+
     def collect_versions(version_data):
         vers = []
         map(lambda ver: vers.extend(ver), version_data.values())
+        if repositorydb:
+            vers = remove_locked_versions(vers)
         return vers
 
     def select_version(data):
         if slot:
             if slot in data:
+                if repositorydb:
+                    return utils.best_version(remove_locked_versions(data[slot]))
                 return utils.best_version(data[slot])
             else:
                 out.error("%s not found in database." % out.color(pkgname+":"+slot, "brightred"))
@@ -136,8 +172,10 @@ def get_pkg(pkgname, repositorydb=True):
         else:
             versions = []
             map(lambda ver: versions.extend(ver), data.values())
+            if repositorydb:
+                return utils.best_version(remove_locked_versions(versions))
             return utils.best_version(versions)
-        
+
     def get_name(data):
         return utils.parse_pkgname(data)
 
@@ -146,20 +184,10 @@ def get_pkg(pkgname, repositorydb=True):
     if len(pkgname.split(":")) > 1:
         pkgname, slot = pkgname.split(":")
 
-    db = dbapi.RepositoryDB()
-    if not repositorydb:
-        db = dbapi.InstallDB()
-
     repo = None; category = None; version = None
     # FIXME: '=' unnecessary?
     if pkgname.startswith("="):
         pkgname = pkgname[1:]
-
-    #if pkgname.endswith(".py"):
-    #    name, version = get_name(pkgname.split(".py")[0])
-    #    return None, None, name, version
-        #print name, version
-        #utils.import_script(pkgname)
 
     parsed = pkgname.split("/")
     if len(parsed) == 1:
@@ -221,8 +249,11 @@ def get_pkg(pkgname, repositorydb=True):
     length = len(result)
     if length == 1:
         repo, category, name, version_data = result[0]
-        if version is None:
+        if not version:
             version = select_version(version_data)
+            if not version:
+                out.warn("this package seems locked by the system administrator: %s/%s" % (category, name))
+                lpms.terminate()
         else:
             if not version in collect_versions(version_data):
                 out.error("%s/%s/%s-%s is not found in the database." % (repo, category, name, version))
@@ -233,8 +264,15 @@ def get_pkg(pkgname, repositorydb=True):
         repo, category, name, version_data = result
         if version is None:
             version = select_version(version_data)
+            if not version:
+                out.warn("this package seems locked by the system administrator: %s/%s" % (category, name))
+                lpms.terminate()
         else:
-            if not version in collect_versions(version_data):
+            versions = collect_versions(version_data)
+            if not versions:
+                out.warn("this package seems locked by the system administrator: %s/%s" % (category, name))
+                lpms.terminate()
+            if not version in versions:
                 out.error("%s/%s/%s-%s is not found in the database." % (repo, category, name, version))
                 lpms.terminate()
         return repo, category, name, version
