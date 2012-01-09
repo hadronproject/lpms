@@ -31,6 +31,101 @@ from lpms import conf
 from lpms import shelltools
 from lpms import constants as cst
 
+
+def parse_user_defined_file(data, repodb, opt=False):
+    '''Parses user defined control files and returns convenient package bundles'''
+    user_defined_options = None
+    if opt:
+        data = data.split(" ", 1)
+        if len(data) > 1:
+            data, user_defined_options = data
+            user_defined_options = [atom.strip() for atom in \
+                    user_defined_options.strip().split(" ")]
+        else:
+            data = data[0]
+    affected = []
+    slot = None
+    slot_parsed = data.split(":")
+    if len(slot_parsed) == 2:
+        data, slot = slot_parsed
+
+    def parse(pkgname):
+        category, name = pkgname.split("/")
+        name, version = parse_pkgname(name)
+        versions = []
+        map(lambda x: versions.extend(x), \
+                repodb.get_version(name, pkg_category=category).values())
+        return category, name, version, versions
+
+    if ">=" == data[:2]:
+        category, name, version, versions = parse(data[2:])
+
+        for ver in versions:
+            if vercmp(ver, version) == 1:
+                affected.append(ver)
+        affected.append(version)
+
+        if user_defined_options:
+            return category, name, affected, user_defined_options
+
+        return category, name, affected
+
+    elif "<=" == data[:2]:
+        category, name, version, versions = parse(data[2:])
+        for ver in versions:
+            if vercmp(ver, version) == -1:
+                affected.append(ver)
+        affected.append(version)
+        
+        if user_defined_options:
+            return category, name, affected, user_defined_options
+
+        return category, name, affected
+
+    elif "<" == data[:1]:
+        category, name, version, versions = parse(data[1:])
+        for ver in versions:
+            if vercmp(ver, version) == -1:
+                affected.append(ver)
+                
+        if user_defined_options:
+            return category, name, affected, user_defined_options
+
+        return category, name, affected
+
+    elif ">" == data[:1]:
+        category, name, version, versions = parse(data[1:])
+
+        for ver in versions:
+            if vercmp(ver, version) == 1:
+                affected.append(ver)
+                
+        if user_defined_options:
+            return category, name, affected, user_defined_options
+
+        return category, name, affected
+
+    elif "==" == data[:2]:
+        pkgname = data[2:]
+        category, name = pkgname.split("/")
+        name, version = parse_pkgname(name)
+        
+        if user_defined_options:
+            return category, name, affected, user_defined_options
+
+        return category, name, version
+    else:
+        category, name = data.split("/")
+        versions = []
+        map(lambda x: versions.extend(x), \
+                repodb.get_version(name, pkg_category=category).values())
+        
+        if user_defined_options:
+            return category, name, versions, user_defined_options
+
+        return category, name, versions
+
+
 def update_info_index(info_path, dir_path="/usr/share/info/dir", delete=False):
     '''Updates GNU Info file index'''
     if os.access(info_path, os.R_OK):
