@@ -217,7 +217,11 @@ def fetch(*urls, **params):
         lpms.terminate()
 
 def get_env(value):
-    return os.environ[value]
+    try:
+        return os.environ[value]
+    except KeyError:
+        warn("%s is not an environment variable." % value)
+        return ""
 
 def makedirs(target, ignore_fix_target=False):
     if current_stage == "install" and not ignore_fix_target:
