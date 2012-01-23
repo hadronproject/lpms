@@ -47,8 +47,42 @@ class Interpreter(internals.InternalFuncs):
         self.script = script
         self.config = conf.LPMSConfig()
         self.get_build_libraries()
+        self.function_collisions()
         self.startup_funcs()
-        
+
+    def function_collisions(self):
+        '''Checks the build environment to deal with function collisions if primary_library is not defined'''
+        if self.env.primary_library: return
+        preserved_names = [
+                'extract', 
+                'prepare', 
+                'configure', 
+                'build', 
+                'install',
+                'collision_check', 
+                'pre_merge', 
+                'post_install'
+                'remove'
+        ]
+
+        race_list = {}
+        for library in self.env.libraries:
+            for preserved_name in preserved_names:
+                if library+"_"+preserved_name in self.env.__dict__:
+                    if preserved_name in race_list:
+                        race_list[preserved_name].append(library)
+                    else:
+                        race_list.update({preserved_name: [library]})
+                        
+                        
+        result = [(key, race_list[key]) for key in race_list if len(race_list[key]) > 1]
+        if result:
+            out.warn("function collision detected in these stages. you should use primary_library keyword.")
+            for item in result:
+                stage, libraries = item
+                out.notify(stage+": "+", ".join(libraries))
+            lpms.terminate("please contact the package maintainer.")
+
     def get_build_libraries(self):
         for lib in self.env.libraries:
             if len(lib.split("/")) == 2:
@@ -118,16 +152,15 @@ class Interpreter(internals.InternalFuncs):
         pass
 
     def run_extract(self):
-        out.normal("extracting source...")
-        extracted_file = os.path.join(self.env.build_dir.split("source")[0],
-                ".extracted")
-        if os.path.isfile(extracted_file): 
-            out.warn_notify("source already extracted.")
-            return True
+        utils.xterm_title("lpms: extracting %s/%s/%s-%s" % (self.env.repo, self.env.category, \
+                self.env.name, self.env.version))
+        out.notify("extracting archive(s) to %s" % os.path.dirname(self.env.build_dir))
+        # warn the user about the extracted archives
+        for item in self.env.extract_plan:
+            out.write("   %s %s\n" % (out.color(">", "green"), os.path.join(self.config.src_cache,\
+                    os.path.basename(item))))        
         self.run_stage("extract")
-        out.notify("source extracted.")
-        if not os.path.isfile(extracted_file):
-            touch(extracted_file)
+        out.notify("source extracted")
         if self.env.stage == "extract":
             lpms.terminate()
     
@@ -136,7 +169,6 @@ class Interpreter(internals.InternalFuncs):
         prepared_file = os.path.join(self.env.build_dir.split("source")[0],
                 ".prepared")
         if os.path.isfile(prepared_file): 
-            #and lpms.getopt("--resume-build"):
             out.warn_notify("source already prepared.")
             return True
         self.run_stage("prepare")
@@ -320,42 +352,67 @@ class Interpreter(internals.InternalFuncs):
 
     def run_stage(self, stage):
         self.env.current_stage = stage
-        # firstly, we find a configuration function in environment
+        exceptions = ('prepare', 'post_install', 'post_remove', 'pre_merge', 'pre_remove') 
         if stage in self.env.__dict__:
-            # if it is exists, run it
             self.run_func(stage)
         else:
-            if len(self.env.libraries) == 0 and self.env.standard_procedure:
-                self.run_func("standard_"+stage)
-                # and now, search build libraries' configuration function
+            if not self.env.libraries and self.env.standard_procedure \
+                    and not stage in exceptions:
+                        self.run_func("standard_"+stage)
             for lib in self.env.libraries:
-                if self.env.standard_procedure and lib+"_"+stage in self.env.__dict__.keys():
-                    self.run_func(lib+"_"+stage)
+                if self.env.standard_procedure and lib+"_"+stage in self.env.__dict__:
+                    if self.env.primary_library:
+                        if self.env.primary_library == lib:
+                            self.run_func(lib+"_"+stage)
+                    else:
+                        self.run_func(lib+"_"+stage)
                 else:
-                    if self.env.standard_procedure and (stage != "post_install" or stage != "post_remove"):
+                    if self.env.standard_procedure and not stage in exceptions:
                         self.run_func("standard_"+stage)
 
 def run(script, env, operation_order=None, remove=False):
     ipr = Interpreter(script, env)
     #firstly, prepare operation_order
-    if not operation_order:
-        operation_order = ['configure', 'build', 'install', 'collision_check', 'merge']
+    if not remove and not operation_order:
+        operation_order = [
+                'extract',
+                'configure', 
+                'build', 
+                'install',
+                'collision_check', 
+                'merge', 
+        ]
+        
+        if 'prepare' in ipr.env.__dict__:
+            index = 0
+            if len(operation_order) == 6: index = 1
+            operation_order.insert(index, 'prepare')
+        else:
+            index = 0
+            if len(operation_order) == 6: index = 1
+            for library in ipr.env.libraries:
+                if library+"_prepare" in ipr.env.__dict__:
+                    operation_order.insert(index, 'prepare')
+                    break
 
-    if not remove and 'extract' in env.__dict__:
-        operation_order.insert(0, 'extract')
-
-    if not remove and not 'extract' in env.__dict__ and 'prepare' in env.__dict__:
-        operation_order.insert(0, 'prepare')
-
-    if not remove and 'extract' in env.__dict__ and 'prepare' in env.__dict__:
-        operation_order.insert(1, 'prepare')
-    
-    if not remove and 'pre_merge' in env.__dict__ and not 'pre_merge' in operation_order:
-        merge_index = operation_order.index('merge')
-        operation_order.insert(merge_index, 'pre_merge')
-
-    if not remove and 'post_install' in env.__dict__ and not 'post_install' in operation_order:
-        operation_order.insert(len(operation_order), 'post_install')
+        if 'pre_merge' in ipr.env.__dict__:
+            index = operation_order.index('merge')
+            operation_order.insert(index, 'pre_merge')
+        else:
+            index = operation_order.index('merge')
+            for library in ipr.env.libraries:
+                if library+"_pre_merge" in ipr.env.__dict__:
+                    operation_order.insert(index, 'pre_merge')
+                    break
+        
+        if 'post_install' in ipr.env.__dict__:
+            operation_order.insert(len(operation_order), 'post_install')
+        else:
+            index = operation_order.index('merge')
+            for library in ipr.env.libraries:
+                if library+"_post_install" in ipr.env.__dict__:
+                    operation_order.insert(len(operation_order), 'post_install')
+                    break
 
     if remove and 'pre_remove' in env.__dict__ and not 'pre_remove' in operation_order:
         operation_order.insert(0, 'pre_remove')
@@ -386,12 +443,10 @@ def run(script, env, operation_order=None, remove=False):
                 ipr.env.pkgname, ipr.env.version))
             out.error("an error occurred when running the %s function." % out.color(opr, "red"))
             return False
-            #lpms.terminate()
         except (AttributeError, NameError), err: 
             out.write(out.color(">>", "brightred")+" %s/%s/%s-%s\n" % (ipr.env.repo, ipr.env.category, 
                 ipr.env.pkgname, ipr.env.version))
             traceback.print_exc(err)
             out.error("an error occurred when running the %s function." % out.color(opr, "red"))
             return False
-            #lpms.terminate()
     return True

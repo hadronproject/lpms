@@ -27,7 +27,6 @@ from lpms import out
 from lpms import conf
 from lpms import utils
 from lpms import fetcher
-from lpms import archive
 from lpms import internals
 from lpms import initpreter
 from lpms import shelltools
@@ -181,29 +180,6 @@ class Build(internals.InternalFuncs):
         for i in ('build_dir', 'install_dir'):
             if not os.path.isdir(getattr(self.env, i)):
                 os.makedirs(getattr(self.env, i))
-
-    def extract_sources(self):
-        already_unpacked = False
-        for url in self.env.extract_plan:
-            archive_path = os.path.join(self.config.src_cache, os.path.basename(url))
-            target = os.path.dirname(self.env.build_dir)
-            unpack_file = os.path.join(os.path.dirname(target), ".unpacked")
-            if os.path.isfile(unpack_file):
-                if lpms.getopt("--force-unpack"):
-                    shelltools.remove_file(unpack_file)
-                    shelltools.remove_file(os.path.join(os.path.dirname(target), ".prepared"))
-                else:
-                    already_unpacked = True
-                    out.warn("%s seems already unpacked." % os.path.basename(archive_path))
-                    continue
-            if hasattr(self.env, "partial"):
-                partial = [atom.strip() for atom in self.env.partial.split(" ") 
-                        if atom != "#"]
-                archive.extract(str(archive_path), str(target), partial)
-            else:
-                archive.extract(str(archive_path), str(target))
-        if not already_unpacked:
-            shelltools.touch(unpack_file)
 
     def parse_url_tag(self):
         def set_shortening(data, opt=False):
@@ -457,11 +433,6 @@ def main(raw_data, instruct):
 
             utils.xterm_title("lpms: extracting %s/%s/%s-%s" % (opr.env.repo, opr.env.category,
                 opr.env.name, opr.env.version))
-
-            if not "extract" in opr.env.__dict__:
-                opr.extract_sources()
-                if opr.env.stage == "unpack":
-                    lpms.terminate()
 
         if opr.env.valid_opts is not None and len(opr.env.valid_opts) != 0:
             out.notify("applied options: %s" % 

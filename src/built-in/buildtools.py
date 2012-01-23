@@ -19,15 +19,39 @@ import os
 import subprocess
 
 import lpms
+from lpms import out
+from lpms import archive
+from lpms import shelltools
 from lpms import conf as cfg
 from lpms import constants as cst
-from lpms import out
-from lpms.exceptions import *
-from lpms import shelltools
 
 
-def standard_setup(*parameters):
-    pass
+def standard_extract():
+    already_unpacked = False
+    for url in extract_plan:
+        archive_path = os.path.join(cfg.LPMSConfig().src_cache, os.path.basename(url))
+        target = os.path.dirname(build_dir)
+        unpack_file = os.path.join(os.path.dirname(target), ".extracted")
+        if os.path.isfile(unpack_file):
+            if lpms.getopt("--force-unpack"):
+                shelltools.remove_file(unpack_file)
+                prepared_file = os.path.join(os.path.dirname(target), ".prepared")
+                if os.access(prepared_file, os.E_OK):
+                    shelltools.remove_file(prepared_file)
+            else:
+                already_unpacked = True
+                out.warn("%s seems already unpacked." % os.path.basename(archive_path))
+                continue
+
+        try:
+            partial = [atom.strip() for atom in partial.split(" ") 
+                    if atom != "#"]
+            archive.extract(str(archive_path), str(target), partial)
+        except NameError:
+            archive.extract(str(archive_path), str(target))
+
+    if not already_unpacked:
+        shelltools.touch(unpack_file)
 
 def standard_configure(*parameters):
     '''Runs standard configuration function'''
