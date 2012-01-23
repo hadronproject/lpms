@@ -36,6 +36,7 @@ class InternalFuncs(object):
         self.env.backup = []
 
         setattr(self.env, "standard_procedure", True)
+        setattr(self.env, "primary_library", None)
 
         # FIXME: use a better method for environment functions.
         builtin_funcs = {"get": self.get}
