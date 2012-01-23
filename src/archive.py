@@ -38,7 +38,6 @@ class Archive:
             lpms.terminate()
 
         archive = tarfile.open(path, 'r')
-        out.notify("extracting %s to %s" % (os.path.basename(path), self.location))
         if isinstance(self.partial, list):
             for name in archive.getnames():
                 if name in self.partial:
@@ -53,17 +52,8 @@ class Archive:
 
     def extract_zip(self, path):
         f = zipfile.ZipFile(path, "r")
-        out.notify("extracting %s to %s" % (os.path.basename(path), self.location))
         f.extractall(path=self.location)
         f.close()
-        #current = os.getcwd()
-        #os.chdir(self.location)
-        #z = zipfile.ZipFile(path, 'r')
-        #for __file in z.infolist():
-        #    file(__file.filename, 'wb').write(z.read(__file.filename))
-        #    t = time.mktime(i.date_time)
-        #    os.utime(fn, (t, t))
-        #os.chdir(current)
 
     def extract_lzma(self, path):
         if not os.access("/bin/tar", os.X_OK) or not os.access("/bin/tar", os.F_OK):
