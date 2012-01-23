@@ -68,6 +68,8 @@ class Interpreter(internals.InternalFuncs):
         race_list = {}
         for library in self.env.libraries:
             for preserved_name in preserved_names:
+                if preserved_name in self.env.__dict__:
+                    continue
                 if library+"_"+preserved_name in self.env.__dict__:
                     if preserved_name in race_list:
                         race_list[preserved_name].append(library)
