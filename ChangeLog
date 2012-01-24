@@ -1,3 +1,8 @@
+2012-01-24 Burak Sezer <purak@hadronproject.org>
+    * lpms-1.0.1
+	
+	Flow control mechanism was improved in interpreter.
+
 2012-01-10 Burak Sezer <purak@hadronproject.org>
 	* lpms 1.0
 	
