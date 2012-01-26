@@ -319,6 +319,14 @@ def main(raw_data, instruct):
         for key in keys:
             setattr(opr.env, key, plan[keys[key]])
 
+        interphase = re.search(r'-r[0-9][0-9]', opr.env.version)
+        if not interphase:
+            interphase = re.search(r'-r[0-9]', opr.env.version)
+        try:
+            opr.env.raw_version = opr.env.version.replace(interphase.group(), "")
+        except AttributeError:
+            opr.env.raw_version = opr.env.version
+        
         # FIXME:
         opr.env.name = opr.env.pkgname
         opr.env.fullname = opr.env.pkgname+"-"+opr.env.version
@@ -367,7 +375,7 @@ def main(raw_data, instruct):
                 opr.env.src_url = None
 
         if not "srcdir" in opr.env.__dict__:
-            setattr(opr.env, "srcdir", opr.env.fullname)
+            setattr(opr.env, "srcdir", opr.env.pkgname+"-"+opr.env.raw_version)
         opr.prepare_environment()
 
         # start logging
