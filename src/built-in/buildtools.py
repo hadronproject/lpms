@@ -28,10 +28,10 @@ from lpms import constants as cst
 
 def standard_extract():
     already_unpacked = False
+    target = os.path.dirname(build_dir)
+    unpack_file = os.path.join(os.path.dirname(target), ".extracted")
     for url in extract_plan:
         archive_path = os.path.join(cfg.LPMSConfig().src_cache, os.path.basename(url))
-        target = os.path.dirname(build_dir)
-        unpack_file = os.path.join(os.path.dirname(target), ".extracted")
         if os.path.isfile(unpack_file):
             if lpms.getopt("--force-unpack"):
                 shelltools.remove_file(unpack_file)

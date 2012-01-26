@@ -46,8 +46,8 @@ class Interpreter(internals.InternalFuncs):
             self.env.real_root = cst.root
         self.script = script
         self.config = conf.LPMSConfig()
-        self.get_build_libraries()
         self.function_collisions()
+        self.get_build_libraries()
         self.startup_funcs()
 
     def function_collisions(self):
@@ -72,7 +72,8 @@ class Interpreter(internals.InternalFuncs):
                     continue
                 if library+"_"+preserved_name in self.env.__dict__:
                     if preserved_name in race_list:
-                        race_list[preserved_name].append(library)
+                        if not library in race_list[preserved_name]:
+                            race_list[preserved_name].append(library)
                     else:
                         race_list.update({preserved_name: [library]})
                         
@@ -361,16 +362,20 @@ class Interpreter(internals.InternalFuncs):
             if not self.env.libraries and self.env.standard_procedure \
                     and not stage in exceptions:
                         self.run_func("standard_"+stage)
+                        return True
             for lib in self.env.libraries:
                 if self.env.standard_procedure and lib+"_"+stage in self.env.__dict__:
                     if self.env.primary_library:
                         if self.env.primary_library == lib:
                             self.run_func(lib+"_"+stage)
+                            return True
                     else:
                         self.run_func(lib+"_"+stage)
+                        return True
                 else:
                     if self.env.standard_procedure and not stage in exceptions:
                         self.run_func("standard_"+stage)
+                        return True
 
 def run(script, env, operation_order=None, remove=False):
     ipr = Interpreter(script, env)
