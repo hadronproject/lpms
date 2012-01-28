@@ -27,31 +27,17 @@ from lpms import constants as cst
 
 
 def standard_extract():
-    already_unpacked = False
     target = os.path.dirname(build_dir)
-    unpack_file = os.path.join(os.path.dirname(target), ".extracted")
     for url in extract_plan:
+        out.write("   %s %s\n" % (out.color(">", "green"), os.path.join(cfg.LPMSConfig().src_cache,\
+                    os.path.basename(url))))        
         archive_path = os.path.join(cfg.LPMSConfig().src_cache, os.path.basename(url))
-        if os.path.isfile(unpack_file):
-            if lpms.getopt("--force-unpack"):
-                shelltools.remove_file(unpack_file)
-                prepared_file = os.path.join(os.path.dirname(target), ".prepared")
-                if os.access(prepared_file, os.E_OK):
-                    shelltools.remove_file(prepared_file)
-            else:
-                already_unpacked = True
-                out.warn("%s seems already unpacked." % os.path.basename(archive_path))
-                continue
-
         try:
             partial = [atom.strip() for atom in partial.split(" ") 
                     if atom != "#"]
             archive.extract(str(archive_path), str(target), partial)
         except NameError:
             archive.extract(str(archive_path), str(target))
-
-    if not already_unpacked:
-        shelltools.touch(unpack_file)
 
 def standard_configure(*parameters):
     '''Runs standard configuration function'''
