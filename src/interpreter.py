@@ -155,18 +155,25 @@ class Interpreter(internals.InternalFuncs):
         pass
 
     def run_extract(self):
+        target = os.path.dirname(self.env.build_dir)
+        extracted_file = os.path.join(os.path.dirname(target), ".extracted")
+        if os.path.isfile(extracted_file):
+            if lpms.getopt("--force-unpack"):
+                shelltools.remove_file(extracted_file)
+            else:
+                out.warn("%s/%s-%s seems already unpacked." % (self.env.category, self.env.name, self.env.version))
+                return True
+
         utils.xterm_title("lpms: extracting %s/%s/%s-%s" % (self.env.repo, self.env.category, \
                 self.env.name, self.env.version))
         out.notify("extracting archive(s) to %s" % os.path.dirname(self.env.build_dir))
-        # warn the user about the extracted archives
-        for item in self.env.extract_plan:
-            out.write("   %s %s\n" % (out.color(">", "green"), os.path.join(self.config.src_cache,\
-                    os.path.basename(item))))        
+        # now, extract the archives
         self.run_stage("extract")
         out.notify("source extracted")
+        shelltools.touch(extracted_file)
         if self.env.stage == "extract":
             lpms.terminate()
-    
+
     def run_prepare(self):
         out.normal("preparing source...")
         prepared_file = os.path.join(self.env.build_dir.split("source")[0],
