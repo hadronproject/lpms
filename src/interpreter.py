@@ -175,6 +175,8 @@ class Interpreter(internals.InternalFuncs):
         pass
 
     def run_extract(self):
+        # if the environment has no extract_plan variable, doesn't run extract function
+        if not hasattr(self.env, "extract_plan"): return
         target = os.path.dirname(self.env.build_dir)
         extracted_file = os.path.join(os.path.dirname(target), ".extracted")
         if os.path.isfile(extracted_file):
