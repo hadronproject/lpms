@@ -35,21 +35,23 @@ class UpgradeSystem(object):
         self.repodb = dbapi.RepositoryDB()
         self.instdb = dbapi.InstallDB()
         self.locked_packages = {}
-        with open(os.path.join(cst.user_dir, "lock")) as data:
-            for line in data.readlines():
-                lock_category, lock_name, lock_version = utils.parse_user_defined_file(line.strip(), \
-                        self.repodb)
-                key= lock_category+"/"+lock_name
-                if key in self.locked_packages:
-                    if isinstance(lock_version, list):
-                        self.locked_packages[key].extend(lock_version)
+        lock_file = os.path.join(cst.user_dir, "lock")
+        if os.access(lock_file, os.R_OK):
+            with open(lock_file) as data:
+                for line in data.readlines():
+                    lock_category, lock_name, lock_version = utils.parse_user_defined_file(line.strip(), \
+                            self.repodb)
+                    key= lock_category+"/"+lock_name
+                    if key in self.locked_packages:
+                        if isinstance(lock_version, list):
+                            self.locked_packages[key].extend(lock_version)
+                        else:
+                            self.locked_packages[key].append(lock_version)
                     else:
-                        self.locked_packages[key].append(lock_version)
-                else:
-                    if isinstance(lock_version, list):
-                        self.locked_packages[key] = lock_version
-                    else:
-                        self.locked_packages[key] = [lock_version]
+                        if isinstance(lock_version, list):
+                            self.locked_packages[key] = lock_version
+                        else:
+                            self.locked_packages[key] = [lock_version]
 
     def filter_locked_packages(self, repovers):
         if not self.category+"/"+self.name in self.locked_packages:
