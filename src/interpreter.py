@@ -87,20 +87,40 @@ class Interpreter(internals.InternalFuncs):
             lpms.terminate("please contact the package maintainer.")
 
     def get_build_libraries(self):
+        result = set()
+        lib_index = None
+        current_length = first_length = len(self.env.libraries)
+
         for lib in self.env.libraries:
             if len(lib.split("/")) == 2:
                 lib_source, lib_name = lib.split("/")
                 libfile = os.path.join(cst.repos, lib_source, "libraries", lib_name+".py")
-                self.env.libraries[self.env.libraries.index(lib)] = lib_name
-            else:
-                libfile = os.path.join(cst.repos, self.env.repo, "libraries", lib+".py")
-            
+                result.add(lib_name)
+            else: 
+                if len(self.env.libraries) > first_length:
+                    parent = self.env.libraries[lib_index]
+                    if len(parent.split("/")) == 2:
+                        parents_repo = parent.split("/")[0]
+                        result.add(lib)
+                        libfile = os.path.join(cst.repos, parents_repo, "libraries", lib+".py")
+                    else:
+                        result.add(lib)
+                        libfile = os.path.join(cst.repos, self.env.repo, "libraries", lib+".py")
+                else:
+                    result.add(lib)
+                    libfile = os.path.join(cst.repos, self.env.repo, "libraries", lib+".py")
+
             if not os.path.isfile(libfile):
                 out.error("build library not found: %s" % out.color(libfile, "red"))
                 lpms.terminate()
 
             # import the script
             self.import_script(libfile)
+            if len(self.env.libraries) > current_length:
+                lib_index = self.env.libraries.index(lib)
+                current_length = len(self.env.libraries)
+
+        self.env.libraries = list(result)
 
     def startup_funcs(self):
         for library in [m for m in self.env.__dict__ if "_library_start" in m]:
@@ -362,26 +382,42 @@ class Interpreter(internals.InternalFuncs):
 
     def run_stage(self, stage):
         self.env.current_stage = stage
+        standard_procedure_fixed = False
         exceptions = ('prepare', 'post_install', 'post_remove', 'pre_merge', 'pre_remove') 
+        standard_procedure_exceptions = ('extract')
+        
+        if stage in standard_procedure_exceptions:
+            if not self.env.standard_procedure:
+                self.env.standard_procedure = True
+                standard_procedure_fixed = True
+        
         if stage in self.env.__dict__:
             self.run_func(stage)
         else:
             if not self.env.libraries and self.env.standard_procedure \
                     and not stage in exceptions:
                         self.run_func("standard_"+stage)
+                        if standard_procedure_fixed:
+                            self.env.standard_procedure = False
                         return True
             for lib in self.env.libraries:
                 if self.env.standard_procedure and lib+"_"+stage in self.env.__dict__:
                     if self.env.primary_library:
                         if self.env.primary_library == lib:
                             self.run_func(lib+"_"+stage)
+                            if standard_procedure_fixed:
+                                self.env.standard_procedure = False
                             return True
                     else:
                         self.run_func(lib+"_"+stage)
+                        if standard_procedure_fixed:
+                            self.env.standard_procedure = False
                         return True
                 else:
                     if self.env.standard_procedure and not stage in exceptions:
                         self.run_func("standard_"+stage)
+                        if standard_procedure_fixed:
+                            self.env.standard_procedure = False
                         return True
 
 def run(script, env, operation_order=None, remove=False):
