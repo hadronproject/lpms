@@ -204,7 +204,7 @@ def get_pkg(pkgname, repositorydb=True):
 
     if version and repo is None:
         # check repository priority for given version
-        data = db.find_pkg(name, repo_name = repo, pkg_category = category)
+        data = db.find_pkg(name, repo_name = repo, pkg_category = category, pkg_slot = slot)
         if data:
             for item in data:
                 if isinstance(item, basestring):
@@ -240,7 +240,7 @@ def get_pkg(pkgname, repositorydb=True):
             result = None
     else:
         result = db.find_pkg(name, repo_name = repo, pkg_category = category, 
-            selection = True)
+            selection = True, pkg_slot=slot)
 
     if not result:
         out.error("%s not found in database." % out.color(pkgname, "brightred"))

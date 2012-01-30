@@ -39,10 +39,19 @@ class API(object):
                 invalids.append(repo[0])
         return invalids
 
-    def find_pkg(self, pkgname, repo_name = None, pkg_category = None, 
-            selection=False):
+    def find_pkg(self, pkgname, repo_name=None, pkg_category=None, \
+            selection=False, pkg_slot=None):
         package = []
         result = self.db.find_pkg(pkgname)
+        if pkg_slot is not None:
+            for repo, category, name, version in result:
+                if pkg_slot is None:
+                    package.append((repo, category, name, version))
+                elif pkg_slot in version:
+                    package.append((repo, category, name, {pkg_slot : version[pkg_slot]}))
+            result = package
+            package = []
+
         if repo_name is None and pkg_category is None:
             if len(result) > 1 and selection:
                 return utils.pkg_selection_dialog(result)
