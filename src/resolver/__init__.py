@@ -141,7 +141,7 @@ class DependencyResolver(object):
         else:
             category, name = data.split("/")
             versions = []
-            repo = db.find_pkg(name, pkg_category=category)
+            repo = db.find_pkg(name, pkg_category=category, pkg_slot=slot)
             if not repo:
                 if instdb:
                     return
@@ -176,6 +176,7 @@ class DependencyResolver(object):
             if not versions:
                 out.warn("this package seems locked by the system administrator: %s/%s" % (category, name))
                 lpms.terminate()
+
             return category, name, utils.best_version(versions)
 
         name, version = utils.parse_pkgname(pkgname)
@@ -183,7 +184,7 @@ class DependencyResolver(object):
         category, name = name.split("/")
         
         result = []
-        repo_query = db.find_pkg(name, pkg_category=category)
+        repo_query = db.find_pkg(name, pkg_category=category, pkg_slot=slot)
         if not repo_query:
             if instdb:
                 return
@@ -271,6 +272,7 @@ class DependencyResolver(object):
         if not result:
             out.warn("this package seems locked by the system administrator: %s/%s" % (category, name))
             lpms.terminate()
+
         return category, name, utils.best_version(result)
 
     def opt_parser(self, data):
@@ -619,7 +621,7 @@ class DependencyResolver(object):
                         plan.append(pkg)
                         continue 
 
-                data = self.instdb.find_pkg(name, pkg_category = category)
+                data = self.instdb.find_pkg(name, pkg_category=category, repo_name=repo)
                 if data:
                     # the package is installed
                     irepo = self.instdb.get_repo(category, name, version)
