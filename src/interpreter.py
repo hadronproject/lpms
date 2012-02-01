@@ -46,8 +46,8 @@ class Interpreter(internals.InternalFuncs):
             self.env.real_root = cst.root
         self.script = script
         self.config = conf.LPMSConfig()
-        self.function_collisions()
         self.get_build_libraries()
+        self.function_collisions()
         self.startup_funcs()
 
     def function_collisions(self):
@@ -76,7 +76,6 @@ class Interpreter(internals.InternalFuncs):
                             race_list[preserved_name].append(library)
                     else:
                         race_list.update({preserved_name: [library]})
-                        
                         
         result = [(key, race_list[key]) for key in race_list if len(race_list[key]) > 1]
         if result:
@@ -394,14 +393,17 @@ class Interpreter(internals.InternalFuncs):
                 standard_procedure_fixed = True
         
         if stage in self.env.__dict__:
+            # run the packages's stage function
             self.run_func(stage)
         else:
             if not self.env.libraries and self.env.standard_procedure \
                     and not stage in exceptions:
+                        # run the standard stage function 
                         self.run_func("standard_"+stage)
                         if standard_procedure_fixed:
                             self.env.standard_procedure = False
                         return True
+            # if the stage is not defined in the spec, find it in the build helpers.
             for lib in self.env.libraries:
                 if self.env.standard_procedure and lib+"_"+stage in self.env.__dict__:
                     if self.env.primary_library:
@@ -415,12 +417,12 @@ class Interpreter(internals.InternalFuncs):
                         if standard_procedure_fixed:
                             self.env.standard_procedure = False
                         return True
-                else:
-                    if self.env.standard_procedure and not stage in exceptions:
-                        self.run_func("standard_"+stage)
-                        if standard_procedure_fixed:
-                            self.env.standard_procedure = False
-                        return True
+            # if the build helpers don't include the stage, run the standard function if it is possible.
+            if self.env.standard_procedure and not stage in exceptions:
+                self.run_func("standard_"+stage)
+                if standard_procedure_fixed:
+                    self.env.standard_procedure = False
+                    return True
 
 def run(script, env, operation_order=None, remove=False):
     ipr = Interpreter(script, env)
