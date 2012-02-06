@@ -16,6 +16,7 @@
 # along with lpms.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+import sys
 import glob
 import inspect
 import lpms
