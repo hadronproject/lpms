@@ -395,6 +395,8 @@ class Interpreter(internals.InternalFuncs):
         if stage in self.env.__dict__:
             # run the packages's stage function
             self.run_func(stage)
+            if standard_procedure_fixed:
+                self.env.standard_procedure = False
         else:
             if not self.env.libraries and self.env.standard_procedure \
                     and not stage in exceptions:
