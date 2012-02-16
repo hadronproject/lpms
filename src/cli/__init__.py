@@ -33,7 +33,7 @@ from lpms.operations import update
 
 commands = sys.argv[1:]
 
-lpms_version = '1.0.1'
+lpms_version = '1.0.2'
 
 help_output = (('--help', '-h', 'Shows this message.'),
         ('--version', '-v', 'Shows version.'),
@@ -293,7 +293,9 @@ def main():
 
     for package in packages:
         if package.startswith("@"):
-            packages.extend(utils.set_parser(package[1:]))
+            set_packages = utils.set_parser(package[1:])
+            if set_packages:
+                packages.extend(set_packages)
             set_remove.append(package)
 
     if instruct["category-install"]:
@@ -310,5 +312,6 @@ def main():
             packages.remove(pkg)
 
     # start building operation
-    api.pkgbuild(packages, instruct)
+    if packages:
+        api.pkgbuild(packages, instruct)
 

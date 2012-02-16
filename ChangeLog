@@ -1,3 +1,19 @@
+2012-02-07 Burak Sezer <purak@hadronproject.org>
+    * lpms-1.0.2
+	
+	Various changes(mostly extraction stage) in interpreter module.
+	
+	A small fix in package locking mechanism.
+	
+	Internal opt function uses enabled options list instead of utils.opts
+	
+	Don't care missing sets and warn the user.
+	
+	A bug fixed that appears if different slots of a package is located in
+	different repositories.
+	
+	Build helper management improved.
+
 2012-01-24 Burak Sezer <purak@hadronproject.org>
     * lpms-1.0.1
 	
