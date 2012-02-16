@@ -186,7 +186,7 @@ def set_parser(set_name):
     elif len(sets) == 1:
         set_file = sets[0]
     else:
-        out.warn("%s not found!")
+        out.warn("%s not found!" % out.color(set_name, "red"))
         return []
     
     return [line for line in file(set_file).read().strip().split("\n") \
