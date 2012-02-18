@@ -16,23 +16,31 @@
 # along with lpms.  If not, see <http://www.gnu.org/licenses/>.
 
 import re
+import sys
 import sqlite3
 import cPickle as pickle
 
 import lpms
+from lpms import api
 from lpms import out
 from lpms.db import dbapi
 from lpms import constants as cst
 
 help_output = (('--only-installed', 'Shows installed packages for given keyword.'),
         ('--in-name', 'Searchs given keyword in package names.'),
-        ('--in-summary', 'Searchs given keyword in package summaries.'))
+        ('--in-summary', 'Searchs given keyword in package summaries.'),
+        ('--interactive', 'Shows package index and allows installation via index numbers.'))
+
+# TODO:
+# * search command must use instruct variable properly
 
 class Search(object):
-    def __init__(self, keyword):
+    def __init__(self, keyword, instruct):
+        self.instruct = instruct
+        self.instruct["ask"] = True
         self.keyword = ""
         for key in keyword:
-            if not key in ('--only-installed', '--in-name', '--in-summary'):
+            if not key in ('--only-installed', '--in-name', '--in-summary', '--interactive'):
                 self.keyword += key+" "
         self.keyword = self.keyword.strip()
         self.connection = sqlite3.connect(cst.repositorydb_path)
@@ -106,7 +114,9 @@ class Search(object):
                 out.notify("these packages are installed but no longer available.")
                 available = False
 
-        for result in self.preprocess(results):
+        results = self.preprocess(results)
+        index = 1
+        for result in results:
             repo, category, name, version_data, summary = result
             version_data = pickle.loads(str(version_data))
             version = ""
@@ -128,9 +138,49 @@ class Search(object):
             if lpms.getopt("--only-installed") and pkg_status == "":
                 continue
 
-            out.write("%s%s/%s/%s (%s) %s\n    %s" % (pkg_status, out.color(repo, "green"),  
-                out.color(category, "green"),
-                out.color(name, "green"),
-                version,
-                other_repo,
-                summary+'\n'))
+            if lpms.getopt("--interactive"):
+                out.write("%s-) %s%s/%s/%s (%s) %s\n    %s" % (out.color(str(index), "green"), 
+                    pkg_status, 
+                    out.color(repo, "green"),  
+                    out.color(category, "green"),
+                    out.color(name, "green"),
+                    version,
+                    other_repo,
+                    summary+'\n'))
+                index += 1
+            else:
+                out.write("%s%s/%s/%s (%s) %s\n    %s" % (pkg_status, out.color(repo, "green"),  
+                    out.color(category, "green"),
+                    out.color(name, "green"),
+                    version,
+                    other_repo,
+                    summary+'\n'))
+
+        if results and lpms.getopt("--interactive"):
+            packages = []
+            def ask():
+                out.write("\ngive number(s):\n")
+                out.write("in order to select more than one package, use space between numbers:\n")
+                out.write("to exit, press Q or q.\n")
+            while True:
+                ask()
+                answers = sys.stdin.readline().strip()
+                if answers == "Q" or answers == "q":
+                    lpms.terminate()
+                else:
+                    targets = set()
+                    for answer in answers.split(" "):
+                        if not answer.isdigit():
+                            out.warn("%s is invalid. please give a number!" % out.color(answer, "red"))
+                            continue
+                        else:
+                            targets.add(answer)
+                try:
+                    for target in targets:
+                        packages.append("/".join(results[int(target)-1][:3]))
+                    break
+                except (IndexError, ValueError):
+                    out.warn("invalid command.")
+                    continue
+
+            if packages: api.pkgbuild(packages, self.instruct)
