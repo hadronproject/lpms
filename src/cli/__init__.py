@@ -172,7 +172,7 @@ def main():
                     from lpms.cli import search
                     results = [command for command in commands if not \
                             command.startswith("-")]
-                    search.Search(results).search()
+                    search.Search(results, instruct).search()
                     return
                 else:
                     if cmd not in regular and cmd not in toinstruct:
