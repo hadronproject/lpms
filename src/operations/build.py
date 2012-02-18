@@ -439,12 +439,17 @@ def main(raw_data, instruct):
             if not fetcher.URLFetcher().run(opr.download_plan):
                 lpms.catch_error("\nplease check the spec")
 
-            utils.xterm_title("lpms: extracting %s/%s/%s-%s" % (opr.env.repo, opr.env.category,
-                opr.env.name, opr.env.version))
-
         if opr.env.valid_opts is not None and len(opr.env.valid_opts) != 0:
             out.notify("applied options: %s" % 
                     " ".join(opr.env.valid_opts))
+
+        if lpms.getopt("--clean-tmp"):
+            for item in shelltools.listdir(cst.extract_dir):
+                path = os.path.join(cst.extract_dir, item)
+                if os.path.isdir(path):
+                    shelltools.remove_dir(path)
+                else:
+                    shelltools.remove_file(path)
 
         os.chdir(opr.env.build_dir)
         
