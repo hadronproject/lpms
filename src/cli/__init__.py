@@ -44,6 +44,7 @@ help_output = (('--help', '-h', 'Shows this message.'),
         ('--belong', '-b', 'Queries the package that owns given keyword.'),
         ('--content', '-c', 'Lists files of given package.'),
         ('--list-repos', 'Lists all repositories.'),
+        ('--clean-tmp', 'Cleans source code extraction directory.'),
         ('--force-upgrade', 'Forces lpms to use latest versions.'),
         ('--show-reverse-depends', 'Shows reverse dependencies of given package. It is a sub command of remove.'),
         ('--configure-pending', 'Configures pending packages if they were not configured at installation time.'),
@@ -51,7 +52,7 @@ help_output = (('--help', '-h', 'Shows this message.'),
         ('--verbose', 'Prints more output if possible.'),
         ('--quiet', 'Hides outputs if possible.'))
 
-build_help = (('--pretend', '-p', 'Shows operation steps'),
+build_help = (('--pretend', '-p', 'Shows operation steps.'),
         ('--ask', '-a', 'Asks to the user before operation.'),
         ('--fetch-only', '-F', 'Only fetches packages, do not install.(not yet)'),
         ('--search', '-s', 'Searches given keyword in database.'),
@@ -68,10 +69,10 @@ build_help = (('--pretend', '-p', 'Shows operation steps'),
         ('--resume-build', 'Resumes the most recent build operation.'),
         ('--change-root', 'Changes installation target.'),
         ('--force-file-collision', 'Disables collision protect.'),
-        ('--no-strip', 'No strip files'),
+        ('--no-strip', 'No strip files.'),
         ('--no-merge', 'Does not merge the package.'),
         ('--ask-repo', 'Shows repo selection dialog if necessary.'),
-        ('--unset-env-variables', 'Unsets environment variables that are defined in lpms.conf'),
+        ('--unset-env-variables', 'Unsets environment variables that are defined in lpms.conf.'),
         ('--opts', 'Determines options of the package.'))
 
 def version():
@@ -119,7 +120,8 @@ nevermind = ('--ignore-depends', '--quiet', '--verbose', '--force-upgrade', '--r
         '--ignore-sandbox', '--force-unpack', '--enable-sandbox', '--ignore-conflicts', 
         '--no-configure', '--ignore-reserve-files', '--reload-previous-repodb',
         '--list-repos', '--no-strip', '--unset-env-variables', '--use-file-relations', 
-        '--in-name', '--in-summary', '--only-installed', '--force-file-collision')
+        '--in-name', '--in-summary', '--only-installed', '--force-file-collision',
+        '--clean-tmp')
 
 exceptions = ('change-root', 'opts', 'stage')
 
