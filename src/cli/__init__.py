@@ -138,7 +138,7 @@ instruct = {'ask': False, 'pretend': False, 'resume-build': False, 'resume': Fal
         'cmd_options': [], 'specials': {}, 'ignore-deps': False, 'sandbox': None,'stage': None, \
         'force': None, 'upgrade': None, 'remove': None, 'skip-first': False, 'sync': False, \
         'update': False, 'configure-pending': False, 'category-install': False,
-        "use-new-opts": False, 'show-reverse-depends': False}
+        "use-new-opts": False, 'like': set(), 'show-reverse-depends': False}
 
 def main():
     packages = []; invalid = []
@@ -227,6 +227,7 @@ def main():
                         not command[2:].startswith("opts"):
                     invalid.append(command)
         else:
+            if "%" in command: instruct['like'].add(command); continue
             packages.append(unicode(command))
 
     for command in commands:
@@ -283,7 +284,7 @@ def main():
     for tag in ('upgrade', 'remove', 'sync', 'update'):
         del instruct[tag]
 
-    if not packages and not instruct["resume"]:
+    if not packages and not instruct["resume"] and not instruct['like']:
         out.error('no given package name.')
         lpms.terminate()
 
@@ -315,6 +316,6 @@ def main():
             packages.remove(pkg)
 
     # start building operation
-    if packages:
+    if packages or instruct['like']:
         api.pkgbuild(packages, instruct)
 
