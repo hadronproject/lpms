@@ -190,6 +190,19 @@ def main(params):
                 
         out.normal("%s repository(ies) is/are updated." % repo_num)
     else:
+        if repo_name == ".":
+            current_path = os.getcwd()
+            for repo_path in [os.path.join(cst.repos, item) \
+                    for item in utils.valid_repos()]:
+                if current_path == repo_path or len(current_path.split(repo_path)) == 2:
+                    # convert it a valid repo_name variable from the path
+                    repo_name = current_path.split(cst.repos)[1][1:]
+                    break
+            if repo_name == ".":
+                out.warn("%s does not seem a valid repository path." % \
+                        out.color(current_path, "red"))
+                lpms.terminate()
+
         if len(repo_name.split("/")) == 2:
             out.normal("updating %s" % repo_name)
             repo, category = repo_name.split("/")
