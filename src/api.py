@@ -294,6 +294,16 @@ def upgrade_system(instruct):
 
 def remove_package(pkgnames, instruct):
     '''Triggers remove operation for given packages'''
+    if instruct['like']:
+        # handle shortened package names
+        database = dbapi.InstallDB()
+        for item in instruct['like']:
+            query = database.db.cursor.execute("SELECT name FROM metadata where name LIKE ?", (item,))
+            results = query.fetchall()
+            if results:
+                for result in results:
+                    pkgnames.append(result[0])
+        del database
     file_relationsdb = dbapi.FileRelationsDB()
     reverse_dependsdb = dbapi.ReverseDependsDB()
     packages = [get_pkg(pkgname, repositorydb=False) for pkgname in pkgnames]
@@ -375,6 +385,16 @@ def resolve_dependencies(data, cmd_options, use_new_opts, specials=None):
 
 def pkgbuild(pkgnames, instruct):
     '''Starting point of build operation'''
+    if instruct['like']:
+        # handle shortened package names
+        database = dbapi.RepositoryDB()
+        for item in instruct['like']:
+            query = database.db.cursor.execute("SELECT name FROM metadata where name LIKE ?", (item,))
+            results = query.fetchall()
+            if results:
+                for result in results:
+                    pkgnames.append(result[0])
+        del database
     plan = resolve_dependencies([get_pkg(pkgname) for pkgname in pkgnames],
             instruct['cmd_options'], instruct['use-new-opts'],
             instruct['specials'])
