@@ -649,23 +649,34 @@ class DependencyResolver(object):
                     if not pkg in plan:
                         plan.append(pkg)
 
-            # locked_packages = []
-            # for item in plan:
-            #     plan_category = item[1]; plan_name = item[2]; plan_version = item[3]
-            #     for locked_package in self.locked_packages:
-            #         if plan_category == locked_package[0] and \
-            #                 plan_name == locked_package[1] and \
-            #                 plan_version in locked_package[2]:
-            #                     out.write("\n")
-            #                     for v in locked_package[2]:
-            #                         out.warn("%s-%s" % ("/".join(item[:-1]), v))
-            #                     out.write("\n")
-            #                     if len(locked_package[2]) > 1:
-            #                         out.error("these packages were locked by system administrator.")
-            #                    else:
-            #                        out.error("this package was locked by system administrator.")
-            #                    lpms.terminate()
-            
+            if lpms.getopt("--ignore-reinstall"):
+                # ignore installed packages
+                # this is useful for package sets.
+                out.normal("cleaning out installed packages...")
+                new_plan = []; rmplan = []
+                for item in plan:
+                    installed_versions = []
+                    repo, category, name, version = item
+                    result = self.instdb.find_pkg(name, pkg_category=category, repo_name=repo)
+                    if result:
+                        map(lambda slot: installed_versions.extend(result[-1][slot]), result[-1])
+                        if not version in installed_versions:
+                            new_plan.append(item)
+                        else:
+                            for package in packages:
+                                if item == package: rmplan.append(item)
+                    else:
+                        new_plan.append(item)
+                
+                # use the new plan if it is not empty
+                if new_plan: plan = new_plan
+
+                # remove the packages from directly from command line
+                for item in rmplan:
+                    if item in plan: plan.remove(item)
+
+            if not plan: out.write("no package is going to be installed.\n"); lpms.terminate()
+
             plan.reverse()
             return plan, self.operation_data, self.modified_by_package
 
