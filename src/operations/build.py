@@ -274,6 +274,18 @@ def main(raw_data, instruct):
             out.write("quitting...\n")
             utils.xterm_title_reset()
             lpms.terminate()
+            
+    # clean source code extraction directory if it is wanted
+    if lpms.getopt("--clean-tmp"):
+        clean_tmp_exceptions = ("resume")
+        for item in shelltools.listdir(cst.extract_dir):
+            if item in clean_tmp_exceptions: continue
+            path = os.path.join(cst.extract_dir, item)
+            if path in clean_tmp_exceptions: continue
+            if os.path.isdir(path):
+                shelltools.remove_dir(path)
+            else:
+                shelltools.remove_file(path)
 
     # resume feature
     # create a resume list. write package data(repo, category, name, version) to 
@@ -442,14 +454,6 @@ def main(raw_data, instruct):
         if opr.env.valid_opts is not None and len(opr.env.valid_opts) != 0:
             out.notify("applied options: %s" % 
                     " ".join(opr.env.valid_opts))
-
-        if lpms.getopt("--clean-tmp"):
-            for item in shelltools.listdir(cst.extract_dir):
-                path = os.path.join(cst.extract_dir, item)
-                if os.path.isdir(path):
-                    shelltools.remove_dir(path)
-                else:
-                    shelltools.remove_file(path)
 
         os.chdir(opr.env.build_dir)
         
