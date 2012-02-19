@@ -60,6 +60,7 @@ build_help = (('--pretend', '-p', 'Shows operation steps.'),
         ('--use-new-opts', '-N', 'Applies new global options for installed packages.'),
         ('--resume', "Resumes previous installation operation. Use '--skip-first' to skip the first package."),
         ('--add-repo', 'Adds new repository(not yet).'),
+        ('--ignore-reinstall', 'Ignores installed packages.'),
         ('--ignore-depends', 'Ignores dependencies.'),
         ('--ignore-conflicts', 'Ignore file conflicts if conflict protect is enabled.'),
         ('--ignore-sandbox', 'Disables sandbox facility.'),
@@ -121,7 +122,7 @@ nevermind = ('--ignore-depends', '--quiet', '--verbose', '--force-upgrade', '--r
         '--no-configure', '--ignore-reserve-files', '--reload-previous-repodb',
         '--list-repos', '--no-strip', '--unset-env-variables', '--use-file-relations', 
         '--in-name', '--in-summary', '--only-installed', '--force-file-collision',
-        '--clean-tmp')
+        '--clean-tmp', '--ignore-reinstall')
 
 exceptions = ('change-root', 'opts', 'stage')
 
