@@ -1,5 +1,18 @@
+2012-02-23 Burak Sezer <purak@hadronproject.org>
+	* lpms-1.0.3
+	
+	Package name shortening feature.
+	
+	A facility to ignore installed packages. Very useful for package sets.
+	
+	Use dot(.) to update/add current repository path.
+	
+	A parameter added to clean constants.extract_dir.
+	
+	Interactive mode for search command.
+
 2012-02-07 Burak Sezer <purak@hadronproject.org>
-    * lpms-1.0.2
+	* lpms-1.0.2
 	
 	Various changes(mostly extraction stage) in interpreter module.
 	
@@ -15,7 +28,7 @@
 	Build helper management improved.
 
 2012-01-24 Burak Sezer <purak@hadronproject.org>
-    * lpms-1.0.1
+	* lpms-1.0.1
 	
 	Flow control mechanism was improved in interpreter.
 
