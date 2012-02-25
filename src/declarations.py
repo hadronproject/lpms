@@ -79,13 +79,16 @@ class ConstantValues:
         self.val.spec_dir = "/usr/lpms"
         self.val.lpms_conf_file = "lpms.conf"
         self.val.build_conf_file = "build.conf"
-        self.val.distfiles = "/usr/portage/distfiles"
         self.val.extract_dir = "/var/tmp/lpms/"
         self.val.lock_file = self.val.extract_dir+"lock"
         self.val.resume_file = "var/tmp/lpms/"+"resume"
         self.val.src_cache = "/var/cache/lpms/sources"
         self.val.news_dir = "news"
         self.val.news_read = "news.read"
+        self.val.sandbox_log = '/var/log/sydbox.log'
+        self.val.sandbox_app = '/usr/bin/sydbox'
+        self.val.sandbox_config = '/etc/sydbox.conf'
+        self.val.sandbox_paths = (self.val.extract_dir, self.val.src_cache)
         
         # lpms.conf is unhealty in this case.
         with open(self.val.config_dir+"/"+self.val.lpms_conf_file) as data:

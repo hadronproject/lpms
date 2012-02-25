@@ -63,8 +63,9 @@ build_help = (('--pretend', '-p', 'Shows operation steps.'),
         ('--ignore-reinstall', 'Ignores installed packages.'),
         ('--ignore-depends', 'Ignores dependencies.'),
         ('--ignore-conflicts', 'Ignore file conflicts if conflict protect is enabled.'),
-        ('--ignore-sandbox', 'Disables sandbox facility.'),
-        ('--enable-sandbox', 'Enables sandbox facilitiy.'),
+        ('--disable-sandbox', 'Disables sandbox facility if it is possible.'),
+        ('--enable-sandbox', 'Enables sandbox facilitiy if it is possible.'),
+        ('--sandbox-log-level', 'Sandbox logging verbosity'),
         ('--ignore-reserve-files', 'Ignores local files.'),
         ('--no-configure', 'Does not run configuration functions.'),
         ('--resume-build', 'Resumes the most recent build operation.'),
@@ -118,7 +119,7 @@ def usage():
 
 
 nevermind = ('--ignore-depends', '--quiet', '--verbose', '--force-upgrade', '--reset', \
-        '--ignore-sandbox', '--force-unpack', '--enable-sandbox', '--ignore-conflicts', 
+        '--disable-sandbox', '--force-unpack', '--enable-sandbox', '--ignore-conflicts', 
         '--no-configure', '--ignore-reserve-files', '--reload-previous-repodb',
         '--list-repos', '--no-strip', '--unset-env-variables', '--use-file-relations', 
         '--in-name', '--in-summary', '--only-installed', '--force-file-collision',
@@ -219,6 +220,9 @@ def main():
                             command.startswith("-")]
                 search.Search(results).search()
                 return
+            elif command[2:].startswith('sandbox-log-level'):
+                # FIXME: This is no good. 
+                pass
             elif command in nevermind:
                 pass
             else:

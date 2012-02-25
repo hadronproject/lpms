@@ -127,7 +127,7 @@ class URLFetcher:
             for url in download_plan:
                 localfile = os.path.basename(url)
                 partfile  = localfile+".part"
-                output = shelltools.system(command+" "+partfile+" "+url, show=True)
+                output = shelltools.system(command+" "+partfile+" "+url, show=True, sandbox=False)
                 if not output:
                     out.error(url+" cannot be downloaded")
                     return False
