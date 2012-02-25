@@ -32,6 +32,10 @@ from lpms import shelltools
 from lpms import constants as cst
 
 
+def set_sandbox_paths():
+    '''Set writable sandbox paths for build operation'''
+    os.environ['SANDBOX_PATHS'] = ";".join(cst.sandbox_paths)
+
 def parse_user_defined_file(data, repodb, opt=False):
     '''Parses user defined control files and returns convenient package bundles'''
     user_defined_options = None
@@ -136,7 +140,7 @@ def update_info_index(info_path, dir_path="/usr/share/info/dir", delete=False):
             command = "/usr/bin/install-info --delete %s %s" % (info_path, dir_path)
         else:
             command = "/usr/bin/install-info %s %s" % (info_path, dir_path)
-        if not shelltools.system(command):
+        if not shelltools.system(command, sandbox=False):
             out.error("%s not updated. info file: %s" % (dir_path, info_path))
             return False
     else:

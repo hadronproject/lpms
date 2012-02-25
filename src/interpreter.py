@@ -134,44 +134,7 @@ class Interpreter(internals.InternalFuncs):
                     lpms.terminate()
 
     def run_func(self, func_name):
-        def run_with_sandbox(func_name):
-            # TODO: add user land switch here
-            try:
-                import fermion
-            except ImportError as err:
-                lpms.catch_error("dev-python/fermion could not imported, please check it!")
-
-            self.env.sandbox_valid_dirs = utils.sandbox_dirs()
-            self.env.sandbox_valid_dirs.append(self.config.build_dir)
-            for i in ('build_dir', 'install_dir', 'src_cache'):
-                self.env.sandbox_valid_dirs.append(getattr(self.env, i))
-            # run in fermion
-            ret = fermion.run(getattr(self.env, func_name),
-                    self.env.sandbox_valid_dirs,
-                    logger=self.sandbox_logger)
-
-            if ret.code != 0:
-                raise BuiltinError
-
-            if len(ret.violations) != 0:
-                out.brightred("sandbox violations in %s/%s/%s-%s!\n" % (self.env.repo, 
-                    self.env.category, self.env.pkgname, self.env.version))
-                out.normal("results:")
-                for result in ret.violations:
-                    out.notify("%s (%s -> %s)" % (result[0], result[1], result[2]))
-                out.error("sandbox violations detected while running %s" % out.color(func_name, "red"))
-                lpms.terminate()
-
-        def run_without_sandbox(func_name):
-            getattr(self.env, func_name)()
-
-        if self.env.sandbox:
-            run_with_sandbox(func_name)
-        else:
-            run_without_sandbox(func_name)
-
-    def sandbox_logger(self, command, path, canonical_path):
-        pass
+        getattr(self.env, func_name)()
 
     def run_extract(self):
         # if the environment has no extract_plan variable, doesn't run extract function

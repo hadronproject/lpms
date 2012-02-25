@@ -455,6 +455,11 @@ def main(raw_data, instruct):
             out.notify("applied options: %s" % 
                     " ".join(opr.env.valid_opts))
 
+        # set writable sandbox paths for build operation
+        utils.set_sandbox_paths()
+        # remove previous sandbox log if it is exist.
+        if os.path.exists(cst.sandbox_log):
+            shelltools.remove_file(cst.sandbox_log)
         os.chdir(opr.env.build_dir)
         
         if not interpreter.run(opr.env.spec_file, opr.env):

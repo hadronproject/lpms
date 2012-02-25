@@ -48,7 +48,13 @@ def terminate(msg=None):
         sys.stdout.write(out.color(msg, "brightred")+'\n')
     raise SystemExit(0)
 
-def getopt(opt):
+def getopt(opt, like=False):
+    if like:
+        for item in sys.argv:
+            if item.startswith(opt):
+                # FIXME: Use regex for this
+                return item.split("=")[1]
+        return
     if opt in sys.argv:
         return True
 

@@ -23,8 +23,9 @@ import time
 import subprocess
 
 import lpms 
-from lpms import conf
 from lpms import out
+from lpms import conf
+from lpms import constants as cst
 
 def binary_isexists(binary):
     path = os.environ['PATH'].split(':')
@@ -104,14 +105,22 @@ def touch(path):
         return
     open(path, 'w').close()
 
-def system(cmd, show=False, stage = None):
+def system(cmd, show=False, stage=None, sandbox=None):
+    cfg = conf.LPMSConfig()
+    if sandbox is None:
+        sandbox = True if cfg.sandbox else False
+        # override 'sandbox' variable if the user wants to modifiy from cli
+        if lpms.getopt('--enable-sandbox'): 
+            sandbox = True
+        elif lpms.getopt('--disable-sandbox'):
+            sandbox = False
     if lpms.getopt("--verbose"):
         ret, output, err = run_cmd(cmd, True)
-    elif (not conf.LPMSConfig().print_output or lpms.getopt("--quiet")) \
+    elif (not cfg.print_output or lpms.getopt("--quiet")) \
             and not show:
-                ret, output, err = run_cmd(cmd, False)
+                ret, output, err = run_cmd(cmd, show=False, enable_sandbox=sandbox)
     else:
-        ret, output, err = run_cmd(cmd, True)
+        ret, output, err = run_cmd(cmd, show=True, enable_sandbox=sandbox)
 
     if ret != 0:
         if not conf.LPMSConfig().print_output or lpms.getopt("--quiet"): 
@@ -123,10 +132,24 @@ def system(cmd, show=False, stage = None):
         return False
     return True
 
-def run_cmd(cmd, show=True):
+def run_cmd(cmd, show=True, enable_sandbox=True):
     stdout = None; stderr = None
-    #if lpms.getopt("--quiet") or (not conf.LPMSConfig().print_output and not \
-    #        lpms.getopt("--verbose")):
+    if enable_sandbox:
+        # FIXME: getopt should not do this.
+        # the verbosity of messages, defaults to 1
+        # 1 - error
+        # 2 - warning
+        # 3 - normal
+        # 4 - verbose
+        # 5 - debug
+        # 6 - crazy debug
+        log_level = lpms.getopt("--sandbox-log-level", like=True)
+        if log_level is None:
+            log_level = "1"
+        if not log_level in ('1', '2', '3', '4', '5', '6'):
+            out.warn("%s is an invalid sandbox log level." % log_level)
+        cmd = "%s --config=%s --log-level=%s --log-file=%s -- %s" % (cst.sandbox_app, cst.sandbox_config, \
+                log_level, cst.sandbox_log, cmd)
     if not show:
         stdout = subprocess.PIPE; stderr=subprocess.PIPE
     result = subprocess.Popen(cmd, shell=True, stdout=stdout, stderr=stderr)
