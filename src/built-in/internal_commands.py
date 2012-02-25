@@ -430,10 +430,10 @@ def insexe(source, target='/usr/bin'):
     shelltools.makedirs(os.path.dirname(target))
     return shelltools.install_executable([source], target)
 
-def system(*cmd):
-    result = shelltools.system(" ".join(cmd), stage = current_stage)
-    if isinstance(result, bool):
-        return result
+def system(*args, **kwargs):
+    result = shelltools.system(" ".join(args), stage=current_stage, \
+            sandbox=False if current_stage in cst.sandbox_exception_stages else True)
+    if isinstance(result, bool): return result
 
     if len(result) == 2:
         if result[1]:

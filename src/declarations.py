@@ -45,7 +45,8 @@ class ConstantValues:
     def __init__(self):
         # FIXME: values should be cleaned
         self.val.root = "/"
-        self.val.stages = ('extract', 'prepare', 'configure', 'build', 'install', 'merge', 'post_install', 'post_remove')
+        self.val.stages = ('extract', 'prepare', 'configure', 'build', 'install', 'merge', \
+                'post_install', 'post_remove', 'pre_merge', 'pre_remove')
         self.val.config_dir = "/etc/lpms"
         self.val.xmlfile_suffix = ".xml"
         self.val.lpms_path = "/usr/lib/python%s.%s/site-packages/lpms" % (sys.version_info[0], sys.version_info[1])
@@ -89,7 +90,8 @@ class ConstantValues:
         self.val.sandbox_app = '/usr/bin/sydbox'
         self.val.sandbox_config = '/etc/sydbox.conf'
         self.val.sandbox_paths = (self.val.extract_dir, self.val.src_cache)
-        
+        self.val.sandbox_exception_stages = ['post_install', 'post_remove', 'pre_remove', 'pre_merge']
+
         # lpms.conf is unhealty in this case.
         with open(self.val.config_dir+"/"+self.val.lpms_conf_file) as data:
             for line in data.readlines():
