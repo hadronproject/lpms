@@ -23,6 +23,7 @@ import lpms
 
 from lpms import out
 from lpms import utils
+from lpms import exceptions
 from lpms import shelltools
 from lpms.archive import extract as internal_extract
 from lpms.fetcher import URLFetcher
@@ -365,6 +366,29 @@ def setgroup(*parameters):
 def sed(*parameters):
     if not system('sed %s' % " ".join(parameters)):
         lpms.terminate('sed %s' % " ".join(parameters)+" failed.")
+
+# FIXME: Use decorator pattern to do this.
+# create a run_binary function for running a shell command from the spec
+# * git
+# * svn
+# * hg
+# * chgrp/sed/chmod/chown
+
+def svn(*parameters):
+    svn_binary = "/usr/bin/svn"
+    if not os.access(svn_binary, os.X_OK):
+        raise exceptions.NotExecutable("%s is not executable." % svn_binary)
+    if not system('%s %s' % (svn_binary, " ".join(parameters))):
+        raise exceptions.CommandFailed('command failed: %s %s' % (svn_binary, " ".join(parameters)))
+    return True
+
+def git(*parameters):
+    git_binary = "/usr/bin/git"
+    if not os.access(git_binary, os.X_OK):
+        raise exceptions.NotExecutable("%s is not executable." % git_binary)
+    if not system('%s %s' % (git_binary, " ".join(parameters))):
+        raise exceptions.CommandFailed('command failed: %s %s' % (git_binary, " ".join(parameters)))
+    return True
 
 def pwd():
     return os.getcwd()
