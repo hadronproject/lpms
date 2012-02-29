@@ -16,6 +16,12 @@
 # along with lpms.  If not, see <http://www.gnu.org/licenses/>.
 
 
+class CommandFailed(Exception):
+    pass
+
+class NotExecutable(Exception):
+    pass
+
 class ConfKeyError(Exception):
     pass
 

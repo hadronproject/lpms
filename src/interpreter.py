@@ -31,7 +31,7 @@ from lpms import internals
 from lpms import shelltools
 from lpms import file_collisions
 
-from lpms.exceptions import BuiltinError, MakeError
+from lpms.exceptions import BuiltinError, MakeError, NotExecutable, CommandFailed
 from lpms.shelltools import touch
 from lpms.operations import merge
 from lpms.operations import remove
@@ -462,7 +462,7 @@ def run(script, env, operation_order=None, remove=False):
                 ipr.env.pkgname, ipr.env.version))
             out.error("an error occurred when running the %s function." % out.color(opr, "red"))
             return False
-        except (AttributeError, NameError), err: 
+        except (AttributeError, NameError, NotExecutable, CommandFailed) as err: 
             out.write(out.color(">>", "brightred")+" %s/%s/%s-%s\n" % (ipr.env.repo, ipr.env.category, 
                 ipr.env.pkgname, ipr.env.version))
             traceback.print_exc(err)
