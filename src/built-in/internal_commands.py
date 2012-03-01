@@ -456,7 +456,7 @@ def insexe(source, target='/usr/bin'):
 
 def system(*args, **kwargs):
     result = shelltools.system(" ".join(args), stage=current_stage, \
-            sandbox=False if current_stage in cst.sandbox_exception_stages else True)
+            sandbox=False if current_stage in cst.sandbox_exception_stages else None)
     if isinstance(result, bool): return result
 
     if len(result) == 2:
