@@ -219,7 +219,11 @@ class Build(internals.InternalFuncs):
     def compile_script(self):
         if not os.path.isfile(self.env.spec_file):
             lpms.catch_error("%s not found!" % self.env.spec_file)
-        self.import_script(self.env.spec_file)
+        if not self.import_script(self.env.spec_file):
+            out.error("an error occured while processing the spec: %s" \
+                    % out.color(self.env.spec_file, "red"))
+            out.error("please report the above error messages to the package maintainer.")
+            lpms.terminate()
 
 def main(raw_data, instruct):
     operation_plan, operation_data, modified_by_package = raw_data

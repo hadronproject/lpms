@@ -17,6 +17,7 @@
 
 import os
 import sys
+import traceback
 
 from lpms import constants as cst 
 
@@ -44,10 +45,18 @@ class InternalFuncs(object):
             setattr(self.env, key, builtin_funcs[key])
 
         for builtin_file in cst.builtin_files:
-            self.import_script(os.path.join(cst.lpms_path, builtin_file))
+            if not self.import_script(os.path.join(cst.lpms_path, builtin_file)):
+                print("there are some problems in lpms' builtin libraries.")
+                print("this may be a serious bug. you should report it.")
+                raise SystemExit(0)
 
     def import_script(self, script_path):
-        exec compile(open(script_path).read(), "error", "exec") in self.env.__dict__
+        try:
+            exec compile(open(script_path).read(), "error", "exec") in self.env.__dict__
+        except:
+            traceback.print_exc()
+            return False
+        return True
 
     def get(self, *libs):
         self.env.libraries.extend(libs)

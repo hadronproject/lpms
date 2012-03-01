@@ -62,11 +62,10 @@ class Update(internals.InternalFuncs):
             self.env.name, self.env.version = utils.parse_pkgname(pkg.split(cst.spec_suffix)[0])
             self.env.__dict__["fullname"] = self.env.name+"-"+self.env.version
 
-            try:
-                self.import_script(script_path)
-            except:
-                traceback.print_exc()
-                out.error("an error occured while processing %s" % out.color(script_path, "red"))
+            if not self.import_script(script_path):
+                out.error("an error occured while processing the spec: %s" \
+                        % out.color(script_path, "red"))
+                out.error("please report the above error messages to the package maintainer.")
                 lpms.terminate()
 
             metadata = utils.metadata_parser(self.env.metadata)

@@ -51,7 +51,11 @@ class InitializeInterpreter(internals.InternalFuncs):
 
         # compile the script
         if os.access(spec_file, os.F_OK):
-            self.import_script(spec_file)
+            if not self.import_script(spec_file)
+                out.error("an error occured while processing the spec: %s" \
+                        % out.color(spec_file, "red"))
+                out.error("please report the above error messages to the package maintainer.")
+                lpms.terminate()
 
         # remove irrelevant functions for environment.
         # because, the following functions must be run by Build class

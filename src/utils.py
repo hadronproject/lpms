@@ -605,7 +605,7 @@ def import_script(script_path):
     objects = {}
     try:
         exec compile(open(script_path).read(), "error", "exec") in objects
-    except SyntaxError, err:
+    except SyntaxError as err:
         lpms.catch_error("%s in %s" % (err, script_path))
     return objects
 

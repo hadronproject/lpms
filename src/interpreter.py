@@ -28,10 +28,10 @@ from lpms import out
 from lpms import conf
 from lpms import utils
 from lpms import internals
+from lpms import exceptions
 from lpms import shelltools
 from lpms import file_collisions
 
-from lpms.exceptions import BuiltinError, MakeError, NotExecutable, CommandFailed
 from lpms.shelltools import touch
 from lpms.operations import merge
 from lpms.operations import remove
@@ -114,7 +114,12 @@ class Interpreter(internals.InternalFuncs):
                 lpms.terminate()
 
             # import the script
-            self.import_script(libfile)
+            if not self.import_script(libfile):
+                out.error("an error occured while processing the library: %s" \
+                        % out.color(libfile, "red"))
+                out.error("please report the above error messages to the library maintainer.")
+                lpms.terminate()
+
             if len(self.env.libraries) > current_length:
                 lib_index = self.env.libraries.index(lib)
                 current_length = len(self.env.libraries)
@@ -438,6 +443,14 @@ def run(script, env, operation_order=None, remove=False):
 
     if remove and 'post_remove' in env.__dict__ and not 'post_remove' in operation_order:
         operation_order.insert(len(operation_order), 'post_remove')
+        
+    def parse_error(exception=True):
+        '''Parse Python related errors'''
+        out.write(out.color(">>", "brightred")+" %s/%s/%s-%s\n" % (ipr.env.repo, ipr.env.category, 
+            ipr.env.pkgname, ipr.env.version))
+        if exception: traceback.print_exc(err)
+        out.error("an error occurred when running the %s function." % out.color(opr, "red"))
+        return False
 
     # FIXME: we need more flow control
     for opr in operation_order:
@@ -457,15 +470,14 @@ def run(script, env, operation_order=None, remove=False):
         method = getattr(ipr, "run_"+opr)
         try:
             method()
-        except (BuiltinError, MakeError):
-            out.write(out.color(">>", "brightred")+" %s/%s/%s-%s\n" % (ipr.env.repo, ipr.env.category, 
-                ipr.env.pkgname, ipr.env.version))
-            out.error("an error occurred when running the %s function." % out.color(opr, "red"))
-            return False
-        except (AttributeError, NameError, NotExecutable, CommandFailed) as err: 
-            out.write(out.color(">>", "brightred")+" %s/%s/%s-%s\n" % (ipr.env.repo, ipr.env.category, 
-                ipr.env.pkgname, ipr.env.version))
-            traceback.print_exc(err)
-            out.error("an error occurred when running the %s function." % out.color(opr, "red"))
-            return False
+        except SyntaxError as err:
+            return parse_error()
+        except AttributeError as err:
+            return parse_error()
+        except NameError as err:
+            return parse_error()
+        except exceptions.NotExecutable as err:
+            return parse_error()
+        except exceptions.CommandFailed as err: 
+            return parse_error()
     return True
