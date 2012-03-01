@@ -51,7 +51,7 @@ class InitializeInterpreter(internals.InternalFuncs):
 
         # compile the script
         if os.access(spec_file, os.F_OK):
-            if not self.import_script(spec_file)
+            if not self.import_script(spec_file):
                 out.error("an error occured while processing the spec: %s" \
                         % out.color(spec_file, "red"))
                 out.error("please report the above error messages to the package maintainer.")
