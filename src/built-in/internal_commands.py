@@ -336,7 +336,7 @@ def rmfile(target, ignore_fix_target=False):
         target = fix_target_path(target)
     src = glob.glob(target)
     if not src:
-        lpms.catch_error("no file matched pattern: %s" % target)
+        raise BuildError("no file matched pattern: %s" % target)
     
     for path in src:
         shelltools.remove_file(path)
@@ -346,7 +346,7 @@ def rmdir(target, ignore_fix_target=False):
         target = fix_target_path(target)
     src = glob.glob(target)
     if not src:
-        lpms.catch_error("no directory matched pattern: %s" % target)
+        raise BuildError("no directory matched pattern: %s" % target)
     
     for path in src:
         shelltools.remove_dir(path)
@@ -414,9 +414,9 @@ def patch(*args, **kwarg):
 
         patches = glob.glob(patch_dir+"/*"+cst.patch_suffix)
         if not patches:
-            lpms.catch_error("no patch found in \'files\' directory.")
+            raise BuildError("no patch found in \'files\' directory.")
         if apply_patch(patches, level, reverse) is not None:
-            lpms.catch_error("patch failed.")
+            raise BuildError("patch failed.")
         return 
 
     patches = []
@@ -432,22 +432,22 @@ def patch(*args, **kwarg):
         if patch_name.endswith(cst.patch_suffix):
             ptch = glob.glob(src)
             if not ptch:
-                lpms.catch_error("%s not found!" % patch_name)
+                raise BuildError("%s not found!" % patch_name)
             patches.extend(ptch)
         else:
             if os.path.isdir(src):
                 ptch = glob.glob(src+"/*")
                 if not ptch:
-                    lpms.catch_error("%s is an directory and it is not involve any files." % patch_name)
+                    raise BuildError("%s is an directory and it is not involve any files." % patch_name)
                 patches.extend(ptch)
             elif os.path.isfile(src):
                 ptch = glob.glob(src)
                 if not ptch:
-                    lpms.catch_error("%s not found." % patch_name)
+                    raise BuildError("%s not found." % patch_name)
                 patches.extend(ptch)
 
     if apply_patch(patches, level, reverse) is not None:
-        lpms.catch_error("patch failed.")
+        raise BuildError("patch failed.")
 
 def insexe(source, target='/usr/bin'):
     target = fix_target_path(target)
