@@ -31,6 +31,9 @@ class ConstError(TypeError):
 class BuiltinError(Exception):
     pass
 
+class BuildError(Exception):
+    pass
+
 class MakeError(Exception):
     pass
 

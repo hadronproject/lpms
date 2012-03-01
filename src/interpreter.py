@@ -18,7 +18,10 @@
 # Main interpreter for build scripts.
 
 import os
+import re
+import sys
 import time
+import inspect
 import traceback
 import cPickle as pickle
 
@@ -48,7 +51,6 @@ class Interpreter(internals.InternalFuncs):
         self.config = conf.LPMSConfig()
         self.get_build_libraries()
         self.function_collisions()
-        self.startup_funcs()
 
     def function_collisions(self):
         '''Checks the build environment to deal with function collisions if primary_library is not defined'''
@@ -126,17 +128,18 @@ class Interpreter(internals.InternalFuncs):
 
         self.env.libraries = list(result)
 
-    def startup_funcs(self):
-        for library in [m for m in self.env.__dict__ if "_library_start" in m]:
-            for func in getattr(self.env, library):
-                try:
-                    # run given function that's defined in environment
-                    func()
-                except:
-                    traceback.print_exc()
-                    out.error("an error occured while running the %s from %s library" % 
-                            (out.color(func.__name__, "red"), out.color(library, "red")))
-                    lpms.terminate()
+    # FIXME: What is this?
+    #def startup_funcs(self):
+    #    for library in [m for m in self.env.__dict__ if "_library_start" in m]:
+    #        for func in getattr(self.env, library):
+    #            try:
+    #                # run given function that's defined in environment
+    #                func()
+    #            except:
+    #                traceback.print_exc()
+    #                out.error("an error occured while running the %s from %s library" % 
+    #                        (out.color(func.__name__, "red"), out.color(library, "red")))
+    #                lpms.terminate()
 
     def run_func(self, func_name):
         getattr(self.env, func_name)()
@@ -444,15 +447,29 @@ def run(script, env, operation_order=None, remove=False):
     if remove and 'post_remove' in env.__dict__ and not 'post_remove' in operation_order:
         operation_order.insert(len(operation_order), 'post_remove')
         
-    def parse_error(exception=True):
-        '''Parse Python related errors'''
+    def parse_traceback(BuildError=False):
+        '''Parse exceptions and show nice and more readable error messages'''
         out.write(out.color(">>", "brightred")+" %s/%s/%s-%s\n" % (ipr.env.repo, ipr.env.category, 
             ipr.env.pkgname, ipr.env.version))
-        if exception: traceback.print_exc(err)
+        exc_type, exc_value, exc_traceback = sys.exc_info()
+        formatted_lines = traceback.format_exception(exc_type, exc_value, exc_traceback)
+        if not BuildError:
+            line = re.compile(r'[^\d.]+')
+            line = line.sub('', formatted_lines[-2])
+            out.write("%s %s " % (out.color("on line %s:" % line, "red"), formatted_lines[-1]))
+        else:
+            for item in formatted_lines:
+                item = item.strip()
+                if item.startswith("File"):
+                    formatted_line = item.split(" ")
+                    if formatted_line[-1] in operation_order:
+                        line = re.compile(r'[^\d.]+')
+                        line = line.sub('', formatted_lines[-3])
+                        out.write("%s %s " % (out.color("on line %s:" % line, "red"), formatted_lines[-1]))
+                        break
         out.error("an error occurred when running the %s function." % out.color(opr, "red"))
         return False
 
-    # FIXME: we need more flow control
     for opr in operation_order:
         if opr in ("merge", "remove"):
             if shelltools.is_exists(cst.lock_file):
@@ -466,18 +483,11 @@ def run(script, env, operation_order=None, remove=False):
                                 time.sleep(3)
                             else: break
             shelltools.echo(os.getpid(), cst.lock_file)
-
         method = getattr(ipr, "run_"+opr)
         try:
             method()
-        except SyntaxError as err:
-            return parse_error()
-        except AttributeError as err:
-            return parse_error()
-        except NameError as err:
-            return parse_error()
-        except exceptions.NotExecutable as err:
-            return parse_error()
-        except exceptions.CommandFailed as err: 
-            return parse_error()
+        except exceptions.BuildError:
+            return parse_traceback(BuildError=True)
+        except:
+            return parse_traceback()
     return True
