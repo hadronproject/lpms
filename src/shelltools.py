@@ -25,6 +25,7 @@ import subprocess
 import lpms 
 from lpms import out
 from lpms import conf
+from lpms import exceptions
 from lpms import constants as cst
 
 def binary_isexists(binary):
@@ -39,8 +40,7 @@ def makedirs(target):
         if not os.access(target, os.F_OK):
             os.makedirs(target)
     except OSError as err:
-        out.error("[makedirs] an error occured: %s" % target)
-        lpms.catch_error(err)
+        raise exceptions.BuiltinError("[makedirs] an error occured: %s" % target)
 
 def is_link(source):
     return os.path.islink(source)
@@ -75,8 +75,7 @@ def echo(content, target):
         with open(target, mode) as _file:
             _file.write('%s\n' % content)
     except IOError as err:
-        out.error("[echo] given content was not written to %s" % target)
-        lpms.catch_error(err, stage=1)
+        raise exceptions.BuiltinError("[echo] given content was not written to %s" % target)
 
 def listdir(source):
     if os.path.isdir(source):
@@ -91,8 +90,7 @@ def cd(target=None):
         try:
             os.chdir(trgt)
         except OSError as err:
-            out.error("[cd] directory was not changed: %s" % trgt)
-            lpms.catch_error(err, stage=1)
+            raise exceptions.BuiltinError("[cd] directory was not changed: %s" % trgt)
 
     if target is None:
         change(os.path.dirname(current))
@@ -169,15 +167,14 @@ def copytree(source, target, sym=True):
         try:
             shutil.copytree(source, target, sym)
         except OSError as err:
-            out.error("[copytree] an error occured while copying: %s -> %s" % (source, target))
-            lpms.catch_error(err)
+            raise exceptions.BuiltinError("[copytree] an error occured while copying: %s -> %s" % (source, target))
     else:
-        lpms.catch_error("[copytree] %s does not exists" % source, stage=1)
+        raise exceptions.BuiltinError("[copytree] %s does not exists" % source, stage=1)
 
 def move(source, target):
     src = glob.glob(source)
     if len(src) == 0:
-        lpms.catch_error("[move] %s is empty" % source)
+        raise exceptions.BuiltinError("[move] %s is empty" % source)
 
     if len(target.split("/")) > 1 and not os.path.isdir(os.path.dirname(target)):
         makedirs(os.path.dirname(target))
@@ -187,15 +184,14 @@ def move(source, target):
             try:
                shutil.move(path, target)
             except OSError as err:
-                out.error("[move] an error occured while moving: %s -> %s" % (source, target))
-                lpms.catch_error(err)
+                raise exceptions.BuiltinError("[move] an error occured while moving: %s -> %s" % (source, target))
         else:
-            lpms.catch_error("[move] file %s doesn\'t exists." % path)
+            raise exceptions.BuiltinError("[move] file %s doesn\'t exists." % path)
 
 def copy(source, target, sym = True):
     src= glob.glob(source)
     if len(src) == 0:
-        lpms.catch_error("[copy] no file matched pattern %s." % source)
+        raise exceptions.BuiltinError("[copy] no file matched pattern %s." % source)
 
     if len(target.split("/")) > 1 and not os.path.exists(os.path.dirname(target)):
         makedirs(os.path.dirname(target))
@@ -205,8 +201,7 @@ def copy(source, target, sym = True):
             try:
                 shutil.copy2(path, target)
             except IOError as err:
-                out.error("[copy] an error occured while copying: %s -> %s" % (source, target))
-                lpms.catch_error(err)
+                raise exceptions.BuiltinError("[copy] an error occured while copying: %s -> %s" % (source, target))
 
         elif is_link(path) and sym:
             if is_dir(target):
@@ -223,7 +218,7 @@ def copy(source, target, sym = True):
         elif is_dir(path):
             copytree(path, target, sym)
         else:
-            lpms.catch_error('[copy] file %s does not exist.' % filePath)
+            raise exceptions.BuiltinError('[copy] file %s does not exist.' % filePath)
 
 def insinto(source, target, install_dir=None, target_file = '', sym = True):
     if install_dir is not None:
@@ -234,7 +229,7 @@ def insinto(source, target, install_dir=None, target_file = '', sym = True):
     if not target_file:
         src = glob.glob(source)
         if len(src) == 0:
-            lpms.catch_error("[instinto] no file matched pattern %s." % source)
+            raise exceptions.BuiltinError("[instinto] no file matched pattern %s." % source)
 
         for path in src:
             if os.access(path, os.F_OK):
@@ -246,8 +241,7 @@ def make_symlink(source, target):
     try:
         os.symlink(source, target)
     except OSError as err:
-        out.error("[make_symlink] symlink not created: %s -> %s" % (target, source))
-        lpms.catch_error(err)
+        raise exceptions.BuiltinError("[make_symlink] symlink not created: %s -> %s" % (target, source))
 
 def remove_file(pattern):
     src = glob.glob(pattern)
@@ -260,14 +254,12 @@ def remove_file(pattern):
             try:
                 os.unlink(path)
             except OSError as err:
-                out.error("[remove_file] an error occured: %s" % path)
-                lpms.catch_error(err)
+                raise exceptions.BuiltinError("[remove_file] an error occured: %s" % path)
         elif is_file(path):
             try:
                 os.remove(path)
             except OSError as err:
-                out.error("[remove_file] an error occured: %s" % path)
-                lpms.catch_error(err)
+                raise exceptions.BuiltinError("[remove_file] an error occured: %s" % path)
         elif not is_dir(path):
             out.error("[remove_file] file %s doesn\'t exists." % path)
             return False
@@ -282,8 +274,7 @@ def remove_dir(source_dir):
             # rmtree gets string
             shutil.rmtree(str(source_dir))
         except OSError as err:
-            out.error("[remove_dir] an error occured while removing: %s" % source_dir)
-            lpms.catch_error(err)
+            raise exceptions.BuiltinError("[remove_dir] an error occured while removing: %s" % source_dir)
     elif is_file(source_dir):
         pass
     else:
@@ -294,8 +285,7 @@ def rename(source, target):
     try:
         os.rename(source, target)
     except OSError as err:
-        out.error("an error occured while renaming: %s -> %s" % (source, target))
-        lpms.catch_error(err)
+        raise exceptions.BuiltinError("an error occured while renaming: %s -> %s" % (source, target))
 
 def install_executable(sources, target):
     if not os.path.isdir(os.path.dirname(target)):
@@ -304,7 +294,7 @@ def install_executable(sources, target):
     for source in sources:
         srcs = glob.glob(source)
         if len(srcs) == 0:
-            lpms.catch_error("[install_executable] file not found: %s" % source)
+            raise exceptions.BuiltinError("[install_executable] file not found: %s" % source)
 
         for src in srcs:
             if not system('install -m0755 -o root -g root %s %s' % (src, target)):

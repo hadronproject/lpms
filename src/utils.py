@@ -353,9 +353,8 @@ def opt(option, cmd_options, default_options, from_package = []):
 def check_root(msg=True): 
     if os.getuid() != 0:
         if msg:
-            lpms.catch_error("you must be root!")
-        else:
-            return False
+            out.error("you must be root!")
+        return False
     return True
 
 def unset_env_variables():

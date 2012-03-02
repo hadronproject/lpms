@@ -218,7 +218,7 @@ class Build(internals.InternalFuncs):
 
     def compile_script(self):
         if not os.path.isfile(self.env.spec_file):
-            lpms.catch_error("%s not found!" % self.env.spec_file)
+            lpms.terminate("%s not found!" % self.env.spec_file)
         if not self.import_script(self.env.spec_file):
             out.error("an error occured while processing the spec: %s" \
                     % out.color(self.env.spec_file, "red"))
@@ -453,7 +453,7 @@ def main(raw_data, instruct):
             opr.prepare_download_plan(opr.env.valid_opts)
             
             if not fetcher.URLFetcher().run(opr.download_plan):
-                lpms.catch_error("\nplease check the spec")
+                lpms.terminate("\nplease check the spec")
 
         if opr.env.valid_opts is not None and len(opr.env.valid_opts) != 0:
             out.notify("applied options: %s" % 
