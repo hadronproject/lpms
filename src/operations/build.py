@@ -467,7 +467,7 @@ def main(raw_data, instruct):
         os.chdir(opr.env.build_dir)
         
         if not interpreter.run(opr.env.spec_file, opr.env):
-            lpms.terminate("errors occured :(")
+            lpms.terminate("thank you for flying with lpms.")
             
         lpms.logger.info("finished %s/%s/%s-%s" % (opr.env.repo, opr.env.category, 
             opr.env.name, opr.env.version))
