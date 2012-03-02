@@ -48,6 +48,10 @@ def terminate(msg=None):
         sys.stdout.write(out.color(msg, "brightred")+'\n')
     raise SystemExit(0)
 
+def set_sandbox_paths():
+    '''Set writable sandbox paths for build operation'''
+    os.environ['SANDBOX_PATHS'] = ";".join(constants.sandbox_paths)
+
 def getopt(opt, like=False):
     if like:
         for item in sys.argv:
@@ -103,3 +107,6 @@ sys.setdefaultencoding('utf-8')
 
 # initialize logging feature
 logger = init_logging()
+
+# set writable sandbox paths for various operations
+set_sandbox_paths()
