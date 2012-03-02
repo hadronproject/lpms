@@ -486,6 +486,8 @@ def run(script, env, operation_order=None, remove=False):
         method = getattr(ipr, "run_"+opr)
         try:
             method()
+        except SystemExit:
+            return False
         except exceptions.BuildError:
             return parse_traceback(BuildError=True)
         except:
