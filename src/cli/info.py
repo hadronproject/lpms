@@ -99,11 +99,11 @@ class Info(object):
             elif len(param) == 1:
                 data = self.repo_db.find_pkg(param[0])
             else:
-                lpms.catch_error("%s seems invalid." % out.color("/".join(param), "brightred"))
-
+                out.error("%s seems invalid." % out.color("/".join(param), "brightred"))
+                lpms.terminate()
             if not data:
-                lpms.catch_error("%s not found!" % out.color("/".join(param), "brightred"))
-
+                out.error("%s not found!" % out.color("/".join(param), "brightred"))
+                lpms.terminate()
             if type(data).__name__ == 'tuple':
                 self.get_info(data)
             else:

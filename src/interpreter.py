@@ -447,13 +447,14 @@ def run(script, env, operation_order=None, remove=False):
     if remove and 'post_remove' in env.__dict__ and not 'post_remove' in operation_order:
         operation_order.insert(len(operation_order), 'post_remove')
         
-    def parse_traceback(BuildError=False):
+    def parse_traceback(exception_type=None):
         '''Parse exceptions and show nice and more readable error messages'''
+        line_index = -5 if exception_type == "BuiltinError" else -3
         out.write(out.color(">>", "brightred")+" %s/%s/%s-%s\n" % (ipr.env.repo, ipr.env.category, 
             ipr.env.pkgname, ipr.env.version))
         exc_type, exc_value, exc_traceback = sys.exc_info()
         formatted_lines = traceback.format_exception(exc_type, exc_value, exc_traceback)
-        if not BuildError:
+        if exception_type == "BuildError":
             line = re.compile(r'[^\d.]+')
             line = line.sub('', formatted_lines[-2])
             out.write("%s %s " % (out.color("on line %s:" % line, "red"), formatted_lines[-1]))
@@ -464,7 +465,7 @@ def run(script, env, operation_order=None, remove=False):
                     formatted_line = item.split(" ")
                     if formatted_line[-1] in operation_order:
                         line = re.compile(r'[^\d.]+')
-                        line = line.sub('', formatted_lines[-3])
+                        line = line.sub('', formatted_lines[line_index])
                         out.write("%s %s " % (out.color("on line %s:" % line, "red"), formatted_lines[-1]))
                         break
         out.error("an error occurred when running the %s function." % out.color(opr, "red"))
@@ -489,7 +490,9 @@ def run(script, env, operation_order=None, remove=False):
         except SystemExit:
             return False
         except exceptions.BuildError:
-            return parse_traceback(BuildError=True)
+            return parse_traceback("BuildError")
+        except exceptions.BuiltinError:
+            return parse_traceback("BuiltinError")
         except:
             return parse_traceback()
     return True

@@ -79,7 +79,8 @@ def main(pkgname, real_root):
                     repo, category, name = pkg[:-1]
                     result = (repo, category, name, version)
             if len(result) == 0:
-                lpms.catch_error("%s not found!" % out.color(pkgname[1:], "brightred"))
+                out.error("%s not found!" % out.color(pkgname[1:], "brightred"))
+                lpms.terminate()
         else:
             data = instdb.find_pkg(pkgname)
             versions = data[-1]
@@ -113,7 +114,8 @@ def main(pkgname, real_root):
                 version = versions.values()[0][0]
 
             if not data:
-                lpms.catch_error("%s not found!" % out.color(pkgname, "brightred"))
+                out.error("%s not found!" % out.color(pkgname, "brightred"))
+                lpms.terminate()
 
             result = list(data); result.remove(data[-1])
             result.insert(3, version)
