@@ -454,20 +454,23 @@ def run(script, env, operation_order=None, remove=False):
             ipr.env.pkgname, ipr.env.version))
         exc_type, exc_value, exc_traceback = sys.exc_info()
         formatted_lines = traceback.format_exception(exc_type, exc_value, exc_traceback)
-        if exception_type == "BuildError":
-            line = re.compile(r'[^\d.]+')
-            line = line.sub('', formatted_lines[-2])
-            out.write("%s %s " % (out.color("on line %s:" % line, "red"), formatted_lines[-1]))
+        if not ipr.env.debug:
+            if exception_type == "BuildError":
+                line = re.compile(r'[^\d.]+')
+                line = line.sub('', formatted_lines[-2])
+                out.write("%s %s " % (out.color("on line %s:" % line, "red"), formatted_lines[-1]))
+            else:
+                for item in formatted_lines:
+                    item = item.strip()
+                    if item.startswith("File"):
+                        formatted_line = item.split(" ")
+                        if formatted_line[-1] in operation_order:
+                            line = re.compile(r'[^\d.]+')
+                            line = line.sub('', formatted_lines[line_index])
+                            out.write("%s %s " % (out.color("on line %s:" % line, "red"), formatted_lines[-1]))
+                            break
         else:
-            for item in formatted_lines:
-                item = item.strip()
-                if item.startswith("File"):
-                    formatted_line = item.split(" ")
-                    if formatted_line[-1] in operation_order:
-                        line = re.compile(r'[^\d.]+')
-                        line = line.sub('', formatted_lines[line_index])
-                        out.write("%s %s " % (out.color("on line %s:" % line, "red"), formatted_lines[-1]))
-                        break
+            traceback.print_exc()
         out.error("an error occurred when running the %s function." % out.color(opr, "red"))
         return False
 

@@ -50,7 +50,8 @@ help_output = (('--help', '-h', 'Shows this message.'),
         ('--configure-pending', 'Configures pending packages if they were not configured at installation time.'),
         ('--reload-previous-repodb', 'Reloads previous repository database backup.'),
         ('--verbose', 'Prints more output if possible.'),
-        ('--quiet', 'Hides outputs if possible.'))
+        ('--quiet', 'Hides outputs if possible.'),
+        ('--debug', 'Enables debug mode.'))
 
 build_help = (('--pretend', '-p', 'Shows operation steps.'),
         ('--ask', '-a', 'Asks to the user before operation.'),
@@ -129,7 +130,8 @@ exceptions = ('change-root', 'opts', 'stage')
 
 toinstruct = ('ask', 'a', 'resume-build', 'resume', 'pretend', 'p', 'fetch-only', 'F', \
         'no-merge', 'remove', 'r', 'upgrade', 'U',  'skip-first', 'sync', 'S', 'update', 'u', \
-        'configure-pending', 'category-install', 'C', 'use-new-opts', 'N', 'show-reverse-depends')
+        'configure-pending', 'category-install', 'C', 'use-new-opts', 'N', \
+        'show-reverse-depends', 'debug')
 
 regular = ('help', 'h', 'version', 'v', 'belong', 'b', 'content', 'c', 'remove', 'r', \
         'no-color', 'n', 'update', 'u', 'search', 's', 'upgrade', 'U', 'ask-repo', 'C', 'show-deps')
@@ -139,8 +141,7 @@ instruct = {'ask': False, 'pretend': False, 'resume-build': False, 'resume': Fal
         'cmd_options': [], 'specials': {}, 'ignore-deps': False, 'sandbox': None,'stage': None, \
         'force': None, 'upgrade': None, 'remove': None, 'skip-first': False, 'sync': False, \
         'update': False, 'configure-pending': False, 'category-install': False,
-        "use-new-opts": False, 'like': set(), 'show-reverse-depends': False}
-
+        "use-new-opts": False, 'like': set(), 'show-reverse-depends': False, 'debug': False}
 def main():
     packages = []; invalid = []
     for command in commands:
