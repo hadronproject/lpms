@@ -1,11 +1,11 @@
-# TODO list for lpms-1.0 #
+# TODO list for lpms-1.1 #
 ==========================
 (-) memory and speed optimizations
 (-) Write a new database module and api in orm style
 (-) re-write operations/build and operations/merge.py
 (-) an 'environment update' script
 (-) unit tests will be written 
-(-) use exceptions instead of lpms.terminate
+(+) use exceptions instead of lpms.terminate
 (-) improve dependency resolver
 (-) write a seperated dependency query tool
 (-) write a seperated searching tool
