@@ -457,7 +457,7 @@ def run(script, env, operation_order=None, remove=False):
         if not ipr.env.debug:
             if exception_type == "BuildError":
                 line = re.compile(r'[^\d.]+')
-                line = line.sub('', formatted_lines[-2])
+                line = line.sub('', formatted_lines[line_index])
                 out.write("%s %s " % (out.color("on line %s:" % line, "red"), formatted_lines[-1]))
             else:
                 for item in formatted_lines:
