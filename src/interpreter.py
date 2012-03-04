@@ -489,6 +489,9 @@ def run(script, env, operation_order=None, remove=False):
             shelltools.echo(os.getpid(), cst.lock_file)
         method = getattr(ipr, "run_"+opr)
         try:
+            # firstly, lpms must be sure in the build directory
+            if os.getcwd() != ipr.env.build_dir:
+                os.chdir(ipr.env.build_dir)
             method()
         except SystemExit:
             return False
