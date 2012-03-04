@@ -476,7 +476,7 @@ def main(raw_data, instruct):
                 # sandboxed processes can access to CCACHE_DIR.
                 os.environ["SANDBOX_PATHS"] = os.environ['CCACHE_DIR']+":%(SANDBOX_PATHS)s" % os.environ
             else:
-                out.warn("ccache could not enabled. so you should check dev-util/ccache")
+                out.warn("ccache could not be enabled. so you should check dev-util/ccache")
       
         if not interpreter.run(opr.env.spec_file, opr.env):
             lpms.terminate("thank you for flying with lpms.")
