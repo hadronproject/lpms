@@ -117,6 +117,7 @@ class DependencyResolver(object):
                 return False
             else:
                 return self.get_best_version(selected_slots)
+        return slot
 
     def package_select(self, incoming, instdb=False):
         db = self.repodb
