@@ -463,7 +463,21 @@ def main(raw_data, instruct):
         if os.path.exists(cst.sandbox_log):
             shelltools.remove_file(cst.sandbox_log)
         os.chdir(opr.env.build_dir)
-        
+
+        # ccache facility
+        if "ccache" in opr.config.__dict__ and opr.config.ccache:
+            if os.access("/usr/lib/ccache/bin", os.R_OK):
+                out.notify("ccache is enabled")
+                os.environ["PATH"] = "/usr/lib/ccache/bin:%(PATH)s" % os.environ
+                if "ccache_dir" in opr.config.__dict__:
+                    os.environ["CCACHE_DIR"] = opr.config.ccache_dir
+                else:
+                    os.environ["CCACHE_DIR"] = cst.ccache_dir
+                # sandboxed processes can access to CCACHE_DIR.
+                os.environ["SANDBOX_PATHS"] = os.environ['CCACHE_DIR']+":%(SANDBOX_PATHS)s" % os.environ
+            else:
+                out.warn("ccache could not enabled. so you should check dev-util/ccache")
+      
         if not interpreter.run(opr.env.spec_file, opr.env):
             lpms.terminate("thank you for flying with lpms.")
             

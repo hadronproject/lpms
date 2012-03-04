@@ -86,6 +86,7 @@ class ConstantValues:
         self.val.src_cache = "/var/cache/lpms/sources"
         self.val.news_dir = "news"
         self.val.news_read = "news.read"
+        self.val.ccache_dir = "/var/cache/ccache"
         self.val.sandbox_log = '/var/log/sydbox.log'
         self.val.sandbox_app = '/usr/bin/sydbox'
         self.val.sandbox_config = '/etc/sydbox.conf'
