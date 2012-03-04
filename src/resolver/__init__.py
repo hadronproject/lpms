@@ -108,6 +108,16 @@ class DependencyResolver(object):
     def get_best_version(self, versions):
         return utils.best_version(versions)
     
+    def parse_slot(self, category, name, db, slot):
+        if slot is not None and slot.endswith("*"):
+            slots = db.get_version(name, pkg_category = category)
+            selected_slots = [item for item in slots if item.startswith(slot.replace("*", "."))]
+            if not selected_slots:
+                out.error("%s is invalid slot for %s/%s" % (slot, category, name))
+                return False
+            else:
+                return self.get_best_version(selected_slots)
+
     def package_select(self, incoming, instdb=False):
         db = self.repodb
         if instdb:
@@ -140,6 +150,7 @@ class DependencyResolver(object):
             pkgname = data[2:]
         else:
             category, name = data.split("/")
+            slot = self.parse_slot(category, name, db, slot)
             versions = []
             repo = db.find_pkg(name, pkg_category=category, pkg_slot=slot)
             if not repo:
@@ -180,8 +191,8 @@ class DependencyResolver(object):
             return category, name, utils.best_version(versions)
 
         name, version = utils.parse_pkgname(pkgname)
-
         category, name = name.split("/")
+        slot = self.parse_slot(category, name, db, slot)
         
         result = []
         repo_query = db.find_pkg(name, pkg_category=category, pkg_slot=slot)
@@ -215,7 +226,6 @@ class DependencyResolver(object):
                     versions = repo[-1][slot]
                 else:
                     continue
-                    #map(lambda v: versions.extend(v), repo[-1].values())
 
             installed_versions = self.instdb.get_version(name, pkg_category=category)
 
