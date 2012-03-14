@@ -236,6 +236,16 @@ class Interpreter(internals.InternalFuncs):
         lpms.logger.info("installing to %s" % self.env.build_dir)
 
         self.run_stage("install")
+        if hasattr(self.env, 'docs'):
+            for doc in self.env.docs:
+                if isinstance(doc, list) or isinstance(doc, tuple):
+                    source_file, target_file = doc
+                    namestr = self.env.fullname if self.env.slot != "0" else self.env.name
+                    target = self.env.fix_target_path("/usr/share/doc/%s/%s" % (namestr, target_file))
+                    source = os.path.join(self.env.build_dir, source_file)
+                    self.env.insfile(source, target)
+                else:
+                    self.env.insdoc(doc)
         out.notify("%s/%s installed." % (self.env.category, self.env.fullname))
         if not os.path.isfile(installed_file):
             touch(installed_file)
