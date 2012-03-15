@@ -19,6 +19,7 @@ import os
 import sys
 import traceback
 
+from lpms import exceptions
 from lpms import constants as cst 
 
 class Environment(object):
@@ -40,7 +41,7 @@ class InternalFuncs(object):
         setattr(self.env, "primary_library", None)
 
         # FIXME: use a better method for environment functions.
-        builtin_funcs = {"get": self.get}
+        builtin_funcs = {"get": self.get, "BuiltinError": exceptions.BuiltinError}
         for key in builtin_funcs:
             setattr(self.env, key, builtin_funcs[key])
 

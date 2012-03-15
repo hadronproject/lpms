@@ -83,11 +83,15 @@ def conf(*args, **kwargs):
     else:
         out.warn("no configure script found.")
 
-def raw_configure(*parameters):
+def raw_configure(*parameters, **kwargs):
     '''Runs configure script with only given parameters'''
     out.notify("running ./configure %s" % " ".join(parameters))
-    if not system("./configure %s" % " ".join(parameters)):
-        lpms.terminate()
+    conf_command = './configure'
+    if "run_dir" in kwargs:
+        conf_command = os.path.join(kwargs["run_dir"], "configure")
+
+    if not system("%s %s" % (conf_command, " ".join(parameters))):
+        raise BuildError("raw_configure failed.")
 
 def make(*parameters, **kwargs):
     '''Runs standard build command with given parameters'''

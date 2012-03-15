@@ -236,6 +236,16 @@ class Interpreter(internals.InternalFuncs):
         lpms.logger.info("installing to %s" % self.env.build_dir)
 
         self.run_stage("install")
+        if hasattr(self.env, 'docs'):
+            for doc in self.env.docs:
+                if isinstance(doc, list) or isinstance(doc, tuple):
+                    source_file, target_file = doc
+                    namestr = self.env.fullname if self.env.slot != "0" else self.env.name
+                    target = self.env.fix_target_path("/usr/share/doc/%s/%s" % (namestr, target_file))
+                    source = os.path.join(self.env.build_dir, source_file)
+                    self.env.insfile(source, target)
+                else:
+                    self.env.insdoc(doc)
         out.notify("%s/%s installed." % (self.env.category, self.env.fullname))
         if not os.path.isfile(installed_file):
             touch(installed_file)
@@ -449,26 +459,21 @@ def run(script, env, operation_order=None, remove=False):
         
     def parse_traceback(exception_type=None):
         '''Parse exceptions and show nice and more readable error messages'''
-        line_index = -5 if exception_type == "BuiltinError" else -3
         out.write(out.color(">>", "brightred")+" %s/%s/%s-%s\n" % (ipr.env.repo, ipr.env.category, 
             ipr.env.pkgname, ipr.env.version))
         exc_type, exc_value, exc_traceback = sys.exc_info()
         formatted_lines = traceback.format_exception(exc_type, exc_value, exc_traceback)
         if not ipr.env.debug:
-            if exception_type == "BuildError":
-                line = re.compile(r'[^\d.]+')
-                line = line.sub('', formatted_lines[line_index])
-                out.write("%s %s " % (out.color("on line %s:" % line, "red"), formatted_lines[-1]))
-            else:
-                for item in formatted_lines:
-                    item = item.strip()
-                    if item.startswith("File"):
-                        formatted_line = item.split(" ")
-                        if formatted_line[-1] in operation_order:
-                            line = re.compile(r'[^\d.]+')
-                            line = line.sub('', formatted_lines[line_index])
-                            out.write("%s %s " % (out.color("on line %s:" % line, "red"), formatted_lines[-1]))
-                            break
+            for item in formatted_lines:
+                item = item.strip()
+                if item.startswith("File"):
+                    regex = re.compile(r'(\w+)\S*$')
+                    regex = regex.search(item)
+                    if regex.group() in operation_order:
+                        line = re.compile(r'[^\d.]+')
+                        line = line.sub('', item)
+                        out.write("%s %s " % (out.color("on line %s:" % line, "red"), formatted_lines[-1]))
+                        break
         else:
             traceback.print_exc()
         out.error("an error occurred when running the %s function." % out.color(opr, "red"))
@@ -490,7 +495,7 @@ def run(script, env, operation_order=None, remove=False):
         method = getattr(ipr, "run_"+opr)
         try:
             # firstly, lpms must be sure in the build directory
-            if os.getcwd() != ipr.env.build_dir:
+            if hasattr(ipr.env, "build_dir") and os.getcwd() != ipr.env.build_dir:
                 os.chdir(ipr.env.build_dir)
             method()
         except SystemExit:
