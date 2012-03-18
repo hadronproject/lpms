@@ -135,7 +135,6 @@ class Merge(internals.InternalFuncs):
         out.notify("merging the package to %s and creating database entries..." % self.env.real_root)
         
         self.file_relationsdb.delete_item_by_pkgdata(self.env.category, self.env.name, self.previous_version, commit=True)
-
         # find content of the package
         for root_path, dirs, files in os.walk(self.env.install_dir, followlinks=True):
             root_path = root_path.split(self.env.install_dir)[1]
@@ -146,7 +145,6 @@ class Merge(internals.InternalFuncs):
                 target = os.path.join(self.env.real_root, root_path[1:], d)
                 
                 real_target = "/".join([root_path, d])
-                
                 if self.is_parent_symlink(target): break
 
                 if os.path.islink(source):
@@ -160,8 +158,14 @@ class Merge(internals.InternalFuncs):
 
                     shelltools.makedirs(os.path.join(self.env.real_root, realpath))
                     # make symlink
+                    if os.path.isdir(target):
+                        shelltools.remove_dir(target)
+                    elif os.path.isfile(target):
+                        shelltools.remove_file(target)
                     shelltools.make_symlink(os.readlink(source), target)
                 else:
+                    if os.path.isfile(target):
+                        shelltools.remove_file(target)
                     shelltools.makedirs(target)
 
                 perms = get_perms(source)
@@ -311,8 +315,10 @@ class Merge(internals.InternalFuncs):
                     realpath = os.readlink(source)
                     if self.env.install_dir in realpath:
                         realpath = realpath.split(self.env.install_dir)[1]
-                    if os.path.islink(target):
+                    if not os.path.isdir(target):
                         shelltools.remove_file(target)
+                    else:
+                        shelltools.remove_dir(target)
                     shelltools.make_symlink(realpath, target)
                 else:
                     sha1sum = utils.sha1sum(source)
@@ -430,7 +436,13 @@ class Merge(internals.InternalFuncs):
         for key in (runtimedeps, builddeps, postmerge, conflict):
             i += 1
             for reverse_data in key:
-                reverse_repo, reverse_category, reverse_name, reverse_version = reverse_data[:-1]
+                # a ugly workaround for conflicts
+                if len(reverse_data) == 4:
+                    # this seems a conflict
+                    reverse_repo, reverse_category, reverse_name, reverse_version = reverse_data
+                else:
+                    # a normal dependency
+                    reverse_repo, reverse_category, reverse_name, reverse_version = reverse_data[:-1]
                 if i == 2:
                     self.reverse_dependsdb.add_reverse_depend((self.env.repo, self.env.category, \
                             self.env.name, self.env.version, reverse_repo, reverse_category, \
