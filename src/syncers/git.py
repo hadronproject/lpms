@@ -53,12 +53,12 @@ class GITSync(object):
             os.chdir(self.repo_path)
             if lpms.getopt("--reset"):
                 out.warn("forcing git to overwrite local files")
-                shelltools.system("%s reset --hard HEAD" % self.git_binary)
-                shelltools.system("%s clean -f -d" % self.git_binary)
-            shelltools.system("%s pull -f -u origin" % self.git_binary)
+                shelltools.system("%s reset --hard HEAD" % self.git_binary, sandbox=False)
+                shelltools.system("%s clean -f -d" % self.git_binary, sandbox=False)
+            shelltools.system("%s pull -f -u origin" % self.git_binary, sandbox=False)
         else:
             os.chdir(os.path.dirname(self.repo_path))
-            shelltools.system("%s clone %s %s" % (self.git_binary, self.remote, self.repo))
+            shelltools.system("%s clone %s %s" % (self.git_binary, self.remote, self.repo), sandbox=False)
 
 
 def run(repo, remote):
