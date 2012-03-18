@@ -51,7 +51,6 @@ class Update(internals.InternalFuncs):
                 out.notify("%s" % out.color(category, "brightwhite"))
             for my_pkg in packages:
                 self.update_package(repo_path, category, my_pkg)
-        self.repo_db.commit()
 
     def update_package(self, repo_path, category, my_pkg, my_version = None, update = False):
         repo_name = os.path.basename(repo_path)
@@ -79,7 +78,6 @@ class Update(internals.InternalFuncs):
             if not "src_url" in metadata:
                 metadata.update({"src_url": None})
 
-            #sys.write.stdin("    %s-%s\r" % (self.env.name, self.env.version))
             if lpms.getopt("--verbose"):
                 out.write("    %s-%s\n" % (self.env.name, self.env.version))
             try:
@@ -147,7 +145,6 @@ class Update(internals.InternalFuncs):
                 except KeyError:
                     pass
             self.packages_num += 1
-        #self.repo_db.commit()
 
 def db_backup():
     import time
@@ -177,6 +174,7 @@ def main(params):
         # firstly, lpms tries to create a copy of current repository database.
         db_backup()
 
+        operation.repo_db.cursor().execute('''BEGIN TRANSACTION''')
         out.normal("updating repository database...")
         for repo_name in os.listdir(cst.repos):
             if not repo_name in utils.valid_repos():
@@ -186,7 +184,8 @@ def main(params):
                 
                 operation.update_repository(repo_name)
                 repo_num += 1
-                
+
+        operation.repo_db.commit()
         out.normal("%s repository(ies) is/are updated." % repo_num)
     else:
         if repo_name == ".":
@@ -249,6 +248,7 @@ def main(params):
             if os.path.isdir(repo_dir):
                 repo_path = os.path.join(repo_dir, cst.repo_file)
                 if os.path.isfile(repo_path):
+                    operation.repo_db.cursor().execute('''BEGIN TRANSACTION''')
                     out.normal("updating repository: %s" % out.color(repo_name, "green"))
                     operation.update_repository(repo_name)
                     operation.repo_db.commit()
