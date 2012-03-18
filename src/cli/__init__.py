@@ -268,12 +268,18 @@ def main():
 
     if instruct['sync']:
         api.syncronize(packages, instruct)
+        if instruct['update']:
+            api.update_repository(packages)
+            if instruct['upgrade']:
+                api.upgrade_system(instruct)
         return
 
     if instruct['update']:
         api.update_repository(packages)
+        if instruct['upgrade']:
+            api.upgrade_system(instruct)
         return
-
+ 
     if instruct['upgrade']:
         api.upgrade_system(instruct)
         return
