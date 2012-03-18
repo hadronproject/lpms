@@ -77,6 +77,9 @@ class API(object):
 
         return package
 
+    def cursor(self):
+        return self.db.connection.cursor()
+
     def commit(self):
         return self.db.commit()
 
