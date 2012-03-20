@@ -389,7 +389,7 @@ def main(raw_data, instruct):
         else:
             if not "src_url" in opr.env.__dict__.keys():
                 opr.env.src_url = None
-
+        
         if not "srcdir" in opr.env.__dict__:
             setattr(opr.env, "srcdir", opr.env.pkgname+"-"+opr.env.raw_version)
         opr.prepare_environment()
@@ -458,6 +458,10 @@ def main(raw_data, instruct):
         if opr.env.valid_opts is not None and len(opr.env.valid_opts) != 0:
             out.notify("applied options: %s" % 
                     " ".join(opr.env.valid_opts))
+            
+        if opr.env.src_url is None and not opr.extract_plan:
+            # Workaround for #208
+            opr.env.extract_nevertheless = True
 
         # remove previous sandbox log if it is exist.
         if os.path.exists(cst.sandbox_log):

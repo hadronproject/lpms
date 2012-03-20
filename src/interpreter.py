@@ -146,7 +146,8 @@ class Interpreter(internals.InternalFuncs):
 
     def run_extract(self):
         # if the environment has no extract_plan variable, doesn't run extract function
-        if not hasattr(self.env, "extract_plan"): return
+        if not hasattr(self.env, "extract_nevertheless") or not self.env.extract_nevertheless:
+            if not hasattr(self.env, "extract_plan"): return
         target = os.path.dirname(self.env.build_dir)
         extracted_file = os.path.join(os.path.dirname(target), ".extracted")
         if os.path.isfile(extracted_file):
@@ -456,7 +457,7 @@ def run(script, env, operation_order=None, remove=False):
 
     if remove and 'post_remove' in env.__dict__ and not 'post_remove' in operation_order:
         operation_order.insert(len(operation_order), 'post_remove')
-        
+
     def parse_traceback(exception_type=None):
         '''Parse exceptions and show nice and more readable error messages'''
         out.write(out.color(">>", "brightred")+" %s/%s/%s-%s\n" % (ipr.env.repo, ipr.env.category, 
