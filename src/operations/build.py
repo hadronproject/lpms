@@ -459,7 +459,7 @@ def main(raw_data, instruct):
             out.notify("applied options: %s" % 
                     " ".join(opr.env.valid_opts))
             
-        if opr.env.src_url is None and not opr.extract_plan:
+        if opr.env.src_url is None and not opr.extract_plan and hasattr(opr, "extract"):
             # Workaround for #208
             opr.env.extract_nevertheless = True
 
