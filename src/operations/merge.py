@@ -316,7 +316,8 @@ class Merge(internals.InternalFuncs):
                     if self.env.install_dir in realpath:
                         realpath = realpath.split(self.env.install_dir)[1]
                     if not os.path.isdir(target):
-                        shelltools.remove_file(target)
+                        if os.path.isfile(target):
+                            shelltools.remove_file(target)
                     else:
                         shelltools.remove_dir(target)
                     shelltools.make_symlink(realpath, target)
