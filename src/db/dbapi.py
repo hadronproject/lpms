@@ -193,7 +193,10 @@ class API(object):
         return self.db.get_depends(repo_name, category, pkgname, version)
 
     def get_arch(self, repo_name, category, pkgname, version = None):
-        return self.db.get_arch(repo_name, category, pkgname, version)
+        available_architectures = self.db.get_arch(repo_name, category, pkgname, version)
+        if available_architectures:
+            return available_architectures.split(" ")
+        return None
 
     def get_repo(self, category, pkgname, version = None):
         valid_repos = utils.valid_repos()
