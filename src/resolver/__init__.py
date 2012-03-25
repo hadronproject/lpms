@@ -47,6 +47,7 @@ class DependencyResolver(object):
         self.active = None
         self.invalid_elements = ['||']
         self.removal = {}
+        self.unavailable_packages = {}
         self.modified_by_package = {}
         
         self.locked_packages = []
@@ -579,10 +580,25 @@ class DependencyResolver(object):
                 if recursive:
                     self.collect(lrepo, lcategory, lname, lversion, self.use_new_opts)
 
-    def resolve_depends(self, packages, cmd_options, use_new_opts, specials=None):
+    def catch_unavailable_packages(self, pkg):
+        repo, category, name, version = pkg
+        available_branches = self.repodb.get_arch(repo, category, name, version)
+        if available_branches:
+            if not self.current_branch in available_branches:
+                if not utils.fix_branch_relations(self.current_branch, available_branches):
+                    if self.current_branch in self.unavailable_packages:
+                        self.unavailable_packages[self.current_branch].append(pkg)
+                    else:
+                        self.unavailable_packages[self.current_branch] = [pkg]
+
+    def resolve_depends(self, packages, cmd_options, current_branch, use_new_opts, specials=None):
         self.special_opts = specials
         self.parse_user_defined_options_file()
         setattr(self, "use_new_opts", use_new_opts)
+        if current_branch is None:
+            setattr(self, "current_branch", self.config.arch)
+        else:
+            setattr(self, "current_branch", current_branch)
 
         for options in (self.config.options.split(" "), cmd_options):
             for opt in options:
@@ -618,7 +634,8 @@ class DependencyResolver(object):
         try:
             for package in packages:
                 if not package in [data[0] for data in self.package_query]:
-                     plan.append(package)
+                    self.catch_unavailable_packages(pkg)
+                    plan.append(package)
 
             processed = topsort(self.package_query)
             for single_pkg in self.single_pkgs:
@@ -629,6 +646,7 @@ class DependencyResolver(object):
                 repo, category, name, version = pkg
                 if (repo, category, name, version) in packages:
                     if not pkg in plan:
+                        self.catch_unavailable_packages(pkg)
                         plan.append(pkg)
                         continue 
 
@@ -642,15 +660,18 @@ class DependencyResolver(object):
                             if not opt in db_options[version].split(" ") and not pkg in plan:
                                 if self.use_new_opts or pkg in self.modified_by_package:
                                     if not pkg in plan:
+                                        self.catch_unavailable_packages(pkg)
                                         plan.append(pkg)
                             if category+"/"+name in self.removal:
                                 if not pkg in plan:
+                                    self.catch_unavailable_packages(pkg)
                                     plan.append(pkg)
                     else:
                         # new version
                         if lpms.getopt("-U") or lpms.getopt("--upgrade") or lpms.getopt("--force-upgrade") \
                                 or (category, name) in self.should_upgrade:
                             if not pkg in plan:
+                                self.catch_unavailable_packages(pkg)
                                 plan.append(pkg)
                         else: 
                             if not pkg in packages and pkg in self.operation_data: 
@@ -658,6 +679,7 @@ class DependencyResolver(object):
                 else:
                     # fresh install
                     if not pkg in plan:
+                        self.catch_unavailable_packages(pkg)
                         plan.append(pkg)
 
             if lpms.getopt("--ignore-reinstall"):
@@ -672,11 +694,14 @@ class DependencyResolver(object):
                     if result:
                         map(lambda slot: installed_versions.extend(result[-1][slot]), result[-1])
                         if not version in installed_versions:
+                            self.catch_unavailable_packages(item)
                             new_plan.append(item)
                         else:
                             for package in packages:
+                                self.catch_unavailable_packages(item)
                                 if item == package: rmplan.append(item)
                     else:
+                        self.catch_unavailable_packages(item)
                         new_plan.append(item)
                 
                 # use the new plan if it is not empty
@@ -687,6 +712,17 @@ class DependencyResolver(object):
                     if item in plan: plan.remove(item)
 
             if not plan: out.write("no package is going to be installed.\n"); lpms.terminate()
+
+            if self.unavailable_packages:
+                out.warn("these packages are not available for your branch: %s" % \
+                        out.color(self.current_branch, "green"))
+                for branch in self.unavailable_packages:
+                    self.unavailable_packages[branch].reverse()
+                    for package in self.unavailable_packages[branch]:
+                        out.notify("/".join(package[:3])+"-"+package[-1])
+                out.write("\n")
+                out.warn("please contact the package maintainers.")
+                lpms.terminate()
 
             plan.reverse()
             return plan, self.operation_data, self.modified_by_package
