@@ -42,6 +42,7 @@ class DependencyResolver(object):
         self.config = conf.LPMSConfig()
         self.single_pkgs = []
         self.udo = {}
+        self.arch_exceptions = {}
         self.get_user_defined_files()
         self.should_upgrade = []
         self.active = None
@@ -61,7 +62,7 @@ class DependencyResolver(object):
                 continue
             with open(user_defined_file) as data:
                 data = [line.strip() for line in data.readlines() \
-                        if line != "#"]
+                        if line != "#" and line.strip()]
                 if "".join(data) == "":
                     continue
             setattr(self, "user_defined_"+os.path.basename(user_defined_file), data)
@@ -73,6 +74,14 @@ class DependencyResolver(object):
         for user_defined_option in self.user_defined_options:
             category, name, versions, opts = self.parse_user_defined_file(user_defined_option, True)
             self.udo.update({(category, name):(versions, opts)})
+
+    def parse_user_defined_arch_exceptions(self):
+        if not hasattr(self, "user_defined_arch_exceptions"):
+            return
+
+        for user_defined_arch_exception in self.user_defined_arch_exceptions:
+            category, name, versions, opts = self.parse_user_defined_file(user_defined_arch_exception, True)
+            self.arch_exceptions.update({(category, name):(versions, opts)})
 
     def parse_user_defined_file(self, data, opt=False):
         return utils.parse_user_defined_file(data, self.repodb, opt)
@@ -583,13 +592,19 @@ class DependencyResolver(object):
     def catch_unavailable_packages(self, pkg):
         repo, category, name, version = pkg
         available_branches = self.repodb.get_arch(repo, category, name, version)
+        # add user defined exceptions
+        if (category, name) in self.arch_exceptions:
+            versions, arches = self.arch_exceptions[(category, name)]
+            if version in versions:
+                available_branches.extend(arches)
         if available_branches:
             if not self.current_branch in available_branches:
                 if not utils.fix_branch_relations(self.current_branch, available_branches):
                     if self.current_branch in self.unavailable_packages:
-                        self.unavailable_packages[self.current_branch].append(pkg)
+                        self.unavailable_packages[self.current_branch].add(pkg)
                     else:
-                        self.unavailable_packages[self.current_branch] = [pkg]
+                        self.unavailable_packages[self.current_branch] = set()
+                        self.unavailable_packages[self.current_branch].add(pkg)
 
     def resolve_depends(self, packages, cmd_options, current_branch, use_new_opts, specials=None):
         self.special_opts = specials
@@ -599,6 +614,15 @@ class DependencyResolver(object):
             setattr(self, "current_branch", self.config.arch)
         else:
             setattr(self, "current_branch", current_branch)
+
+        if self.current_branch.startswith("$"):
+            out.error("your system seems to use %s bleeding edge branch. this is not possible!" % \
+                    out.color(self.current_branch, "red"))
+            lpms.terminate()
+
+        # import and parse user defined arch exceptions file
+        # in order to mix software branches
+        self.parse_user_defined_arch_exceptions()
 
         for options in (self.config.options.split(" "), cmd_options):
             for opt in options:
@@ -717,7 +741,7 @@ class DependencyResolver(object):
                 out.warn("these packages are not available for your branch: %s" % \
                         out.color(self.current_branch, "green"))
                 for branch in self.unavailable_packages:
-                    self.unavailable_packages[branch].reverse()
+                    #self.unavailable_packages[branch].reverse()
                     for package in self.unavailable_packages[branch]:
                         out.notify("/".join(package[:3])+"-"+package[-1])
                 out.write("\n")
@@ -735,4 +759,3 @@ class DependencyResolver(object):
                 for cyc in cycle:
                     print(cyc)
                 lpms.terminate()
-                #out.write(cycle+"\n\n")
