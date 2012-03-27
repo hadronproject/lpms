@@ -40,9 +40,11 @@ class API(object):
         return invalids
 
     def find_pkg(self, pkgname, repo_name=None, pkg_category=None, \
-            selection=False, pkg_slot=None):
+            selection=False, pkg_slot=None, arch=None):
         package = []
-        result = self.db.find_pkg(pkgname)
+        result = self.db.find_pkg(pkgname, "x86")
+        if result is False: return False
+
         if pkg_slot is not None:
             for repo, category, name, version in result:
                 if pkg_slot is None:
