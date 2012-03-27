@@ -6,7 +6,7 @@ About
 -------
 
 lpms is a package manager which was designed to provide advanced control and 
-optimization over packages. It is written in Python entirely and uses custom 
+optimization over the packages. It is written in Python entirely and uses custom 
 Python scripts to build packages.
 
 lpms aims to be functional, user-friendly, fast and powerful.
@@ -21,11 +21,9 @@ Dependencies
 
 * Python-2.7.x must be compiled with sqlite3 support. So lpms depends on sqlite3.
 
-* Uses 'fermion' as sandboxing application.
+* Uses sydbox as sandboxing application.
  
- $ git clone git://gitorious.org/hadron/fermion.git
-
- Note: If you don't want to use fermion, you must set sandbox as False in 
+ Note: If you don't want to use sydbox, you must set sandbox as False in 
  /etc/lpms/build.conf.
 
 * Uses 'magic' to check MIME types. The module is a part of file(sys-apps/file
