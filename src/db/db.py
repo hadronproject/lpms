@@ -157,11 +157,25 @@ class PackageDatabase:
                 return True
         return False
 
-    def find_pkg(self, name):
-        self.cursor.execute('''select repo, category, name, version from metadata where name=(?)''', (name,))
+    def find_pkg(self, name, arch=None):
+        if arch is None:
+            self.cursor.execute('''select repo, category, name, version from metadata where name=(?)''', (name,))
+        else:
+            self.cursor.execute('''select repo, category, name, version, arch from metadata where name=(?)''', (name,))
         result = self.cursor.fetchall()
         if not result:
             return result
+        if arch is not None:
+            filtered = []
+            for item in result:
+                repo, category, name, version, arch_data = item
+                arch_data = pickle.loads(str(arch_data))
+                if not arch_data: continue
+                for slot in arch_data:
+                    if not arch_data[slot]: continue
+                    if arch in arch_data[slot].split(" "):
+                        filtered.append((repo, category, name, pickle.loads(str(version))))
+            return filtered if filtered else False
         return [(repo, category, name, pickle.loads(str(version))) for repo, category, name, version in result]
     
     def get_metadata(self, keyword, repo, category, name):
