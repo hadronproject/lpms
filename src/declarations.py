@@ -54,8 +54,8 @@ class ConstantValues:
         self.val.lpms_path = "/usr/lib/python%s.%s/site-packages/lpms" % (sys.version_info[0], sys.version_info[1])
         self.val.logfile = "/var/log/lpms.log"
         self.val.user_dir = "/etc/lpms/user"
-        self.val.user_defined_files = ('%s/arch_exceptions' % self.val.user_dir, '%s/lock' % self.val.user_dir, \
-                '%s/unlock' % self.val.user_dir, '%s/options' % self.val.user_dir)
+        self.val.user_defined_files = ('%s/lock' % self.val.user_dir, '%s/unlock' % self.val.user_dir,  \
+                '%s/options' % self.val.user_dir)
         self.val.local_env_variable_files = ('%s/ldflags' % self.val.user_dir, '%s/cflags' % self.val.user_dir, \
                 '%s/cxxflags' % self.val.user_dir, '%s/env' % self.val.user_dir)
         self.val.protect_file = "reserve_files.conf"
