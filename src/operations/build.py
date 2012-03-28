@@ -152,11 +152,11 @@ class Build(internals.InternalFuncs):
                 self.download_plan.append(url)
             else:
                 option, url = url
-                if self.check_cache(url):
-                    continue
-                if option in applied: 
-                    self.download_plan.append(url)
+                if option in applied:
                     self.extract_plan.append(url)
+                    if self.check_cache(url):
+                        continue
+                    self.download_plan.append(url)
         setattr(self.env, "extract_plan", self.extract_plan)
 
     def prepare_environment(self):
