@@ -60,7 +60,8 @@ class DependencyResolver(object):
                 continue
             with open(user_defined_file) as data:
                 data = [line.strip() for line in data.readlines() \
-                        if line != "#"]
+                        if line != "#" and line.strip()]
+                print data
                 if "".join(data) == "":
                     continue
             setattr(self, "user_defined_"+os.path.basename(user_defined_file), data)
