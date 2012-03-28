@@ -1,3 +1,18 @@
+2012-03-28 Burak Sezer <purak@hadronproject.org>
+	* lpms-1.0.4
+	
+	Sandbox migration was completed. Fermion/Catbox was removed. lpms uses
+	sydbox instead of it.
+
+	#205 use "begin transaction" clause before insert the packages to the
+	repository database(update operation).
+
+	Slot declaration support via joker char(*) like dev-lang/python:2*
+
+	Basic debug mode for exceptions.
+
+	Exception handling was improved. catch_error is obsolete.
+
 2012-02-23 Burak Sezer <purak@hadronproject.org>
 	* lpms-1.0.3
 	
