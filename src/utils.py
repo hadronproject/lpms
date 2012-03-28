@@ -32,9 +32,9 @@ from lpms import shelltools
 from lpms import constants as cst
 
 def fix_branch_relations(current_branch, available_branches):
-    if current_branch.startswith("$") and not \
-            current_branch.startswith("~"):
-        return False
+    # Return False if current branch is stable
+    if not current_branch.startswith("~"): return False
+
     return current_branch[1:] in available_branches
 
 def parse_user_defined_file(data, repodb, opt=False):
