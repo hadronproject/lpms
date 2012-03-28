@@ -44,8 +44,6 @@ class ConstantValues:
 
     def __init__(self):
         # FIXME: values should be cleaned
-        # TODO: move available_branches to system profile manager
-        self.val.available_branches = ['x86', '~x86']
         self.val.root = "/"
         self.val.stages = ('extract', 'prepare', 'configure', 'build', 'install', 'merge', \
                 'post_install', 'post_remove', 'pre_merge', 'pre_remove')

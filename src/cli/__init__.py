@@ -73,7 +73,6 @@ build_help = (('--pretend', '-p', 'Shows operation steps.'),
         ('--change-root', 'Changes installation target.'),
         ('--force-file-collision', 'Disables collision protect.'),
         ('--no-strip', 'No strip files.'),
-        ('--arch', 'Specify software branch'),
         ('--no-merge', 'Does not merge the package.'),
         ('--ask-repo', 'Shows repo selection dialog if necessary.'),
         ('--unset-env-variables', 'Unsets environment variables that are defined in lpms.conf.'),
@@ -127,7 +126,7 @@ nevermind = ('--ignore-depends', '--quiet', '--verbose', '--force-upgrade', '--r
         '--in-name', '--in-summary', '--only-installed', '--force-file-collision',
         '--clean-tmp', '--ignore-reinstall')
 
-exceptions = ('change-root', 'opts', 'stage', 'arch')
+exceptions = ('change-root', 'opts', 'stage')
 
 toinstruct = ('ask', 'a', 'resume-build', 'resume', 'pretend', 'p', 'fetch-only', 'F', \
         'no-merge', 'remove', 'r', 'upgrade', 'U',  'skip-first', 'sync', 'S', 'update', 'u', \
@@ -139,11 +138,10 @@ regular = ('help', 'h', 'version', 'v', 'belong', 'b', 'content', 'c', 'remove',
 
 instruct = {'ask': False, 'pretend': False, 'resume-build': False, 'resume': False, \
         'pretend': False, 'no-merge': False, 'fetch-only': False, 'real_root': None, \
-        'cmd_options': [], 'current_branch': None, 'specials': {}, 'ignore-deps': False, 'sandbox': None,'stage': None, \
+        'cmd_options': [], 'specials': {}, 'ignore-deps': False, 'sandbox': None,'stage': None, \
         'force': None, 'upgrade': None, 'remove': None, 'skip-first': False, 'sync': False, \
         'update': False, 'configure-pending': False, 'category-install': False,
         "use-new-opts": False, 'like': set(), 'show-reverse-depends': False, 'debug': False}
-
 def main():
     packages = []; invalid = []
     for command in commands:
@@ -254,8 +252,6 @@ def main():
                     instruct["specials"].update({name: opts.split(" ")})
                 if command[2:].startswith('opts='):
                     instruct['cmd_options'] = command[2:].split('=')[1].split(' ')
-                if command[2:].startswith('arch='):
-                    instruct['current_branch'] = command[2:].split('=')[1]
                 if command[2:].startswith('stage'):
                     instruct['stage'] = command[2:].split('=')[1].strip()
                 instruct[command[2:]] = True

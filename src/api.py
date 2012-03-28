@@ -376,12 +376,12 @@ def remove_package(pkgnames, instruct):
             file_relationsdb.delete_item_by_pkgdata(category, name, version, commit=True)
             reverse_dependsdb.delete_item(category, name, version, commit=True)
 
-def resolve_dependencies(data, cmd_options, current_branch, use_new_opts, specials=None):
+def resolve_dependencies(data, cmd_options, use_new_opts, specials=None):
     '''Resolve dependencies using fixit object. This function
     prepares a full operation plan for the next stages'''
     out.normal("resolving dependencies")
     fixit = resolver.DependencyResolver()
-    return fixit.resolve_depends(data, cmd_options, current_branch, use_new_opts, specials)
+    return fixit.resolve_depends(data, cmd_options, use_new_opts, specials)
 
 def pkgbuild(pkgnames, instruct):
     '''Starting point of build operation'''
@@ -389,13 +389,13 @@ def pkgbuild(pkgnames, instruct):
         # handle shortened package names
         database = dbapi.RepositoryDB()
         for item in instruct['like']:
-            query = database.db.cursor.execute("SELECT name FROM metadata WHERE name LIKE ?", (item,))
+            query = database.db.cursor.execute("SELECT name FROM metadata where name LIKE ?", (item,))
             results = query.fetchall()
             if results:
                 for result in results:
                     pkgnames.append(result[0])
         del database
     plan = resolve_dependencies([get_pkg(pkgname) for pkgname in pkgnames],
-            instruct['cmd_options'], instruct['current_branch'], instruct['use-new-opts'],
+            instruct['cmd_options'], instruct['use-new-opts'],
             instruct['specials'])
     build.main(plan, instruct)
