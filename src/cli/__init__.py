@@ -33,7 +33,7 @@ from lpms.operations import update
 
 commands = sys.argv[1:]
 
-lpms_version = '1.0.4'
+lpms_version = '1.1_alpha1'
 
 help_output = (('--help', '-h', 'Shows this message.'),
         ('--version', '-v', 'Shows version.'),
