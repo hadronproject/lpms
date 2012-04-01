@@ -19,6 +19,9 @@
 class CommandFailed(Exception):
     pass
 
+class DatabaseAPIError(Exception):
+    pass
+
 class NotExecutable(Exception):
     pass
 
