@@ -53,13 +53,19 @@ class PackageDatabase(object):
                 continue
         return True
 
-    def begin_transaction():
-        self.cursor.execute('BEGIN TRANSACTION')
+    def begin_transaction(self):
+        self.cursor.execute('''BEGIN TRANSACTION''')
+
+    def close(self):
+        self.cursor.close()
 
     def commit(self):
-        try:
-            return self.connection.commit()
-        except sqlite3.OperationalError as err:
-            # TODO: Parse the exception and show it to the user in a suitable form
-            print(err)
-            lpms.terminate()
+        #try:
+        return self.connection.commit()
+        #except sqlite3.OperationalError as err:
+        #    # TODO: Parse the exception and show it to the user in a suitable form
+        #    print "burda"
+        #    print(err)
+        #    self.cursor.close()
+        #    lpms.terminate()
+

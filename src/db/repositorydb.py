@@ -23,12 +23,11 @@ from lpms.db import db
 
 class RepositoryDatabase(db.PackageDatabase):
     def __init__(self):
-        super(RepositoryDatabase, self).__init__("/tmp/repositorydb.db")
+        super(RepositoryDatabase, self).__init__("/root/repositorydb.db")
     
     def insert_package(self, dataset, commit=False):
         # Firstly, convert Python data types to store in the SQLite3 database.
         options = sqlite3.Binary(pickle.dumps(dataset.options, 1))
-        
         # Optional dependencies 
         optional_depends_build = sqlite3.Binary(pickle.dumps(dataset.optional_depends_build, 1))
         optional_depends_runtime = sqlite3.Binary(pickle.dumps(dataset.optional_depends_runtime, 1))
@@ -51,7 +50,7 @@ class RepositoryDatabase(db.PackageDatabase):
         if commit:
             self.commit()
 
-    def delete_package(self, *kwargs):
+    def delete_package(self, **kwargs):
         # Set the keywords
         name = kwargs.get("package_name", None)
         package_id = kwargs.get("package_id", None)
@@ -131,6 +130,10 @@ class RepositoryDatabase(db.PackageDatabase):
                         static_depends_postmerge, static_depends_conflict FROM package WHERE id = (?)''', (package_id,))
         return self.cursor.fetchone()
 
+    def get_repository_names(self):
+        self.cursor.execute('''SELECT repo FROM package''')
+        return list(set(self.cursor.fetchall()))
+
 # For testing purposes
 """
 db = RepositoryDatabase()
@@ -171,7 +174,7 @@ dataset.arch = "~x86"
 dataset.optional_depends_build = { 'nls': ["sys-libs/ncurses"] }
 dataset.optional_depends_runtime = { 'nls': ["sys-libs/ncurses"] }
 dataset.optional_depends_postmerge = {}
-dataset.optional_depends_conflict = {}
+dataset.optional_depends_conflict = {
 dataset.static_depends_build = ["sys-libs/glibc"]
 dataset.static_depends_runtime = ["sys-libs/glibc"]
 dataset.static_depends_postmerge = []

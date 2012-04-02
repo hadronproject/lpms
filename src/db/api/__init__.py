@@ -51,14 +51,16 @@ class RepositoryDB:
                 'optional_depends_postmerge',
                 'optional_depends_conflict', 
                 'static_depends_build', 
-                'static_depends_runtime'
+                'static_depends_runtime',
+                'static_depends_postmerge',
+                'static_depends_conflict'
         )
 
         # Set the keywords
         name = kwargs.get("package_name", None)
-        if name is None:
-            raise DatabaseAPIError("you must give package_name parameter.")
         p_id = kwargs.get("package_id", None)
+        if p_id is None and name is None:
+            raise DatabaseAPIError("you must give package_name parameter.")
         repo = kwargs.get("package_repo", None)
         category = kwargs.get("package_category", None)
         version = kwargs.get("package_version", None)
@@ -130,7 +132,10 @@ class RepositoryDB:
                 'optional_depends_postmerge',
                 'optional_depends_conflict', 
                 'static_depends_build', 
-                'static_depends_runtime'
+                'static_depends_runtime',
+                'static_depends_postmerge',
+                'static_depends_conflict', 
+ 
         )
 
         package_query = self.database.get_package_dependencies(package_id)
@@ -145,18 +150,24 @@ class RepositoryDB:
 
 
     def delete_package(self, **kwargs):
+        '''Basic wrapper method to delete_package method of the repository database'''
         # Set the keywords
         name = kwargs.get("package_name", None)
-        package_id = kwargs.get("package_id", None)
+        p_id = kwargs.get("package_id", None)
         repo = kwargs.get("package_repo", None)
         category = kwargs.get("package_category", None)
         version = kwargs.get("package_version", None)
         package_commit = kwargs.get("commit", False)
-        self.repositorydb.delete_package(package_id=p_id, package_repo=repo, package_category=category, \
+        self.database.delete_package(package_id=p_id, package_repo=repo, package_category=category, \
                 package_name=name, package_version=version, commit=package_commit)
 
     def delete_repository(self, repo, commit=False):
-        self.repositorydb.delete_repository(repo, commit)
+        '''Basic wrapper method to delete_repository method of the repository database'''
+        self.database.delete_repository(repo, commit)
+
+    def get_repository_names(self):
+        '''Basic wrapper method to get_repository_names method of the repository database'''
+        return self.database.get_repository_names()
 
 class InstallDB:
     def __init__(self):
@@ -197,7 +208,7 @@ class InstallDB:
 
         # Set the keywords
         name = kwargs.get("package_name", None)
-        if name is None:
+        if p_id is None and name is None:
             raise DatabaseAPIError("you must give package_name parameter.")
         p_id = kwargs.get("package_id", None)
         repo = kwargs.get("package_repo", None)
@@ -308,10 +319,6 @@ class InstallDB:
         self.repositorydb.delete_repository(repo, commit)
 
 # For testing purposes
-repodb = RepositoryDB()
-print repodb.find_package(package_name = "nano")
-print repodb.database.begin_transaction
-
 """
 a = InstallDB()
 
