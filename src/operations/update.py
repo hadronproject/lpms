@@ -36,11 +36,11 @@ class Update(internals.InternalFuncs):
         super(Update, self).__init__()
         self.repodb = api.RepositoryDB()
         self.packages_num = 0
-        print self.repodb.find_package
+
     def update_repository(self, repo_name):
         exceptions = ['scripts', 'licenses', 'news', 'info', 'libraries', '.git', '.svn']
         # fistly, drop the repo
-        #self.repo_db.drop_repo(repo_name)
+        self.repodb.database.delete_repository(repo_name, commit=True)
         repo_path = os.path.join(cst.repos, repo_name)
         for category in os.listdir(repo_path):
             if category in exceptions:
@@ -56,12 +56,21 @@ class Update(internals.InternalFuncs):
                 self.update_package(repo_path, category, my_pkg)
 
     def update_package(self, repo_path, category, my_pkg, my_version = None, update = False):
+        dataset = LCollect()
         repo_name = os.path.basename(repo_path)
+        
+        dataset.repo = repo_name
+        dataset.category = category
+        
         os.chdir(os.path.join(repo_path, category, my_pkg))
         for pkg in glob.glob("*"+cst.spec_suffix):
             script_path = os.path.join(repo_path, category, my_pkg, pkg)
 
             self.env.name, self.env.version = utils.parse_pkgname(pkg.split(cst.spec_suffix)[0])
+            
+            dataset.name = self.env.name
+            dataset.version = self.env.version
+            
             self.env.__dict__["fullname"] = self.env.name+"-"+self.env.version
 
             if not self.import_script(script_path):
@@ -83,11 +92,15 @@ class Update(internals.InternalFuncs):
 
             if lpms.getopt("--verbose"):
                 out.write("    %s-%s\n" % (self.env.name, self.env.version))
+            
             try:
-                data = (repo_name, category, metadata["name"], metadata["version"], 
-                        metadata["summary"], metadata["homepage"], metadata["license"], 
-                        metadata["src_url"], metadata["options"], 
-                        metadata['slot'], metadata['arch'])
+                dataset.summary = metadata['summary']
+                dataset.homepage = metadata['homepage']
+                dataset.license = metadata['license']
+                dataset.src_uri = metadata['src_url']
+                dataset.options = metadata['options']
+                dataset.slot = metadata['slot']
+
             except KeyError as err:
                 out.error("%s/%s/%s-%s: invalid metadata" % (repo_name, category, \
                         self.env.name, self.env.version))
@@ -95,56 +108,66 @@ class Update(internals.InternalFuncs):
                 out.warn("you can run 'lpms --reload-previous-repodb' command to reload previous db version.")
                 lpms.terminate("good luck!")
 
-            (repo, category, self.env.name, self.env.version, 
-                    summary, homepage, _license, src_url, options, slot, arch) = data
-            
-            #if update:
-            #    self.repo_db.remove_pkg(repo, category, self.env.name, self.env.version)
+            if update:
+                self.repodb.delete_package(package_repo=dataset.repo, package_category=dataset.category, \
+                        package_name=self.env.name, package_version=self.env.version)
 
-            #/self.repo_db.add_pkg(data, commit=False)
-            # add dependency mumbo-jumbo
-            runtime = []; build = []; postmerge = []; conflict = []
+            static_depends_runtime = []; static_depends_build = []; static_depends_postmerge = []; static_depends_conflict = []
             if 'depends' in self.env.__dict__.keys():
                 deps = utils.depends_parser(self.env.depends)
                 if 'runtime' in deps:
-                    runtime.extend(deps['runtime'])
+                    static_depends_runtime.extend(deps['runtime'])
                 if 'build' in deps:
-                    build.extend(deps['build'])
+                    static_depends_build.extend(deps['build'])
                 if 'common' in deps:
-                    runtime.extend(deps['common'])
-                    build.extend(deps['common'])
+                    static_depends_runtime.extend(deps['common'])
+                    static_depends_build.extend(deps['common'])
                 if 'postmerge' in deps:
-                    postmerge.extend(deps['postmerge'])
+                    static_depends_postmerge.extend(deps['postmerge'])
                 if 'conflict' in deps:
-                    conflict.extend(deps['conflict'])
+                    static_depends_conflict.extend(deps['conflict'])
 
+            optional_depends_runtime = []; optional_depends_build = []; optional_depends_postmerge = []; optional_depends_conflict = []
             for opt in ('opt_common', 'opt_conflict', 'opt_postmerge', 'opt_runtime', 'opt_build'):
                 try:
                     deps = utils.parse_opt_deps(getattr(self.env, opt))
-                    print deps
                     if opt.split("_")[1] == "runtime":
-                        runtime.append(deps)
+                        optional_depends_runtime.append(deps)
                     elif opt.split("_")[1] == "build":
-                        build.append(deps)
+                        optional_depends_build.append(deps)
                     elif opt.split("_")[1] == "common":
-                        build.append(deps)
-                        runtime.append(deps)
+                        optional_depends_build.append(deps)
+                        optional_depends_runtime.append(deps)
                     elif opt.split("_")[1] == "postmerge":
-                        postmerge.append(deps)
+                        optional_depends_postmerge.append(deps)
                     elif opt.split("_")[1] == "conflict":
-                        conflict.append(deps)
+                        optional_depends_conflict.append(deps)
                     del deps
                 except AttributeError:
                     continue
 
-            dependencies = (repo, category, self.env.name, self.env.version, 
-                    build, runtime, postmerge, conflict)
-            #print dependencies
-            #self.repo_db.add_depends(dependencies)
+            dataset.optional_depends_runtime = optional_depends_runtime
+            dataset.optional_depends_build = optional_depends_build
+            dataset.optional_depends_postmerge = optional_depends_postmerge
+            dataset.optional_depends_conflict = optional_depends_conflict
+
+            dataset.static_depends_runtime = static_depends_runtime
+            dataset.static_depends_build = static_depends_build
+            dataset.static_depends_postmerge = static_depends_postmerge
+            dataset.static_depends_conflict = static_depends_conflict
+
+            if metadata['arch'] is not None:
+                arches = metadata['arch'].split(" ")
+                for arch in arches:
+                    dataset.arch = arch
+                    self.repodb.insert_package(dataset)
+            else:
+                dataset.arch = None
+                self.repodb.insert_package(dataset)
+
             # remove optional keys
-            for key in ('depends', 'options', 'opt_runtime', 
-                    'opt_build', 'opt_conflict', 'opt_common', 
-                    'opt_postmerge'):
+            for key in ('depends', 'options', 'opt_runtime', 'opt_build', \
+                    'opt_conflict', 'opt_common', 'opt_postmerge'):
                 try:
                     del self.env.__dict__[key]
                 except KeyError:
@@ -179,8 +202,8 @@ def main(params):
         # firstly, lpms tries to create a copy of current repository database.
         db_backup()
 
-        operation.repo_db.cursor().execute('''BEGIN TRANSACTION''')
         out.normal("updating repository database...")
+        operation.repodb.database.begin_transaction()
         for repo_name in os.listdir(cst.repos):
             if not repo_name in utils.valid_repos():
                 continue
@@ -190,7 +213,7 @@ def main(params):
                 operation.update_repository(repo_name)
                 repo_num += 1
 
-        operation.repo_db.commit()
+        operation.repodb.database.commit()
         out.normal("%s repository(ies) is/are updated." % repo_num)
     else:
         if repo_name == ".":
@@ -215,10 +238,11 @@ def main(params):
                 out.error("%s is not a repository." % out.color(repo, "red"))
                 lpms.terminate()
 
+            operation.repodb.database.begin_transaction()
             for pkg in os.listdir(os.path.join(repo_path, category)):
                 operation.update_package(repo_path, category, pkg, update=True)
-            operation.repo_db.commit()
-        
+            operation.repodb.database.commit()
+
         elif len(repo_name.split("/")) == 3:
             version = None
             repo, category, name = repo_name.split("/")
@@ -241,8 +265,9 @@ def main(params):
 
             repo_path = os.path.join(cst.repos, repo)
             out.normal("updating %s/%s/%s" % (repo, category, name))
+            operation.repodb.database.begin_transaction()
             operation.update_package(repo_path, category, name, my_version = version, update = True)
-            #operation.repo_db.commit()
+            operation.repodb.database.commit()
         
         else:
             if not repo_name in utils.valid_repos():
@@ -253,10 +278,11 @@ def main(params):
             if os.path.isdir(repo_dir):
                 repo_path = os.path.join(repo_dir, cst.repo_file)
                 if os.path.isfile(repo_path):
-                    #operation.repo_db.cursor().execute('''BEGIN TRANSACTION''')
+                    operation.repodb.database.begin_transaction()
                     out.normal("updating repository: %s" % out.color(repo_name, "green"))
                     operation.update_repository(repo_name)
-                    #operation.repo_db.commit()
+                    operation.repodb.database.commit()
+                    operation.repodb.database.close()
                 else:
                     lpms.terminate("repo.conf file could not found in %s" % repo_dir+"/info")
             else:
@@ -264,8 +290,7 @@ def main(params):
 
     out.normal("Total %s packages have been processed." % operation.packages_num)
     
-    """for repo in operation.repo_db.get_repos():
+    for repo in operation.repodb.get_repository_names():
         if not repo[0] in utils.valid_repos():
-            operation.repo_db.drop_repo(repo[0])
+            operation.repodb.delete_repository(repo[0], commit=True)
             out.warn("%s dropped." % repo[0])
-            """
