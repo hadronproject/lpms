@@ -21,23 +21,26 @@ import traceback
 
 import lpms
 
+from lpms.types import LCollect
+from lpms.types import PackageItem
+
 from lpms import out
 from lpms import utils
 from lpms import internals
 from lpms import constants as cst
 
-from lpms.db import dbapi
+from lpms.db import api
 
 class Update(internals.InternalFuncs):
     def __init__(self):
         super(Update, self).__init__()
-        self.repo_db = dbapi.RepositoryDB()
+        self.repodb = api.RepositoryDB()
         self.packages_num = 0
-
+        print self.repodb.find_package
     def update_repository(self, repo_name):
         exceptions = ['scripts', 'licenses', 'news', 'info', 'libraries', '.git', '.svn']
         # fistly, drop the repo
-        self.repo_db.drop_repo(repo_name)
+        #self.repo_db.drop_repo(repo_name)
         repo_path = os.path.join(cst.repos, repo_name)
         for category in os.listdir(repo_path):
             if category in exceptions:
@@ -95,10 +98,10 @@ class Update(internals.InternalFuncs):
             (repo, category, self.env.name, self.env.version, 
                     summary, homepage, _license, src_url, options, slot, arch) = data
             
-            if update:
-                self.repo_db.remove_pkg(repo, category, self.env.name, self.env.version)
+            #if update:
+            #    self.repo_db.remove_pkg(repo, category, self.env.name, self.env.version)
 
-            self.repo_db.add_pkg(data, commit=False)
+            #/self.repo_db.add_pkg(data, commit=False)
             # add dependency mumbo-jumbo
             runtime = []; build = []; postmerge = []; conflict = []
             if 'depends' in self.env.__dict__.keys():
@@ -118,6 +121,7 @@ class Update(internals.InternalFuncs):
             for opt in ('opt_common', 'opt_conflict', 'opt_postmerge', 'opt_runtime', 'opt_build'):
                 try:
                     deps = utils.parse_opt_deps(getattr(self.env, opt))
+                    print deps
                     if opt.split("_")[1] == "runtime":
                         runtime.append(deps)
                     elif opt.split("_")[1] == "build":
@@ -135,7 +139,8 @@ class Update(internals.InternalFuncs):
 
             dependencies = (repo, category, self.env.name, self.env.version, 
                     build, runtime, postmerge, conflict)
-            self.repo_db.add_depends(dependencies)
+            #print dependencies
+            #self.repo_db.add_depends(dependencies)
             # remove optional keys
             for key in ('depends', 'options', 'opt_runtime', 
                     'opt_build', 'opt_conflict', 'opt_common', 
@@ -237,7 +242,7 @@ def main(params):
             repo_path = os.path.join(cst.repos, repo)
             out.normal("updating %s/%s/%s" % (repo, category, name))
             operation.update_package(repo_path, category, name, my_version = version, update = True)
-            operation.repo_db.commit()
+            #operation.repo_db.commit()
         
         else:
             if not repo_name in utils.valid_repos():
@@ -248,10 +253,10 @@ def main(params):
             if os.path.isdir(repo_dir):
                 repo_path = os.path.join(repo_dir, cst.repo_file)
                 if os.path.isfile(repo_path):
-                    operation.repo_db.cursor().execute('''BEGIN TRANSACTION''')
+                    #operation.repo_db.cursor().execute('''BEGIN TRANSACTION''')
                     out.normal("updating repository: %s" % out.color(repo_name, "green"))
                     operation.update_repository(repo_name)
-                    operation.repo_db.commit()
+                    #operation.repo_db.commit()
                 else:
                     lpms.terminate("repo.conf file could not found in %s" % repo_dir+"/info")
             else:
@@ -259,7 +264,8 @@ def main(params):
 
     out.normal("Total %s packages have been processed." % operation.packages_num)
     
-    for repo in operation.repo_db.get_repos():
+    """for repo in operation.repo_db.get_repos():
         if not repo[0] in utils.valid_repos():
             operation.repo_db.drop_repo(repo[0])
             out.warn("%s dropped." % repo[0])
+            """

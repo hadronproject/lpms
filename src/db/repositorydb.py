@@ -65,9 +65,11 @@ class RepositoryDatabase(db.PackageDatabase):
             if self.commit: self.commit()
         else:
             if repo is not None and category is not None and name is not None and version is not None:
-                self.cursor.execute('''DELETE FROM package WHERE repo = (?) AND category = (?) and name = (?) and version = (?)''', (repo, category, name, version))
+                self.cursor.execute('''DELETE FROM package WHERE repo = (?) AND category = (?) \
+                        AND name = (?) AND version = (?)''', (repo, category, name, version))
             elif repo is not None and category is not None and name is not None:
-                self.cursor.execute('''DELETE FROM package WHERE repo = (?) AND category = (?) and name = (?)''', (repo, category, name))
+                self.cursor.execute('''DELETE FROM package WHERE repo = (?) AND category = (?) \
+                        AND name = (?)''', (repo, category, name))
         if commit: self.commit()
     
     def delete_repository(self, repo, commit=False):
@@ -82,47 +84,34 @@ class RepositoryDatabase(db.PackageDatabase):
         category = kwargs.get("package_category", None)
         version = kwargs.get("package_version", None)
         
-        if package_id is not None:
-            self.cursor.execute('''SELECT id, repo, category, name, version, slot, arch, options, \
+        query_body = '''SELECT id, repo, category, name, version, slot, arch, options, \
                     optional_depends_build, optional_depends_runtime, optional_depends_postmerge, \
                     optional_depends_conflict, static_depends_build, static_depends_runtime, \
-                    static_depends_postmerge, static_depends_conflict FROM package WHERE id = (?)''', (package_id,))
+                    static_depends_postmerge, static_depends_conflict'''
+        if package_id is not None:
+            self.cursor.execute('''%s FROM package WHERE id = (?)''' % query_body, (package_id,))
         else:
             if repo is None and category is None and version is None:
-                self.cursor.execute('''SELECT id, repo, category, name, version, slot, arch, options, \
-                        optional_depends_build, optional_depends_runtime, optional_depends_postmerge, \
-                        optional_depends_conflict, static_depends_build, static_depends_runtime, \
-                        static_depends_postmerge, static_depends_conflict FROM package where name = (?)''', (name,))
+                self.cursor.execute('''%s FROM package where name = (?)''' \
+                        % query_body, (name,))
             elif repo is not None and category is None and version is None:
-                self.cursor.execute('''SELECT id, repo, category, name, version, slot, arch, options, \
-                        optional_depends_build, optional_depends_runtime, optional_depends_postmerge, \
-                        optional_depends_conflict, static_depends_build, static_depends_runtime, \
-                        static_depends_postmerge, static_depends_conflict FROM package where repo = (?) and name = (?)''', (repo, name,))
+                self.cursor.execute('''%s FROM package where repo = (?) and name = (?)''' \
+                                % query_body, (repo, name,))
             elif repo is None and category is not None and version is None:
-                self.cursor.execute('''SELECT id, repo, category, name, version, slot, arch, options, \
-                        optional_depends_build, optional_depends_runtime, optional_depends_postmerge, \
-                        optional_depends_conflict, static_depends_build, static_depends_runtime, static_depends_postmerge, static_depends_conflict \
-                        FROM package where category = (?) and name = (?)''', (category, name,))
+                self.cursor.execute('''%s FROM package where category = (?) and name = (?)''' \
+                        % query_body, (category, name,))
             elif repo is None and category is None and version is not None:
-                self.cursor.execute('''SELECT id, repo, category, name, version, slot, arch, options, \
-                        optional_depends_build, optional_depends_runtime, optional_depends_postmerge, \
-                        optional_depends_conflict, static_depends_build, static_depends_runtime, static_depends_postmerge, static_depends_conflict \
-                        FROM package where version = (?) and name = (?)''', (version, name,))
+                self.cursor.execute('''%s FROM package where version = (?) and name = (?)''' \
+                        % query_body, (version, name,))
             elif repo is not None and category is not None and version is None:
-                self.cursor.execute('''SELECT id, repo, category, name, version, slot, arch, options,\
-                        optional_depends_build, optional_depends_runtime, optional_depends_postmerge, \
-                        optional_depends_conflict, static_depends_build, static_depends_runtime, static_depends_postmerge, static_depends_conflict \
-                        FROM package where repo = (?) and category = (?) and name = (?)''', (repo, category, name,))
+                self.cursor.execute('''%s FROM package where repo = (?) and category = (?) and name = (?)''' \
+                        % query_body, (repo, category, name,))
             elif repo is None and category is not None and version is not None:
-                self.cursor.execute('''SELECT id, repo, category, name, version, slot, arch, options,\
-                        optional_depends_build, optional_depends_runtime, optional_depends_postmerge, \
-                        optional_depends_conflict, static_depends_build, static_depends_runtime, static_depends_postmerge, static_depends_conflict \
-                        FROM package where version = (?) AND category = (?) AND name = (?)''', (version, category, name,))
+                self.cursor.execute('''%s FROM package where version = (?) AND category = (?) AND name = (?)''' \
+                        % query_body, (version, category, name,))
             elif repo is not None and category is None and version is not None:
-                self.cursor.execute('''SELECT id, repo, category, name, version, slot, arch, options,\
-                        optional_depends_build, optional_depends_runtime, optional_depends_postmerge, \
-                        optional_depends_conflict, static_depends_build, static_depends_runtime, static_depends_postmerge, static_depends_conflict \
-                        FROM package where version = (?) AND repo = (?) AND name = (?)''', (version, repo, name,))
+                self.cursor.execute('''%s FROM package where version = (?) AND repo = (?) AND name = (?)''' \
+                        % query_body, (version, repo, name,))
         return self.cursor.fetchall()
 
     def get_package_metadata(self, **kwargs):
@@ -132,13 +121,14 @@ class RepositoryDatabase(db.PackageDatabase):
         else:
             self.cursor.execute('''SELECT id, repo, category, name, version, slot, summary, homepage, \
                     license, src_uri, arch, options FROM package where repo = (?) AND category = (?)  \
-                    AND name = (?) AND version = (?)''', (kwargs['repo'], kwargs['category'], kwargs['name'], kwargs['version'],))
+                    AND name = (?) AND version = (?)''', (kwargs['repo'], kwargs['category'], \
+                    kwargs['name'], kwargs['version'],))
         return self.cursor.fetchone()
 
     def get_package_dependencies(self, package_id):
         self.cursor.execute('''SELECT optional_depends_build, optional_depends_runtime, optional_depends_postmerge, \
-                        optional_depends_conflict, static_depends_build, static_depends_runtime, static_depends_postmerge, static_depends_conflict \
-                        FROM package WHERE id = (?)''', (package_id,))
+                        optional_depends_conflict, static_depends_build, static_depends_runtime, \
+                        static_depends_postmerge, static_depends_conflict FROM package WHERE id = (?)''', (package_id,))
         return self.cursor.fetchone()
 
 # For testing purposes

@@ -53,6 +53,9 @@ class PackageDatabase(object):
                 continue
         return True
 
+    def begin_transaction():
+        self.cursor.execute('BEGIN TRANSACTION')
+
     def commit(self):
         try:
             return self.connection.commit()
