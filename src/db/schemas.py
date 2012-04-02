@@ -57,12 +57,16 @@ def installed_schema():
             name TEXT,
             version TEXT,
             slot TEXT,
-            build_time TEXT,
+            arch TEXT,
+            start_time INTEGER,
+            end_time INTEGER,
+            requestor TEXT,
             host TEXT,
             cflags TEXT,
             cxxflags TEXT,
             ldflags TEXT,
-            size INTEGER
+            makeopts TEXT,
+            size FLOAT
         );
         
         CREATE INDEX package_repo_category_idx ON package (repo, category);

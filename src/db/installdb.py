@@ -161,6 +161,30 @@ class InstallDatabase(db.PackageDatabase):
                         FROM package WHERE id = (?)''', (package_id,))
         return self.cursor.fetchone()
 
+    def insert_build_info(self, dataset, commit=True):
+        self.cursor.execute('''INSERT INTO build_info VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', \
+                (None, dataset.repo, dataset.category, dataset.name, dataset.version, dataset.slot, \
+                dataset.arch, dataset.start_time, dataset.end_time, dataset.requestor, \
+                dataset.build_time, dataset.host, dataset.cflags, dataset.cxxflags, dataset.ldflags, \
+                dataset.makeopts, dataset.size)
+        )
+        if commit: self.commit()
+
+    def get_package_build_info(self, **kwargs):
+        # Set the values
+        name = kwargs.get("package_name", None)
+        package_id = kwargs.get("package_id", None)
+        repo = kwargs.get("package_repo", None)
+        category = kwargs.get("package_category", None)
+        version = kwargs.get("package_version", None)
+        
+        if package_id is not None:
+            self.cursor.execute('''SELECT * FROM build_info WHERE id = (?)''', (package_id,))
+        else:
+            self.cursor.execute('''SELECT * FROM build_info WHERE repo = (?) AND category = (?) AND name = (?) AND version = (?)''', \
+                (repo, category, name, version))
+        return self.cursor.fetchone()
+
 # For testing purposes
 """
 db = InstallDatabase()

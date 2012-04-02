@@ -37,11 +37,27 @@ class RepositoryDB:
     def find_package(self, **kwargs):
         results = PackageItem()
         added_packages = []
-        object_items = ('id', 'repo', 'category', 'name', 'version', 'slot', 'arch', 'options', \
-                        'optional_depends_build', 'optional_depends_runtime', 'optional_depends_postmerge', \
-                        'optional_depends_conflict', 'static_depends_build', 'static_depends_runtime')
+        object_items = (
+                'id', 
+                'repo', 
+                'category', 
+                'name', 
+                'version', 
+                'slot', 
+                'arch', 
+                'options',
+                'optional_depends_build', 
+                'optional_depends_runtime', 
+                'optional_depends_postmerge',
+                'optional_depends_conflict', 
+                'static_depends_build', 
+                'static_depends_runtime'
+        )
+
         # Set the keywords
         name = kwargs.get("package_name", None)
+        if name is None:
+            raise DatabaseAPIError("you must give package_name parameter.")
         p_id = kwargs.get("package_id", None)
         repo = kwargs.get("package_repo", None)
         category = kwargs.get("package_category", None)
@@ -70,8 +86,21 @@ class RepositoryDB:
         return results
 
     def get_package_metadata(self, **kwargs):
-        object_items = ('id', 'repo', 'category', 'name', 'version', 'slot', 'summary', \
-                'homepage', 'license', 'src_uri', 'arch', 'options')
+        object_items = (
+                'id', 
+                'repo', 
+                'category', 
+                'name', 
+                'version', 
+                'slot', 
+                'summary',
+                'homepage', 
+                'license', 
+                'src_uri', 
+                'arch', 
+                'options'
+        )
+
         # Set the keywords
         name = kwargs.get("package_name", None)
         p_id = kwargs.get("package_id", None)
@@ -95,8 +124,15 @@ class RepositoryDB:
         return pkg_obj
 
     def get_package_dependencies(self, package_id):
-        object_items = ('optional_depends_build', 'optional_depends_runtime', 'optional_depends_postmerge', \
-                'optional_depends_conflict', 'static_depends_build', 'static_depends_runtime')
+        object_items = (
+                'optional_depends_build', 
+                'optional_depends_runtime', 
+                'optional_depends_postmerge',
+                'optional_depends_conflict', 
+                'static_depends_build', 
+                'static_depends_runtime'
+        )
+
         package_query = self.database.get_package_dependencies(package_id)
         
         # Create a LCollect object
@@ -125,24 +161,44 @@ class RepositoryDB:
 class InstallDB:
     def __init__(self):
         self.database = installdb.InstallDatabase()
-        
+
     def insert_package(self, dataset, commit=False):
         self.database.insert_package(dataset, commit)
 
     def find_package(self, **kwargs):
         results = PackageItem()
         added_packages = []
-        object_items = ('id', 'repo', 'category', 'name', 'version', 'slot', 'arch', 'options', \
-                        'optional_depends_build', 'optional_depends_runtime', 'optional_depends_postmerge', \
-                        'optional_depends_conflict', 'static_depends_build', 'static_depends_runtime', \
-                        'static_depends_postmerge', 'static_depends_conflict', \
-                        'optional_reverse_build', 'optional_reverse_runtime', 'optional_reverse_postmerge', \
-                        'optional_reverse_conflict', 'static_reverse_build', 'static_reverse_runtime', 'static_reverse_postmerge', 'static_reverse_conflict')
+        object_items = (
+                'id', 
+                'repo', 
+                'category', 
+                'name', 
+                'version', 
+                'slot', 
+                'arch', 
+                'options',
+                'optional_depends_build', 
+                'optional_depends_runtime', 
+                'optional_depends_postmerge',
+                'optional_depends_conflict', 
+                'static_depends_build', 
+                'static_depends_runtime',
+                'static_depends_postmerge', 
+                'static_depends_conflict',
+                'optional_reverse_build', 
+                'optional_reverse_runtime', 
+                'optional_reverse_postmerge', 
+                'optional_reverse_conflict', 
+                'static_reverse_build', 
+                'static_reverse_runtime', 
+                'static_reverse_postmerge', 
+                'static_reverse_conflict'
+        )
 
         # Set the keywords
         name = kwargs.get("package_name", None)
         if name is None:
-            raise DatabaseAPIError("you must give package_name parameter")
+            raise DatabaseAPIError("you must give package_name parameter.")
         p_id = kwargs.get("package_id", None)
         repo = kwargs.get("package_repo", None)
         category = kwargs.get("package_category", None)
@@ -171,8 +227,20 @@ class InstallDB:
         return results
 
     def get_package_metadata(self, **kwargs):
-        object_items = ('id', 'repo', 'category', 'name', 'version', 'slot', 'summary', \
-                'homepage', 'license', 'src_uri', 'arch', 'options')
+        object_items = ('id', 
+                'repo', 
+                'category', 
+                'name', 
+                'version', 
+                'slot', 
+                'summary',
+                'homepage', 
+                'license', 
+                'src_uri', 
+                'arch', 
+                'options'
+        )
+
         # Set the keywords
         name = kwargs.get("package_name", None)
         p_id = kwargs.get("package_id", None)
@@ -196,12 +264,24 @@ class InstallDB:
         return pkg_obj
 
     def get_package_dependencies(self, package_id):
-        object_items = ('optional_depends_build', 'optional_depends_runtime', 'optional_depends_postmerge', \
-                'optional_depends_conflict', 'static_depends_build', 'static_depends_runtime', \
-                'static_depends_postmerge', 'static_depends_conflict', 'optional_reverse_build', \
-                'optional_reverse_runtime', 'optional_reverse_postmerge', \
-                'optional_reverse_conflict', 'static_reverse_build', 'static_reverse_runtime', \
-                'static_reverse_postmerge', 'static_reverse_conflict')
+        object_items = (
+                'optional_depends_build', 
+                'optional_depends_runtime', 
+                'optional_depends_postmerge', 
+                'optional_depends_conflict', 
+                'static_depends_build', 
+                'static_depends_runtime', 
+                'static_depends_postmerge', 
+                'static_depends_conflict', 
+                'optional_reverse_build',
+                'optional_reverse_runtime', 
+                'optional_reverse_postmerge',
+                'optional_reverse_conflict', 
+                'static_reverse_build', 
+                'static_reverse_runtime',
+                'static_reverse_postmerge', 
+                'static_reverse_conflict'
+        )
         package_query = self.database.get_package_dependencies(package_id)
         
         # Create a LCollect object
@@ -228,6 +308,10 @@ class InstallDB:
         self.repositorydb.delete_repository(repo, commit)
 
 # For testing purposes
+repodb = RepositoryDB()
+print repodb.find_package(package_name = "nano")
+print repodb.database.begin_transaction
+
 """
 a = InstallDB()
 

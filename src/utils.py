@@ -582,17 +582,18 @@ def metadata_parser(data, keys=None):
     return metadata
 
 def depends_parser(depends):
+    '''Parses package dependencies. Static or optional'''
     deps = {}
     for atom in depends.strip().split('\n'):
         if len(atom.split('@')) == 2:
             opt = atom.split('@')[0].strip()
             deps[opt] = []; data = atom.split('@')[1]
             if data != '\n' and data != '\t' and data != '':
-                deps[opt].append(data.strip())
+                deps[opt].extend([item.strip() for item in data.strip().split(' ')])
         else:
             data = atom.split('@')[0]
             if data != '\n' and data != '\t' and data != '':
-                deps[opt].append(data.strip())
+                deps[opt].append([item.strip() for item in data.strip().split(' ')])
     return deps
 
 def import_script(script_path):
