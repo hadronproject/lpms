@@ -31,6 +31,11 @@ from lpms import conf
 from lpms import shelltools
 from lpms import constants as cst
 
+def get_suitable_arches(arch):
+    if arch.startswith("~"):
+        return [arch, arch[1:]]
+    return [arch]
+
 def parse_user_defined_file(data, repodb, opt=False):
     '''Parses user defined control files and returns convenient package bundles'''
     user_defined_options = None

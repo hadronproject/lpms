@@ -45,6 +45,8 @@ class ConstantValues:
     def __init__(self):
         # FIXME: values should be cleaned
         self.val.root = "/"
+        # Currently, we support x86 stable and x86 unstable(~x86)
+        self.val.supported_arches = ['~x86', 'x86']
         self.val.stages = ('extract', 'prepare', 'configure', 'build', 'install', 'merge', \
                 'post_install', 'post_remove', 'pre_merge', 'pre_remove')
         self.val.config_dir = "/etc/lpms"
