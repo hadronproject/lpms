@@ -64,11 +64,13 @@ class RepositoryDB:
         repo = kwargs.get("package_repo", None)
         category = kwargs.get("package_category", None)
         version = kwargs.get("package_version", None)
+        available_arches = kwargs.get("available_arches", None)
 
         # Get the package query
         package_query = self.database.find_package(package_id=p_id, package_repo=repo, \
-                package_category=category, package_name=name, package_version=version)
-        
+                package_category=category, package_name=name, package_version=version, \
+                package_available_arches=available_arches)
+
         # Create a LCollect object
         pkg_obj = LCollect()
 
@@ -214,7 +216,7 @@ class InstallDB:
         repo = kwargs.get("package_repo", None)
         category = kwargs.get("package_category", None)
         version = kwargs.get("package_version", None)
-        
+
         # Get the package query
         package_query = self.database.find_package(package_id=p_id, package_repo=repo, \
                 package_category=category, package_name=name, package_version=version)

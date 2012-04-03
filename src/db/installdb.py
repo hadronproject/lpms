@@ -128,19 +128,29 @@ class InstallDatabase(db.PackageDatabase):
             self.cursor.execute('''%s FROM package WHERE id = (?)''' % query_body, (package_id,))
         else:
             if repo is None and category is None and version is None:
-                self.cursor.execute('''%s FROM package where name = (?)''' % query_body, (name,))
+                self.cursor.execute('''%s FROM package where name = (?)''' \
+                        % query_body, (name,))
             elif repo is not None and category is None and version is None:
-                self.cursor.execute('''%s FROM package where repo = (?) and name = (?)''' % query_body, (repo, name,))
+                self.cursor.execute('''%s FROM package where repo = (?) and name = (?)''' \
+                        % query_body, (repo, name,))
             elif repo is None and category is not None and version is None:
-                self.cursor.execute('''%s FROM package where category = (?) and name = (?)''' % query_body, (category, name,))
+                self.cursor.execute('''%s FROM package where category = (?) and name = (?)''' \
+                        % query_body, (category, name,))
             elif repo is None and category is None and version is not None:
-                self.cursor.execute('''%s FROM package where version = (?) and name = (?)''' % query_body, (version, name,))
+                self.cursor.execute('''%s FROM package where version = (?) and name = (?)''' \
+                        % query_body, (version, name,))
             elif repo is not None and category is not None and version is None:
-                self.cursor.execute('''%s FROM package where repo = (?) and category = (?) and name = (?)''' % query_body, (repo, category, name,))
+                self.cursor.execute('''%s FROM package where repo = (?) and category = (?) and name = (?)''' \
+                        % query_body, (repo, category, name,))
             elif repo is None and category is not None and version is not None:
-                self.cursor.execute('''%s FROM package where version = (?) AND category = (?) AND name = (?)''' % query_body, (version, category, name,))
+                self.cursor.execute('''%s FROM package where version = (?) AND category = (?) AND name = (?)''' \
+                        % query_body, (version, category, name,))
             elif repo is not None and category is None and version is not None:
-                self.cursor.execute('''%s FROM package where version = (?) AND repo = (?) AND name = (?)''' % query_body, (version, repo, name,))
+                self.cursor.execute('''%s FROM package where version = (?) AND repo = (?) AND name = (?)''' \
+                        % query_body, (version, repo, name,))
+            elif repo is not None and category is not None and name is not None and version is not None:
+                self.cursor.execute('''%s FROM package WHERE repo = (?) AND category = (?) AND name = (?) AND \
+                        version = (?)''' % query_body, (repo, category, name, version))
         return self.cursor.fetchall()
 
     def get_package_metadata(self, dataset):
