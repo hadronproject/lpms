@@ -167,7 +167,7 @@ class RepositoryDB:
 
     def get_repository_names(self):
         '''Basic wrapper method to get_repository_names method of the repository database'''
-        return self.database.get_repository_names()
+        return [name[0] for name in self.database.get_repository_names()]
 
 class InstallDB:
     def __init__(self):
