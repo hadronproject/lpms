@@ -282,7 +282,6 @@ def main(params):
                     out.normal("updating repository: %s" % out.color(repo_name, "green"))
                     operation.update_repository(repo_name)
                     operation.repodb.database.commit()
-                    operation.repodb.database.close()
                 else:
                     lpms.terminate("repo.conf file could not found in %s" % repo_dir+"/info")
             else:
@@ -290,7 +289,11 @@ def main(params):
 
     out.normal("Total %s packages have been processed." % operation.packages_num)
     
-    for repo in operation.repodb.get_repository_names():
-        if not repo[0] in utils.valid_repos():
-            operation.repodb.delete_repository(repo[0], commit=True)
-            out.warn("%s dropped." % repo[0])
+    # Drop inactive repository from the database
+    for name in operation.repodb.get_repository_names():
+        if not name in utils.valid_repos():
+            operation.repodb.delete_repository(name, commit=True)
+            out.warn("%s dropped." % name)
+    
+    # Close the database connection
+    operation.repodb.database.close()
