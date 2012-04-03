@@ -98,7 +98,10 @@ class Update(internals.InternalFuncs):
                 dataset.homepage = metadata['homepage']
                 dataset.license = metadata['license']
                 dataset.src_uri = metadata['src_url']
-                dataset.options = metadata['options']
+                if metadata['options'] is None:
+                    dataset.options = None
+                else:
+                    dataset.options = metadata['options'].split(" ")
                 dataset.slot = metadata['slot']
 
             except KeyError as err:
