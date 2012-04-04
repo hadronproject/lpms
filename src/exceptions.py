@@ -61,3 +61,9 @@ class InvalidURI(Exception):
 class ItemNotFound(Exception):
     pass
 
+class UnavailablePackage(Exception):
+    pass
+
+class MissingInternalParameter(Exception):
+    pass
+
