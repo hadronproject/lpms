@@ -35,12 +35,15 @@ from lpms import file_collisions
 from lpms import constants as cst
 
 from lpms.db import dbapi
+from lpms.db import api as DBapi
 
 from lpms.operations import sync
 from lpms.operations import build
 from lpms.operations import update
 from lpms.operations import remove
 from lpms.operations import upgrade
+
+from lpms.exceptions import UnavailablePackage
 
 def configure_pending(packages, instruct):
     '''Configure packages that do not configured after merge operation'''
@@ -123,7 +126,7 @@ def get_pkg(pkgname, repositorydb=True):
     # FIXME: locked packages solutions is a temporary fix
     locked_packages = []
     if repositorydb:
-        db = dbapi.RepositoryDB()
+        db = DBapi.RepositoryDB()
         lock_file = "/etc/lpms/user/lock"
         if os.access(lock_file, os.R_OK):
             with open(lock_file) as locked_packages_data:
@@ -202,6 +205,7 @@ def get_pkg(pkgname, repositorydb=True):
         if result is not None:
             name, version = result
 
+    print repo, category, name, version
     if version and repo is None:
         # check repository priority for given version
         data = db.find_pkg(name, repo_name = repo, pkg_category = category, pkg_slot = slot)
@@ -239,13 +243,21 @@ def get_pkg(pkgname, repositorydb=True):
         else:
             result = None
     else:
-        result = db.find_pkg(name, repo_name = repo, pkg_category = category, 
-            selection = True, pkg_slot=slot)
+        packages = db.find_package(package_repo=repo, package_name=name, package_category=category, package_version=version)
+        #result = db.find_package(name, repo_name = repo, pkg_category = category, 
+        #    selection = True, pkg_slot=slot)
+        if not packages:
+            out.error("%s is unavailable." % out.color(pkgname, "brightred"))
+            lpms.terminate()
+            #raise UnavailablePackage("%s is unavailable." % out.color(pkgname, "brightred"))
+        primary_repository = utils.get_primary_repository()
+        for package in packages:
+            if package.repo == primary_repository:
+                return package
+        #raise UnavailablePackage
+        return None
 
-    if not result:
-        out.error("%s not found in database." % out.color(pkgname, "brightred"))
-        lpms.terminate()
-
+    """
     length = len(result)
     if length == 1:
         repo, category, name, version_data = result[0]
@@ -276,6 +288,7 @@ def get_pkg(pkgname, repositorydb=True):
                 out.error("%s/%s/%s-%s is not found in the database." % (repo, category, name, version))
                 lpms.terminate()
         return repo, category, name, version
+    """
 
 def upgrade_system(instruct):
     '''Runs UpgradeSystem class and triggers API's build function
@@ -383,19 +396,77 @@ def resolve_dependencies(data, cmd_options, use_new_opts, specials=None):
     fixit = resolver.DependencyResolver()
     return fixit.resolve_depends(data, cmd_options, use_new_opts, specials)
 
+class GetPackage:
+    def __init__(self, package):
+        self.package = package
+        self.repo = None
+        self.category = None
+        self.name = None
+        self.version = None
+        self.slot = None
+        self.repodb = DBapi.RepositoryDB()
+
+    def get_convenient_package(self, packages): 
+        results = []
+        repositories = utils.valid_repos()
+        primary = None
+        # Firstly, select the correct repository
+        for repository in repositories:
+            for package in packages:
+                if self.slot is not None and \
+                        package.slot != self.slot: continue
+                if primary is None and package.repo == repository:
+                    results.append(package)
+                    primary = package.repo
+                    continue
+                elif primary is not None and package.repo == primary:
+                    if not package in results:
+                        results.append(package)
+                    continue
+            if repository != primary: continue
+
+        # Second, select the best version
+        versions = [result.version for result in results]
+        best_version = utils.best_version(versions)
+        for result in results:
+            if result.version == best_version:
+                return result
+
+    def select(self):
+        preform = self.package.split("/")
+        if len(preform) == 3:
+            self.repo, self.category, fullname = preform
+        elif len(preform) == 2:
+            self.category, fullname = preform
+        elif len(preform) == 1:
+            fullname = self.package
+
+        if cst.slot_indicator in fullname:
+            fullname, self.slot = fullname.split(":")
+
+        self.name, self.version = utils.parse_pkgname(fullname)
+
+        packages = self.repodb.find_package(package_repo=self.repo, package_name=self.name, \
+                package_category=self.category, package_version=self.version)
+
+        the_package = self.get_convenient_package(packages)
+        if the_package is None:
+            raise UnavailablePackage(self.package)
+        return the_package
 def pkgbuild(pkgnames, instruct):
     '''Starting point of build operation'''
     if instruct['like']:
         # handle shortened package names
-        database = dbapi.RepositoryDB()
+        mydb = DBapi.RepositoryDB()
         for item in instruct['like']:
-            query = database.db.cursor.execute("SELECT name FROM metadata where name LIKE ?", (item,))
+            query = mydb.database.cursor.execute("SELECT name FROM package where name LIKE ?", (item,))
             results = query.fetchall()
             if results:
                 for result in results:
                     pkgnames.append(result[0])
-        del database
-    plan = resolve_dependencies([get_pkg(pkgname) for pkgname in pkgnames],
+        del mydb
+
+    plan = resolve_dependencies([GetPackage(pkgname).select() for pkgname in pkgnames],
             instruct['cmd_options'], instruct['use-new-opts'],
             instruct['specials'])
     build.main(plan, instruct)

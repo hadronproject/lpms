@@ -19,13 +19,12 @@
 
 import cPickle as pickle
 
-from lpms.exceptions import DatabaseAPIError
-
 from lpms.types import LCollect
 from lpms.types import PackageItem
 
 from lpms.db import installdb
 from lpms.db import repositorydb
+from lpms.exceptions import DatabaseAPIError, MissingInternalParameter
 
 class RepositoryDB:
     def __init__(self):
@@ -87,6 +86,12 @@ class RepositoryDB:
                     continue
                 setattr(pkg_obj, item, package[index])
             results.add(pkg_obj)
+
+            # Delete the object to prevent overrides
+            del pkg_obj
+            # Create it again
+            pkg_obj = LCollect()
+
         return results
 
     def get_package_metadata(self, **kwargs):
@@ -112,9 +117,14 @@ class RepositoryDB:
         category = kwargs.get("package_category", None)
         version = kwargs.get("package_version", None)
 
-        package_query = self.database.get_package_metadata(package_id=p_id, package_repo=repo, \
-                package_category=category, package_name=name, package_version=version)
-        
+        if p_id is not None:
+            package_query = self.database.get_package_metadata(package_id=p_id)
+        else:
+            if None in (repo, category, name, version):
+                raise MissingInternalParameter("%s/%s/%s-%s is meaningless") 
+            package_query = self.database.get_package_metadata(package_repo=repo, \
+                    package_category=category, package_name=name, package_version=version)
+               
         # Create a LCollect object
         pkg_obj = LCollect()
 
@@ -160,8 +170,13 @@ class RepositoryDB:
         category = kwargs.get("package_category", None)
         version = kwargs.get("package_version", None)
         package_commit = kwargs.get("commit", False)
-        self.database.delete_package(package_id=p_id, package_repo=repo, package_category=category, \
-                package_name=name, package_version=version, commit=package_commit)
+        if p_id is not None:
+            self.database.delete_package(package_id=p_id, commit=package_commit)
+        else:
+            if None in (repo, category, name, version):
+                raise MissingInternalParameter("%s/%s/%s-%s is meaningless")
+            self.database.delete_package(package_repo=repo, package_category=category, \
+                    package_name=name, package_version=version, commit=package_commit)
 
     def delete_repository(self, repo, commit=False):
         '''Basic wrapper method to delete_repository method of the repository database'''
@@ -237,6 +252,12 @@ class InstallDB:
                     continue
                 setattr(pkg_obj, item, package[index])
             results.add(pkg_obj)
+
+            # Delete the object to prevent overrides
+            del pkg_obj
+            # Create it again
+            pkg_obj = LCollect()
+
         return results
 
     def get_package_metadata(self, **kwargs):
@@ -261,8 +282,13 @@ class InstallDB:
         category = kwargs.get("package_category", None)
         version = kwargs.get("package_version", None)
 
-        package_query = self.database.get_package_metadata(package_id=p_id, package_repo=repo, \
-                package_category=category, package_name=name, package_version=version)
+        if p_id is not None:
+            package_query = self.database.get_package_metadata(package_id=p_id)
+        else:
+            if None in (repo, category, name, version):
+                raise MissingInternalParameter("%s/%s/%s-%s is meaningless")
+            package_query = self.database.get_package_metadata(package_repo=repo, \
+                    package_category=category, package_name=name, package_version=version)
         
         # Create a LCollect object
         pkg_obj = LCollect()
@@ -309,16 +335,21 @@ class InstallDB:
     def delete_package(self, **kwargs):
         # Set the keywords
         name = kwargs.get("package_name", None)
-        package_id = kwargs.get("package_id", None)
+        p_id = kwargs.get("package_id", None)
         repo = kwargs.get("package_repo", None)
         category = kwargs.get("package_category", None)
         version = kwargs.get("package_version", None)
         package_commit = kwargs.get("commit", False)
-        self.repositorydb.delete_package(package_id=p_id, package_repo=repo, package_category=category, \
-                package_name=name, package_version=version, commit=package_commit)
+        if p_id is not None:
+            self.database.delete_package(package_id=p_id)
+        else:
+            if None in (repo, category, name, version):
+                raise MissingInternalParameter("%s/%s/%s-%s is meaningless")
+            self.database.delete_package(package_repo=repo, package_category=category, \
+                    package_name=name, package_version=version, commit=package_commit)
 
     def delete_repository(self, repo, commit=False):
-        self.repositorydb.delete_repository(repo, commit)
+        self.database.delete_repository(repo, commit)
 
 # For testing purposes
 """

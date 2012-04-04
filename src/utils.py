@@ -221,6 +221,12 @@ def valid_repos():
         return [repo[1:-1] for repo in repo_file.read().split("\n") \
                 if repo.startswith("[") and repo.endswith("]")]
 
+def get_primary_repository():
+    repos = valid_repos()
+    if repos: 
+        return repos[0]
+    return None
+
 def is_lpms_running():
     for _dir in os.listdir("/proc"):
         if not _dir.isdigit():
@@ -290,7 +296,7 @@ def confirm(text):
             return False
         out.write(out.color("Sorry, response " + answer + " not understood! yes/y or no/n\n", "red"))
 
-def parse_pkgname(script_name):
+def parse_pkgname(string):
     #pkgname = []; version = []
     #parsed=script_name.split(".py")[0].split("-")
     #for i in parsed:
@@ -318,7 +324,10 @@ def parse_pkgname(script_name):
     # Thanks to Daniel Robbins :=P
     #
     ############################################################################
-    return pkgsplit(script_name)
+    result = pkgsplit(string)
+    if result is None:
+        return string, None
+    return result
 
 def check_path(binary):
     if not binary.startswith("/"):
