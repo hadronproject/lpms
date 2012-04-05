@@ -19,11 +19,17 @@
 
 import cPickle as pickle
 
+# Base data containers for lpms database
 from lpms.types import LCollect
 from lpms.types import PackageItem
 
+# Low level databases
+from lpms.db import filesdb
 from lpms.db import installdb
 from lpms.db import repositorydb
+from lpms.db import file_relationsdb
+from lpms.db import reverse_dependsdb
+
 from lpms.exceptions import DatabaseAPIError, MissingInternalParameter
 
 class RepositoryDB:
@@ -351,6 +357,17 @@ class InstallDB:
     def delete_repository(self, repo, commit=False):
         self.database.delete_repository(repo, commit)
 
+class FilesDB(filesdb.FilesDatabase):
+    def __init__(self):
+        super(FilesDB, self).__init__(fix_path(cst.filesdb_path))
+
+class FileRelationsDB(file_relationsdb.FileRelationsDatabase):
+    def __init__(self):
+        super(FileRelationsDB, self).__init__(fix_path(cst.file_relationsdb_path))
+
+class ReverseDependsDB(reverse_dependsdb.ReverseDependsDatabase):
+    def __init__(self):
+        super(ReverseDependsDB, self).__init__(fix_path(cst.reverse_dependsdb_path))
 # For testing purposes
 """
 a = InstallDB()
