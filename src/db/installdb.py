@@ -19,9 +19,10 @@ import sqlite3
 import cPickle as pickle
 
 import lpms
-from lpms.db import db
 
-class InstallDatabase(db.PackageDatabase):
+from lpms.db import base
+
+class InstallDatabase(base.PackageDatabase):
     def __init__(self):
         super(InstallDatabase, self).__init__("/tmp/installdb.db")
     
