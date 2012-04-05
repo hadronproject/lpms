@@ -34,12 +34,11 @@ class PackageDatabase(object):
                 break
         if self.__class__.__module__.endswith(cst.repositorydb):
             self.dbpath = os.path.join(root, cst.db_path, cst.repositorydb)+cst.db_prefix
-        
-        if not os.path.exists(os.path.dirname(self.dbpath)):
-            os.makedirs(os.path.dirname(self.dbpath))
-        # TODO: check permissions
-        #if os.access(self.dbpath, os.R_OK):
-        print self.dbpath
+        elif self.__class__.__module__.endswith(cst.installdb):
+            self.dbpath = os.path.join(root, cst.db_path, cst.installdb)+cst.db_prefix
+        else:
+            raise Exception("%s seems an invalid child class." % self.__class__.__module__)
+
         try:
             self.connection = sqlite3.connect(self.dbpath)
         except sqlite3.OperationalError:
@@ -58,8 +57,10 @@ class PackageDatabase(object):
         for table in tables:
             content.extent(list(table))
 
+        database = self.__class__.__module__.split(".")[-1]
         if not content:
-            self.cursor.executescript(schemas.schema(self.dbpath))
+            print("Creating %s on %s" % (database, self.dbpath))
+            self.cursor.executescript(getattr(schemas, database)())
             return True
 
         for table in content:

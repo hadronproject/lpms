@@ -17,7 +17,10 @@
 
 from lpms import constants as const
 
-def installed_schema():
+# TODO: 
+# * Fix schema names
+
+def installdb():
      return """
         CREATE TABLE package(
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -90,7 +93,7 @@ def installed_schema():
         CREATE INDEX build_info_name_version_slot_idx ON build_info (name, version, slot);
     """
 
-def repo_schema():
+def repositorydb():
     return """
         CREATE TABLE package(
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -169,21 +172,4 @@ def files_schema():
             realpath text,
             slot text
         );
-    """
-
-def schema(db_path):
-    return installed_schema()
-    #return repo_schema()
-    """
-    if len(db_path.split(const.installdb_path)) == 2:
-        return installed_schema()
-    
-    if len(db_path.split(const.file_relationsdb_path)) == 2:
-        return file_relations_schema()
-    
-    if len(db_path.split(const.reverse_dependsdb_path)) == 2:
-        return reverse_depends_schema()
-
-    if len(db_path.split(const.filesdb_path)) == 2:
-        return files_schema()
     """
