@@ -73,6 +73,7 @@ class ConstantValues:
         self.val.db_path = "var/db/lpms"
         self.val.filesdb = "filesdb"
         self.val.repositorydb = "repositorydb"
+        self.val.installdb = "repositorydb"
         self.val.db_prefix = ".db"
         self.val.reverse_dependsdb_path = "/var/db/lpms/reverse_depends.db"
         self.val.file_relationsdb_path = "/var/db/lpms/file_relationsdb.db"
