@@ -107,189 +107,6 @@ def syncronize(cmdline, instruct):
     if instruct["upgrade"]:
         upgrade_system(instruct)
 
-def get_pkg(pkgname, repositorydb=True):
-    '''Parses given pkgnames and selects suitable versions and 
-    repositories:
-
-        main/sys-devel/binutils
-        sys-devel/binutils
-        binutils
-
-    If the user wants to determine the package version, it should use
-    the following notation:
-        
-        =main/sys-devel/binutils-2.13
-        =binutils-2.13
-        =sys-devel/binutils-2.14
-    '''
-    
-    # FIXME: locked packages solutions is a temporary fix
-    locked_packages = []
-    if repositorydb:
-        db = DBapi.RepositoryDB()
-        lock_file = "/etc/lpms/user/lock"
-        if os.access(lock_file, os.R_OK):
-            with open(lock_file) as locked_packages_data:
-                for line in locked_packages_data.readlines():
-                    locked_packages.append(utils.parse_user_defined_file(line.strip(), \
-                            repodb=db))
-    else:
-        db = dbapi.InstallDB()
-    
-    valid_repos = utils.valid_repos()
-
-    def remove_locked_versions(versions):
-        '''Removes locked versions from package bundle if it effected'''
-        for locked_package in locked_packages:
-            locked_category, locked_name, locked_version_data = locked_package
-            if locked_category != category and locked_name != name:
-                continue
-            if isinstance(locked_version_data, list):
-                result = []
-                for version in versions:
-                    if not version in locked_version_data:
-                        result.append(version)
-                return result
-            elif isinstance(locked_version_data, basestring):
-                if locked_version_data in versions:
-                    versions.remove(locked_version_data)
-                    return versions
-        return versions
-
-    def collect_versions(version_data):
-        vers = []
-        map(lambda ver: vers.extend(ver), version_data.values())
-        if repositorydb:
-            vers = remove_locked_versions(vers)
-        return vers
-
-    def select_version(data):
-        if slot:
-            if slot in data:
-                if repositorydb:
-                    return utils.best_version(remove_locked_versions(data[slot]))
-                return utils.best_version(data[slot])
-            else:
-                out.error("%s not found in database." % out.color(pkgname+":"+slot, "brightred"))
-                lpms.terminate()
-        else:
-            versions = []
-            map(lambda ver: versions.extend(ver), data.values())
-            if repositorydb:
-                return utils.best_version(remove_locked_versions(versions))
-            return utils.best_version(versions)
-
-    def get_name(data):
-        return utils.parse_pkgname(data)
-
-    # handle package slot
-    slot = None
-    if len(pkgname.split(":")) > 1:
-        pkgname, slot = pkgname.split(":")
-
-    repo = None; category = None; version = None
-    # FIXME: '=' unnecessary?
-    if pkgname.startswith("="):
-        pkgname = pkgname[1:]
-
-    parsed = pkgname.split("/")
-    if len(parsed) == 1:
-        name = parsed[0]
-    elif len(parsed) == 2:
-        category, name = parsed
-    elif len(parsed) == 3:
-        repo, category, name = parsed
-
-    if len(name.split("-")) > 1:
-        result = get_name(name)
-        if result is not None:
-            name, version = result
-
-    print repo, category, name, version
-    if version and repo is None:
-        # check repository priority for given version
-        data = db.find_pkg(name, repo_name = repo, pkg_category = category, pkg_slot = slot)
-        if data:
-            for item in data:
-                if isinstance(item, basestring):
-                    # the first member of the list is repo name
-                    # if one repository in use.
-                    repos = [item]
-                    # FIXME: this waits a db fix
-                    data = [data]
-                    break
-                else:
-                    repos = [r[0] for r in data]
-                    break
-            found = False
-            for valid_repo in valid_repos:
-                if valid_repo in repos:
-                    result = data[repos.index(valid_repo)]
-                    versions = []
-                    map(lambda ver: versions.extend(ver), result[-1].values())
-                    if version in versions:
-                        found = True
-                        break
-            
-            if not found:
-                result = None
-                for invalid_repo in repos:
-                    if not invalid_repo in valid_repos:
-                        for item in data:
-                            if invalid_repo == item[0]:
-                                for key in item[-1]:
-                                    if version in item[-1][key]:
-                                        result = item; break
-        else:
-            result = None
-    else:
-        packages = db.find_package(package_repo=repo, package_name=name, package_category=category, package_version=version)
-        #result = db.find_package(name, repo_name = repo, pkg_category = category, 
-        #    selection = True, pkg_slot=slot)
-        if not packages:
-            out.error("%s is unavailable." % out.color(pkgname, "brightred"))
-            lpms.terminate()
-            #raise UnavailablePackage("%s is unavailable." % out.color(pkgname, "brightred"))
-        primary_repository = utils.get_primary_repository()
-        for package in packages:
-            if package.repo == primary_repository:
-                return package
-        #raise UnavailablePackage
-        return None
-
-    """
-    length = len(result)
-    if length == 1:
-        repo, category, name, version_data = result[0]
-        if not version:
-            version = select_version(version_data)
-            if not version:
-                out.warn("this package seems locked by the system administrator: %s/%s" % (category, name))
-                lpms.terminate()
-        else:
-            if not version in collect_versions(version_data):
-                out.error("%s/%s/%s-%s is not found in the database." % (repo, category, name, version))
-                lpms.terminate()
-        return repo, category, name, version
-
-    elif length == 4:
-        repo, category, name, version_data = result
-        if version is None:
-            version = select_version(version_data)
-            if not version:
-                out.warn("this package seems locked by the system administrator: %s/%s" % (category, name))
-                lpms.terminate()
-        else:
-            versions = collect_versions(version_data)
-            if not versions:
-                out.warn("this package seems locked by the system administrator: %s/%s" % (category, name))
-                lpms.terminate()
-            if not version in versions:
-                out.error("%s/%s/%s-%s is not found in the database." % (repo, category, name, version))
-                lpms.terminate()
-        return repo, category, name, version
-    """
-
 def upgrade_system(instruct):
     '''Runs UpgradeSystem class and triggers API's build function
     if there are {upgrade, downgrade}able package'''
@@ -397,6 +214,7 @@ def resolve_dependencies(data, cmd_options, use_new_opts, specials=None):
     return fixit.resolve_depends(data, cmd_options, use_new_opts, specials)
 
 class GetPackage:
+    '''Selects a convenient package for advanced dependency resolving phases'''
     def __init__(self, package):
         self.package = package
         self.repo = None
@@ -453,6 +271,7 @@ class GetPackage:
         if the_package is None:
             raise UnavailablePackage(self.package)
         return the_package
+
 def pkgbuild(pkgnames, instruct):
     '''Starting point of build operation'''
     if instruct['like']:
