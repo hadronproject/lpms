@@ -19,9 +19,10 @@ import sqlite3
 import cPickle as pickle
 
 import lpms
-from lpms.db import db
 
-class RepositoryDatabase(db.PackageDatabase):
+from lpms.db import base
+
+class RepositoryDatabase(base.PackageDatabase):
     def __init__(self):
         super(RepositoryDatabase, self).__init__("/root/repositorydb.db")
     
