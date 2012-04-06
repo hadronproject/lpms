@@ -15,35 +15,19 @@
 # You should have received a copy of the GNU General Public License
 # along with lpms.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
-import sys
 import sqlite3
 
 import lpms
-
-from lpms import constants as cst
-
 from lpms.db import schemas
 
-class LpmsDatabase(object):
-    def __init__(self):
-        root = cst.root
-        for option in sys.argv:
-            if option.startswith("--change-root"):
-                root = option.replace("--change-root=", "")
-                break
-        if self.__class__.__module__.endswith(cst.repositorydb):
-            self.dbpath = os.path.join(root, cst.db_path, cst.repositorydb)+cst.db_prefix
-        elif self.__class__.__module__.endswith(cst.installdb):
-            self.dbpath = os.path.join(root, cst.db_path, cst.installdb)+cst.db_prefix
-        else:
-            raise Exception("%s seems an invalid child class." % self.__class__.__module__)
-
+class PackageDatabase(object):
+    def __init__(self, db_path):
+        self.db_path = db_path
         try:
-            self.connection = sqlite3.connect(self.dbpath)
+            self.connection = sqlite3.connect(self.db_path)
         except sqlite3.OperationalError:
             # TODO: Use an exception for this.
-            lpms.terminate("lpms could not connected to the database (%s)" % self.dbpath)
+            lpms.terminate("lpms could not connected to the database (%s)" % self.db_path)
 
         self.cursor = self.connection.cursor()
         table = self.cursor.execute('SELECT * FROM sqlite_master WHERE type = "table"')
@@ -57,10 +41,8 @@ class LpmsDatabase(object):
         for table in tables:
             content.extent(list(table))
 
-        database = self.__class__.__module__.split(".")[-1]
         if not content:
-            print("Creating %s on %s" % (database, self.dbpath))
-            self.cursor.executescript(getattr(schemas, database)())
+            self.cursor.executescript(schemas.schema(self.db_path))
             return True
 
         for table in content:
@@ -78,11 +60,12 @@ class LpmsDatabase(object):
         self.cursor.close()
 
     def commit(self):
-        try:
-            return self.connection.commit()
-        except sqlite3.OperationalError as err:
-            # TODO: Parse the exception and show it to the user in a suitable form
-            print(err)
-            self.cursor.close()
-            lpms.terminate()
+        #try:
+        return self.connection.commit()
+        #except sqlite3.OperationalError as err:
+        #    # TODO: Parse the exception and show it to the user in a suitable form
+        #    print "burda"
+        #    print(err)
+        #    self.cursor.close()
+        #    lpms.terminate()
 
