@@ -15,11 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with lpms.  If not, see <http://www.gnu.org/licenses/>.
 
-from lpms import constants as const
-
-# TODO: 
-# * Fix schema names
-
 def installdb():
      return """
         CREATE TABLE package(
@@ -128,7 +123,7 @@ def repositorydb():
         CREATE INDEX name_version_slot_idx ON package (name, version, slot);
     """
 
-def file_relations_schema():
+def file_relationsdb():
     return """
         create table file_relations (
             repo text,
@@ -140,7 +135,7 @@ def file_relations_schema():
         );
     """
 
-def reverse_depends_schema():
+def reverse_dependsdb():
     return """
         create table reverse_depends (
             repo text,
@@ -155,7 +150,7 @@ def reverse_depends_schema():
         );
     """
 
-def files_schema():
+def filesdb():
     return """
         create table files (
             repo text,

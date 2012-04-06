@@ -22,9 +22,9 @@ import lpms
 
 from lpms.db import base
 
-class RepositoryDatabase(base.PackageDatabase):
+class RepositoryDatabase(base.LpmsDatabase):
     def __init__(self):
-        super(RepositoryDatabase, self).__init__("/root/repositorydb.db")
+        super(RepositoryDatabase, self).__init__()
     
     def insert_package(self, dataset, commit=False):
         # Firstly, convert Python data types to store in the SQLite3 database.

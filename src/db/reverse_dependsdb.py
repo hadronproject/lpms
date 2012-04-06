@@ -18,49 +18,14 @@
 import sqlite3
 
 import lpms
-from lpms.db import skel
+from lpms.db import base
 
 # build_dep value is defined as 1 for runtime and post merge dependencies
 
-class ReverseDependsDatabase(object):
+class ReverseDependsDatabase(base.LpmsDatabase):
     '''This class defines a database to store reverse package relations'''
-    def __init__(self, db_path):
-        self.db_path =  db_path
-        try:
-            self.connection = sqlite3.connect(self.db_path)
-        except sqlite3.OperationalError:
-            lpms.terminate("lpms could not connected to the database (%s)" % self.db_path)
-
-        self.cursor = self.connection.cursor()
-        table = self.cursor.execute('select * from sqlite_master where type = "table"')
-        if table.fetchone() is None:
-            self.initialize_db()
-
-    def initialize_db(self):
-        '''Initializes database, create the table if it does not exist'''
-        tablelist = self.cursor.execute('select * from sqlite_master where type="table"')
-        tablelist = self.cursor.fetchall()
-        content = []
-        for i in tablelist:
-            content += list(i)
-
-        # get list of tables and drop them
-        for t in content:
-            try:
-                self.cursor.execute('drop table %s' % (t,))
-            except sqlite3.OperationalError:
-                # skip, can not drop table...
-                continue
-        self.cursor.executescript(skel.schema(self.db_path))
-
-    def commit(self):
-        '''Commits changes to database'''
-        try:
-            return self.connection.commit()
-        except sqlite3.OperationalError as err:
-            # FIXME: print error message by more convenient way
-            print(err)
-            lpms.terminate()
+    def __init__(self):
+        super(ReverseDependsDatabase, self).__init__()
 
     def add_reverse_depend(self, data, build_dep=1, commit=False):
         '''Registers reverse depend item for given package'''
