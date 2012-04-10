@@ -31,6 +31,33 @@ from lpms import conf
 from lpms import shelltools
 from lpms import constants as cst
 
+
+def get_convenient_package(packages, slot=None): 
+    results = []
+    repositories = valid_repos()
+    primary = None
+    # Firstly, select the correct repository
+    for repository in repositories:
+        for package in packages:
+            if slot is not None and \
+                    package.slot != slot: continue
+            if primary is None and package.repo == repository:
+                results.append(package)
+                primary = package.repo
+                continue
+            elif primary is not None and package.repo == primary:
+                if not package in results:
+                    results.append(package)
+                continue
+        if repository != primary: continue
+
+    # Second, select the best version
+    versions = [result.version for result in results]
+    the_best_version = best_version(versions)
+    for result in results:
+        if result.version == the_best_version:
+            return result
+
 def get_suitable_arches(arch):
     if arch.startswith("~"):
         return [arch, arch[1:]]
@@ -120,14 +147,14 @@ def parse_user_defined_file(data, repodb, opt=False):
         return category, name, version
     else:
         category, name = data.split("/")
-        versions = []
-        map(lambda x: versions.extend(x), \
-                repodb.get_version(name, pkg_category=category).values())
-        
+        results = repodb.find_package(package_name=name, package_category=category)
         if user_defined_options:
-            return category, name, versions, user_defined_options
+            packages = {}
+            for result in results:
+                packages[result.id] = user_defined_options
+            return packages
 
-        return category, name, versions
+        return [result.version for result in results]
 
 
 def update_info_index(info_path, dir_path="/usr/share/info/dir", delete=False):
@@ -607,7 +634,7 @@ def depends_parser(depends):
         else:
             data = atom.split('@')[0]
             if data != '\n' and data != '\t' and data != '':
-                deps[opt].append([item.strip() for item in data.strip().split(' ')])
+                deps[opt].extend([item.strip() for item in data.strip().split(' ')])
     return deps
 
 def import_script(script_path):

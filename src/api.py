@@ -206,13 +206,6 @@ def remove_package(pkgnames, instruct):
             file_relationsdb.delete_item_by_pkgdata(category, name, version, commit=True)
             reverse_dependsdb.delete_item(category, name, version, commit=True)
 
-def resolve_dependencies(data, cmd_options, use_new_opts, specials=None):
-    '''Resolve dependencies using fixit object. This function
-    prepares a full operation plan for the next stages'''
-    out.normal("resolving dependencies")
-    fixit = resolver.DependencyResolver()
-    return fixit.resolve_depends(data, cmd_options, use_new_opts, specials)
-
 class GetPackage:
     '''Selects a convenient package for advanced dependency resolving phases'''
     def __init__(self, package):
@@ -223,32 +216,6 @@ class GetPackage:
         self.version = None
         self.slot = None
         self.repodb = DBapi.RepositoryDB()
-
-    def get_convenient_package(self, packages): 
-        results = []
-        repositories = utils.valid_repos()
-        primary = None
-        # Firstly, select the correct repository
-        for repository in repositories:
-            for package in packages:
-                if self.slot is not None and \
-                        package.slot != self.slot: continue
-                if primary is None and package.repo == repository:
-                    results.append(package)
-                    primary = package.repo
-                    continue
-                elif primary is not None and package.repo == primary:
-                    if not package in results:
-                        results.append(package)
-                    continue
-            if repository != primary: continue
-
-        # Second, select the best version
-        versions = [result.version for result in results]
-        best_version = utils.best_version(versions)
-        for result in results:
-            if result.version == best_version:
-                return result
 
     def select(self):
         preform = self.package.split("/")
@@ -267,10 +234,17 @@ class GetPackage:
         packages = self.repodb.find_package(package_repo=self.repo, package_name=self.name, \
                 package_category=self.category, package_version=self.version)
 
-        the_package = self.get_convenient_package(packages)
+        the_package = utils.get_convenient_package(packages, self.slot)
         if the_package is None:
             raise UnavailablePackage(self.package)
         return the_package
+
+def resolve_dependencies(data, cmd_options, use_new_opts, specials=None):
+    '''Resolve dependencies using fixit object. This function
+    prepares a full operation plan for the next stages'''
+    out.normal("resolving dependencies")
+    dependency_resolver = resolver.DependencyResolver(data)
+    return dependency_resolver.create_operation_plan()
 
 def pkgbuild(pkgnames, instruct):
     '''Starting point of build operation'''
