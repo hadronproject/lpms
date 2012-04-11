@@ -187,11 +187,28 @@ class DependencyResolver(object):
         added = []
         result = []
         for parent in bundle:
-            if not parent in options:
-                continue
+            pass_parent = False
+            if "&&" in parent:
+                for and_option in [and_option.strip() for and_option in parent.split("&&")]:
+                    if not and_option in options:
+                        pass_parent = True
+                        break
+                if pass_parent: continue
+            else:
+                if not parent in options: continue
+
             for child in bundle[parent]:
                 if isinstance(child, tuple):
+                    pass_child = False
                     raw_option, packages = child
+                    if "&&" in raw_option:
+                        for and_option in [and_option.strip() for and_option in \
+                                raw_option.split("&&")[1:]]:
+                            if not and_option in options: 
+                                pass_child = True
+                                break
+                    if pass_child: continue
+                    raw_option = raw_option.split("&&")[0].rstrip()
                     if raw_option.count("\t") != 1:
                         previous_item = bundle[parent][bundle[parent].index(child) - 1]
                         if isinstance(previous_item, tuple):
