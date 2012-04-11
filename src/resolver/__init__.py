@@ -140,7 +140,15 @@ class DependencyResolver(object):
                         self.inline_options[package.id].append(option)
             else:
                 self.inline_options[package.id] = inline_options
-            
+
+
+            for locked in self.locked_packages:
+                if (package.category, package.name) == locked[:2]:
+                    if package.version in locked[2]:
+                        out.error("%s/%s/%s-%s:%s seems to be locked by the system administrator." \
+                                % (package.repo, package.category, package.name, package.version, package.slot))
+                        # FIXME: Use and exception for this
+                        lpms.terminate()
             return package
 
         category, name = pkgname.split("/")
@@ -182,7 +190,16 @@ class DependencyResolver(object):
                     "red"), out.color(package, "red")))
             # FIXME: use an exception
             lpms.terminate()
-        return utils.get_convenient_package(packages, slot)
+
+        package = utils.get_convenient_package(packages, slot)
+        for locked in self.locked_packages:
+            if (package.category, package.name) == locked[:2]:
+                if package.version in locked[2]:
+                    out.error("%s/%s/%s-%s:%s seems to be locked by the system administrator." \
+                            % (package.repo, package.category, package.name, package.version, package.slot))
+                    # FIXME: Use and exception for this
+                    lpms.terminate()
+        return package
 
     def parse_suboptional_dependencies(self, bundle, options):
         added = []
@@ -286,4 +303,3 @@ class DependencyResolver(object):
             for i in self.collect_dependencies(package):
                 print i.category, i.name, i.version
         exit()
-

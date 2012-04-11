@@ -83,10 +83,10 @@ def parse_user_defined_file(data, repodb, opt=False):
     def parse(pkgname):
         category, name = pkgname.split("/")
         name, version = parse_pkgname(name)
-        versions = []
-        map(lambda x: versions.extend(x), \
-                repodb.get_version(name, pkg_category=category).values())
-        return category, name, version, versions
+        versions = [package.version for package in \
+                repodb.find_package(package_name=name, package_category=category)]
+        # FIXME: This waits Python3
+        return unicode(category), unicode(name), unicode(version), versions
 
     if ">=" == data[:2]:
         category, name, version, versions = parse(data[2:])
@@ -153,8 +153,8 @@ def parse_user_defined_file(data, repodb, opt=False):
             for result in results:
                 packages[result.id] = user_defined_options
             return packages
-
-        return [result.version for result in results]
+        # FIXME: This waits Python3
+        return unicode(category), unicode(name), [result.version for result in results]
 
 
 def update_info_index(info_path, dir_path="/usr/share/info/dir", delete=False):
