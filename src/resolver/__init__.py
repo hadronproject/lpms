@@ -22,6 +22,7 @@ class DependencyResolver(object):
         self.conf = conf.LPMSConfig()
         self.instdb = api.InstallDB
         self.repodb = api.RepositoryDB()
+        self.control_chars = ["||"]
         self.inline_options = {}
         self.repository_stack = {}
         self.user_defined_options = {}
@@ -193,9 +194,18 @@ class DependencyResolver(object):
                     if not and_option in options:
                         pass_parent = True
                         break
-                if pass_parent: continue
+                if pass_parent: 
+                    if "||" in bundle[parent]:
+                        for package in bundle[parent][bundle[parent].index("||")+1:]:
+                            print package
+                            result.append(self.get_convenient_package(package))
+                    continue
             else:
-                if not parent in options: continue
+                if not parent in options: 
+                    if "||" in bundle[parent]:
+                        for package in bundle[parent][bundle[parent].index("||")+1:]:
+                            result.append(self.get_convenient_package(package))
+                    continue
 
             for child in bundle[parent]:
                 if isinstance(child, tuple):
@@ -207,7 +217,11 @@ class DependencyResolver(object):
                             if not and_option in options: 
                                 pass_child = True
                                 break
-                    if pass_child: continue
+                    if pass_child:
+                        if "||" in packages:
+                            for package in packages[packages.index("||")+1:]:
+                                result.append(self.get_convenient_package(package)) 
+                        continue
                     raw_option = raw_option.split("&&")[0].rstrip()
                     if raw_option.count("\t") != 1:
                         previous_item = bundle[parent][bundle[parent].index(child) - 1]
@@ -219,7 +233,13 @@ class DependencyResolver(object):
                         added.append(raw_option)
                         for package in packages:
                             result.append(self.get_convenient_package(package))
+                    else:
+                        if "||" in packages:
+                            for package in packages[packages.index("||")+1:]:
+                                result.append(self.get_convenient_package(package))
                 else:
+                    if child in self.control_chars:
+                        continue
                     result.append(self.get_convenient_package(child))
         return result
 
@@ -234,7 +254,7 @@ class DependencyResolver(object):
                         options.remove(option[1:])
                 else:
                     if not option in options:
-                        options.append(option)
+                        options.add(option)
         if package.id in self.inline_options:
             for option in self.inline_options[package.id]:
                 if option.startswith("-"):
