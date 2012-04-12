@@ -14,6 +14,7 @@ from lpms import constants as cst
 from lpms.db import api
 from lpms.types import LCollect
 from lpms.types import PackageItem
+from lpms.exceptions import UnavailablePackage
 
 class DependencyResolver(object):
     def __init__(self, packages):
@@ -48,9 +49,16 @@ class DependencyResolver(object):
                     self.forbidden_options.add(option[1:])
         self.get_user_defined_files()
         self.parse_user_defined_options_file()
-        for locked_item in self.user_defined_lock_file:
-            self.locked_packages.extend([self.parse_user_defined_file(locked_item)])
-    
+        if hasattr(self, "user_defined_lock_file"):
+            for locked_item in self.user_defined_lock_file:
+                self.locked_packages.extend([self.parse_user_defined_file(locked_item)])
+
+        self.custom_arch_requests = {}
+        if hasattr(self, "user_defined_arch_file"):
+            for arch_item in self.user_defined_arch_file:
+                self.custom_arch_requests.update(utils.ParseArchFile(arch_item, \
+                        self.repodb).parse())
+
     def get_user_defined_files(self):
         for user_defined_file in cst.user_defined_files:
             if not os.access(user_defined_file, os.W_OK):
@@ -63,13 +71,13 @@ class DependencyResolver(object):
             setattr(self, "user_defined_"+os.path.basename(user_defined_file)+"_file", data)
 
     def parse_user_defined_options_file(self):
-        if not hasattr(self, "user_defined_options_file"): return    
+        if not hasattr(self, "user_defined_options_file"): return
         for item in self.user_defined_options_file:
             self.user_defined_options.update(self.parse_user_defined_file(item, True))
-    
+
     def parse_user_defined_file(self, data, options=False):
         return utils.parse_user_defined_file(data, self.repodb, options)
-       
+
     def parse_inline_options(self, name):
         result = []
         for inline in re.findall("\[(.*?)\]", name):
@@ -88,6 +96,7 @@ class DependencyResolver(object):
         return slot
 
     def get_convenient_package(self, package, instdb=False):
+        convenient_arches = utils.get_convenient_arches(self.conf.arch)
         result = LCollect()
         database = self.repodb
         if instdb:
@@ -132,8 +141,15 @@ class DependencyResolver(object):
                         "red"), out.color(package, "red")))
                 # FIXME: use an exception
                 lpms.terminate()
-                
-            package = utils.get_convenient_package(results, slot)
+            try:
+                package = utils.get_convenient_package(results, self.custom_arch_requests, \
+                        convenient_arches, slot)
+            except UnavailablePackage:
+                for result in results:
+                    out.error("%s/%s/%s-%s:%s is unavailable for your arch(%s): " % (result.repo, result.category, \
+                            result.name, result.version, result.slot, self.conf.arch))
+                lpms.terminate()
+
             if package.id in self.inline_options:
                 for option in inline_options:
                     if not option in self.inline_options[package.id]:
@@ -191,7 +207,15 @@ class DependencyResolver(object):
             # FIXME: use an exception
             lpms.terminate()
 
-        package = utils.get_convenient_package(packages, slot)
+        try:
+            package = utils.get_convenient_package(results, self.custom_arch_requests, \
+                    convenient_arches, slot)
+        except UnavailablePackage:
+            for result in results:
+                out.error("%s/%s/%s-%s:%s is unavailable for your arch(%s): " % (result.repo, result.category, \
+                        result.name, result.version, result.slot, self.conf.arch))
+            lpms.terminate()
+
         for locked in self.locked_packages:
             if (package.category, package.name) == locked[:2]:
                 if package.version in locked[2]:
@@ -214,7 +238,6 @@ class DependencyResolver(object):
                 if pass_parent: 
                     if "||" in bundle[parent]:
                         for package in bundle[parent][bundle[parent].index("||")+1:]:
-                            print package
                             result.append(self.get_convenient_package(package))
                     continue
             else:

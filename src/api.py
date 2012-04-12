@@ -216,6 +216,16 @@ class GetPackage:
         self.version = None
         self.slot = None
         self.repodb = DBapi.RepositoryDB()
+        self.conf = conf.LPMSConfig()
+        self.custom_arch_request = {}
+        arch_file = os.path.join(cst.user_dir, "arch")
+        if os.path.isfile(arch_file):
+            with open(arch_file) as lines:
+               for line in lines.readlines():
+                    if not line.strip():
+                        continue
+                    self.custom_arch_request.update(utils.ParseArchFile(line.strip(), \
+                            self.repodb).parse())
 
     def select(self):
         preform = self.package.split("/")
@@ -228,13 +238,23 @@ class GetPackage:
 
         if cst.slot_indicator in fullname:
             fullname, self.slot = fullname.split(":")
-
+        
         self.name, self.version = utils.parse_pkgname(fullname)
-
+        
         packages = self.repodb.find_package(package_repo=self.repo, package_name=self.name, \
                 package_category=self.category, package_version=self.version)
+        
+        convenient_arches = utils.get_convenient_arches(self.conf.arch)
+        
+        try:
+            the_package = utils.get_convenient_package(packages, self.custom_arch_request, \
+                    convenient_arches, self.slot)
+        except UnavailablePackage:
+            for package in packages:
+                out.error("%s/%s/%s-%s:%s is unavailable for your arch(%s): " % (package.repo, package.category, \
+                        package.name, package.version, package.slot, self.conf.arch))
+            lpms.terminate()
 
-        the_package = utils.get_convenient_package(packages, self.slot)
         if the_package is None:
             raise UnavailablePackage(self.package)
         return the_package
@@ -245,6 +265,8 @@ def resolve_dependencies(data, cmd_options, use_new_opts, specials=None):
     out.normal("resolving dependencies")
     dependency_resolver = resolver.DependencyResolver(data)
     return dependency_resolver.create_operation_plan()
+
+    #return fixit.resolve_depends(data, cmd_options, use_new_opts, specials)
 
 def pkgbuild(pkgnames, instruct):
     '''Starting point of build operation'''
