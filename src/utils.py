@@ -26,19 +26,27 @@ import hashlib
 import collections
 
 import lpms
+
 from lpms import out
 from lpms import conf
 from lpms import shelltools
 from lpms import constants as cst
 
+from lpms.exceptions import UnavailablePackage
 
-def get_convenient_package(packages, slot=None): 
+def get_convenient_package(packages, arch_data, convenient_arches, slot=None): 
     results = []
     repositories = valid_repos()
     primary = None
     # Firstly, select the correct repository
     for repository in repositories:
         for package in packages:
+            if not package.arch in convenient_arches:
+                if not package.id in arch_data:
+                    continue
+                else:
+                    if not package.arch in arch_data[package.id]:
+                        continue
             if slot is not None and \
                     package.slot != slot: continue
             if primary is None and package.repo == repository:
@@ -57,15 +65,90 @@ def get_convenient_package(packages, slot=None):
     for result in results:
         if result.version == the_best_version:
             return result
+    raise UnavailablePackage
 
-def get_suitable_arches(arch):
+def get_convenient_arches(arch):
     if arch.startswith("~"):
         return [arch, arch[1:]]
     return [arch]
 
-def parse_user_defined_file(data, repodb, opt=False):
+class ParseArchFile(object):
+    def __init__(self, data, repodb):
+        self.data = data.split(" ", 1)
+        self.data, self.arch = self.data
+        self.repodb = repodb
+
+        self.version = None
+        self.slot = None
+        slot_parsed = self.data.split(":")
+        if len(slot_parsed) == 2:
+            self.data, self.slot = slot_parsed
+
+    def get_packages(self, pkgname):
+        category, name = pkgname.split("/")
+        name, self.version = parse_pkgname(name)
+        return [(package.id, package.version) for package in self.repodb.find_package(package_name=name, \
+                package_category=category, package_available_arches=[self.arch.strip()])]
+
+    def parse(self):
+        if ">=" == self.data[:2]:
+            packages = {}
+            for package_id, package_version in self.get_packages(self.data[2:]):
+                compare = vercmp(package_version, self.version)
+                if compare == 1 or compare == 0:
+                    packages[package_id] = get_convenient_arches(self.arch.strip())
+            return packages
+
+        elif "<=" == self.data[:2]:
+            packages = {}
+            for package_id, package_version in self.get_packages(self.data[2:]):
+                compare = vercmp(package_version, self.version)
+                if compare == -1 or compare == 0:
+                    packages[package_id] = get_convenient_arches(self.arch.strip())
+            return packages
+
+        elif "<" == self.data[:1]:
+            packages = {}
+            for package_id, package_version in self.get_packages(self.data[1:]):
+                compare = vercmp(package_version, self.version)
+                if compare == -1:
+                    packages[package_id] = get_convenient_arches(self.arch.strip())
+            return packages
+
+        elif ">" == self.data[:1]:
+            packages = {}
+            for package_id, package_version in self.get_packages(self.data[1:]):
+                compare = vercmp(package_version, self.version)
+                if compare == 1:
+                    packages[package_id] = get_convenient_arches(self.arch.strip())
+            return packages
+
+        elif "==" == self.data[:2]:
+            packages = {}
+            for package_id, package_version in self.get_packages(self.data[2:]):
+                compare = vercmp(package_version, self.version)
+                if compare == 0:
+                    packages[package_id] = get_convenient_arches(self.arch.strip())
+            return packages
+
+        else:
+            category, name = self.data.split("/")
+            results = self.repodb.find_package(package_name=name, package_category=category, \
+                    package_available_arches=[self.arch.strip()])
+            packages = {}
+            for result in results:
+                packages[result.id] = get_convenient_arches(self.arch.strip())
+            return packages
+
+def parse_user_defined_file(data, repodb, opt=False, arch_file=False):
     '''Parses user defined control files and returns convenient package bundles'''
     user_defined_options = None
+    arch_request = None
+    if arch_file:
+        data = data.split(" ", 1)
+        data, arch_request = data
+        arch_request = [atom.strip() for atom in arch_request.strip().split(" ")]
+
     if opt:
         data = data.split(" ", 1)
         if len(data) > 1:
@@ -74,6 +157,7 @@ def parse_user_defined_file(data, repodb, opt=False):
                     user_defined_options.strip().split(" ")]
         else:
             data = data[0]
+
     affected = []
     slot = None
     slot_parsed = data.split(":")
