@@ -32,12 +32,20 @@ from lpms import conf
 from lpms import shelltools
 from lpms import constants as cst
 
+from lpms.exceptions import LockedPackage
 from lpms.exceptions import UnavailablePackage
 
-def get_convenient_package(packages, arch_data, convenient_arches, slot=None): 
+def get_convenient_package(packages, locked_packages, arch_data, \
+        convenient_arches, slot=None): 
     results = []
     repositories = valid_repos()
     primary = None
+
+    # Remove locked packages from the package list
+    packages = [package for package in packages if not package.id \
+            in locked_packages]
+    if not packages: raise LockedPackage
+
     # Firstly, select the correct repository
     for repository in repositories:
         for package in packages:
@@ -140,106 +148,118 @@ class ParseArchFile(object):
                 packages[result.id] = get_convenient_arches(self.arch.strip())
             return packages
 
-def parse_user_defined_file(data, repodb, opt=False, arch_file=False):
-    '''Parses user defined control files and returns convenient package bundles'''
-    user_defined_options = None
-    arch_request = None
-    if arch_file:
-        data = data.split(" ", 1)
-        data, arch_request = data
-        arch_request = [atom.strip() for atom in arch_request.strip().split(" ")]
+class ParseUserDefinedFile(object):
+    def __init__(self, data, repodb, opt=False):
+        '''Parses user defined control files and returns convenient package bundles'''
+        self.repodb = repodb
+        self.data = data
+        self.version = None
+        self.packages = {}
+        self.locked_packages = []
+        self.user_defined_options = None
+        if opt:
+            self.data = self.data.split(" ", 1)
+            if len(self.data) > 1:
+                self.data, self.user_defined_options = self.data
+                self.user_defined_options = [atom.strip() for atom in \
+                        self.user_defined_options.strip().split(" ")]
+            else:
+                self.data = self.data[0]
 
-    if opt:
-        data = data.split(" ", 1)
-        if len(data) > 1:
-            data, user_defined_options = data
-            user_defined_options = [atom.strip() for atom in \
-                    user_defined_options.strip().split(" ")]
+        self.slot = None
+        slot_parsed = self.data.split(":")
+        if len(slot_parsed) == 2:
+            self.data, self.slot = slot_parsed
+
+    def get_packages(self, pkgname):
+        category, name = pkgname.split("/")
+        name, self.version = parse_pkgname(name)
+        return [(package.id, package.version) for package in \
+                self.repodb.find_package(package_name=name, package_category=category)]
+
+    def parse(self):
+        if ">=" == self.data[:2]:
+            results = self.get_packages(self.data[2:])
+
+            for package_id, package_version in results:
+                compare = vercmp(package_version, self.version)
+                if compare == 1 or compare == 0:
+                    if self.user_defined_options:
+                        self.packages[package_id] = self.user_defined_options
+                    else:
+                        self.locked_packages.append(package_id)
+
+            if self.user_defined_options:
+                return self.packages
+            return self.locked_packages
+
+        elif "<=" == self.data[:2]:
+            results = self.get_packages(self.data[2:])
+
+            for package_id, package_version in results:
+                compare = vercmp(package_version, self.version)
+                if compare == -1 or compare == 0:
+                    if self.user_defined_options:
+                        self.packages[package_id] = self.user_defined_options
+                    else:
+                        self.locked_packages.append(package_id)
+
+            if self.user_defined_options:
+                return self.packages
+            return self.locked_packages
+
+        elif "<" == self.data[:1]:
+            results = self.get_packages(self.data[1:])
+
+            for package_id, package_version in results:
+                compare = vercmp(package_version, self.version)
+                if compare == -1:
+                    if self.user_defined_options:
+                        self.packages[package_id] = self.user_defined_options
+                    else:
+                        self.locked_packages.append(package_id)
+
+            if self.user_defined_options:
+                return self.packages
+            return self.locked_packages
+
+        elif ">" == self.data[:1]:
+            results = self.get_packages(self.data[1:])
+
+            for package_id, package_version in results:
+                compare = vercmp(package_version, self.version)
+                if compare == 1:
+                    if self.user_defined_options:
+                        self.packages[package_id] = self.user_defined_options
+                    else:
+                        self.locked_packages.append(package_id)
+
+            if self.user_defined_options:
+                return self.packages
+            return self.locked_packages
+
+        elif "==" == self.data[:2]:
+            pkgname = self.data[2:]
+            category, name = pkgname.split("/")
+            name, version = parse_pkgname(name)
+            results = self.repodb.find_package(package_name=name, \
+                    package_category=category, package_version=version)
+            package = results.get(0)
+            if self.user_defined_options:
+                return {package.id: self.user_defined_options}
+
+            package = results.get(0)
+            return [package.id]
+
         else:
-            data = data[0]
-
-    affected = []
-    slot = None
-    slot_parsed = data.split(":")
-    if len(slot_parsed) == 2:
-        data, slot = slot_parsed
-
-    def parse(pkgname):
-        category, name = pkgname.split("/")
-        name, version = parse_pkgname(name)
-        versions = [package.version for package in \
-                repodb.find_package(package_name=name, package_category=category)]
-        # FIXME: This waits Python3
-        return unicode(category), unicode(name), unicode(version), versions
-
-    if ">=" == data[:2]:
-        category, name, version, versions = parse(data[2:])
-
-        for ver in versions:
-            if vercmp(ver, version) == 1:
-                affected.append(ver)
-        affected.append(version)
-
-        if user_defined_options:
-            return category, name, affected, user_defined_options
-
-        return category, name, affected
-
-    elif "<=" == data[:2]:
-        category, name, version, versions = parse(data[2:])
-        for ver in versions:
-            if vercmp(ver, version) == -1:
-                affected.append(ver)
-        affected.append(version)
-        
-        if user_defined_options:
-            return category, name, affected, user_defined_options
-
-        return category, name, affected
-
-    elif "<" == data[:1]:
-        category, name, version, versions = parse(data[1:])
-        for ver in versions:
-            if vercmp(ver, version) == -1:
-                affected.append(ver)
-                
-        if user_defined_options:
-            return category, name, affected, user_defined_options
-
-        return category, name, affected
-
-    elif ">" == data[:1]:
-        category, name, version, versions = parse(data[1:])
-
-        for ver in versions:
-            if vercmp(ver, version) == 1:
-                affected.append(ver)
-                
-        if user_defined_options:
-            return category, name, affected, user_defined_options
-
-        return category, name, affected
-
-    elif "==" == data[:2]:
-        pkgname = data[2:]
-        category, name = pkgname.split("/")
-        name, version = parse_pkgname(name)
-        
-        if user_defined_options:
-            return category, name, affected, user_defined_options
-
-        return category, name, version
-    else:
-        category, name = data.split("/")
-        results = repodb.find_package(package_name=name, package_category=category)
-        if user_defined_options:
-            packages = {}
-            for result in results:
-                packages[result.id] = user_defined_options
-            return packages
-        # FIXME: This waits Python3
-        return unicode(category), unicode(name), [result.version for result in results]
-
+            category, name = self.data.split("/")
+            results = self.repodb.find_package(package_name=name, package_category=category)
+            if self.user_defined_options:
+                packages = {}
+                for result in results:
+                    packages[result.id] = self.user_defined_options
+                return packages
+            return [result.id for result in results]
 
 def update_info_index(info_path, dir_path="/usr/share/info/dir", delete=False):
     '''Updates GNU Info file index'''

@@ -114,6 +114,9 @@ def yellow(msg):
 def brightwhite(msg):
     write(color(msg, "brightwhite"))
 
+def error_notify(msg):
+    write(color(" * ", "red")+msg+"\n")
+
 def warn_notify(msg):
     write(color(" * ", "brightyellow")+msg+"\n")
 

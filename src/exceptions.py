@@ -67,3 +67,12 @@ class UnavailablePackage(Exception):
 class MissingInternalParameter(Exception):
     pass
 
+class LockedPackage(Exception):
+    pass
+
+class PackageNotFound(Exception):
+    pass
+
+class DependencyError(Exception):
+    pass
+

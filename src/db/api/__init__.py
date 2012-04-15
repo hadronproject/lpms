@@ -231,9 +231,9 @@ class InstallDB:
 
         # Set the keywords
         name = kwargs.get("package_name", None)
+        p_id = kwargs.get("package_id", None)
         if p_id is None and name is None:
             raise DatabaseAPIError("you must give package_name parameter.")
-        p_id = kwargs.get("package_id", None)
         repo = kwargs.get("package_repo", None)
         category = kwargs.get("package_category", None)
         version = kwargs.get("package_version", None)
