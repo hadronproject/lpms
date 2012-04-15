@@ -196,30 +196,4 @@ class InstallDatabase(base.LpmsDatabase):
                 (repo, category, name, version))
         return self.cursor.fetchone()
 
-# For testing purposes
-"""
-db = InstallDatabase()
 
-dataset = LCollect()
-
-dataset = LCollect()
-dataset.repo = "main"
-dataset.category = "app-editors"
-dataset.name = "nano"
-dataset.version = "2.2.6"
-dataset.slot = "0"
-dataset.summary = "Pico editor clone with enhancements"
-dataset.homepage = "http://www.nano-editor.org"
-dataset.license = "GPL-2"
-dataset.src_uri = "mirror:/hadronproject/nano-2.2.6.tar.gz"
-dataset.options = ["X", "gtk", "nls", "curses"]
-dataset.arch = "x86"
-dataset.optional_depends_build = { 'nls': ["sys-libs/ncurses"] }
-dataset.optional_depends_runtime = { 'nls': ["sys-libs/ncurses"] }
-dataset.optional_depends_postmerge = {}
-dataset.optional_depends_conflict = {}
-dataset.static_depends_build = ["sys-libs/glibc"]
-dataset.static_depends_runtime = ["sys-libs/glibc"]
-dataset.static_depends_postmerge = []
-dataset.static_depends_conflict = []
-"""

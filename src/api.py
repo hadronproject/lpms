@@ -43,6 +43,9 @@ from lpms.operations import update
 from lpms.operations import remove
 from lpms.operations import upgrade
 
+from lpms.exceptions import LockedPackage
+from lpms.exceptions import DependencyError
+from lpms.exceptions import PackageNotFound
 from lpms.exceptions import UnavailablePackage
 
 def configure_pending(packages, instruct):
@@ -218,6 +221,7 @@ class GetPackage:
         self.repodb = DBapi.RepositoryDB()
         self.conf = conf.LPMSConfig()
         self.custom_arch_request = {}
+        self.locked_packages = []
         arch_file = os.path.join(cst.user_dir, "arch")
         if os.path.isfile(arch_file):
             with open(arch_file) as lines:
@@ -225,6 +229,15 @@ class GetPackage:
                     if not line.strip():
                         continue
                     self.custom_arch_request.update(utils.ParseArchFile(line.strip(), \
+                            self.repodb).parse())
+
+        lock_file = os.path.join(cst.user_dir, "lock")
+        if os.path.isfile(lock_file):
+            with open(lock_file) as lines:
+               for line in lines.readlines():
+                    if not line.strip():
+                        continue
+                    self.locked_packages.extend(utils.ParseUserDefinedFile(line.strip(), \
                             self.repodb).parse())
 
     def select(self):
@@ -244,44 +257,59 @@ class GetPackage:
         packages = self.repodb.find_package(package_repo=self.repo, package_name=self.name, \
                 package_category=self.category, package_version=self.version)
         
+        if not packages:
+            raise PackageNotFound(self.package)
+
         convenient_arches = utils.get_convenient_arches(self.conf.arch)
-        
+
         try:
-            the_package = utils.get_convenient_package(packages, self.custom_arch_request, \
-                    convenient_arches, self.slot)
+            the_package = utils.get_convenient_package(packages, self.locked_packages, \
+                    self.custom_arch_request, convenient_arches, self.slot)
         except UnavailablePackage:
             for package in packages:
-                out.error("%s/%s/%s-%s:%s is unavailable for your arch(%s): " % (package.repo, package.category, \
+                out.error("%s/%s/%s-%s:%s is unavailable for your arch(%s)." % (package.repo, package.category, \
                         package.name, package.version, package.slot, self.conf.arch))
+            lpms.terminate()
+        except LockedPackage:
+            out.error("these package(s) is/are locked by the system administrator:")
+            for package in packages:
+                out.error_notify("%s/%s/%s-%s:%s" % (package.repo, package.category, \
+                        package.name, package.version, package.slot))
             lpms.terminate()
 
         if the_package is None:
             raise UnavailablePackage(self.package)
         return the_package
 
-def resolve_dependencies(data, cmd_options, use_new_opts, specials=None):
+def resolve_dependencies(packages, cmd_options, use_new_opts, specials=None):
     '''Resolve dependencies using fixit object. This function
     prepares a full operation plan for the next stages'''
     out.normal("resolving dependencies")
-    dependency_resolver = resolver.DependencyResolver(data)
+    dependency_resolver = resolver.DependencyResolver(packages, cmd_options, specials)
     return dependency_resolver.create_operation_plan()
 
-    #return fixit.resolve_depends(data, cmd_options, use_new_opts, specials)
-
 def pkgbuild(pkgnames, instruct):
-    '''Starting point of build operation'''
+    '''Starting point of the build operation'''
+    # Get package name or names if the user uses joker character
     if instruct['like']:
-        # handle shortened package names
         mydb = DBapi.RepositoryDB()
         for item in instruct['like']:
-            query = mydb.database.cursor.execute("SELECT name FROM package where name LIKE ?", (item,))
+            query = mydb.database.cursor.execute("SELECT name FROM package where \
+                    name LIKE ?", (item,))
             results = query.fetchall()
             if results:
                 for result in results:
                     pkgnames.append(result[0])
         del mydb
-
-    plan = resolve_dependencies([GetPackage(pkgname).select() for pkgname in pkgnames],
-            instruct['cmd_options'], instruct['use-new-opts'],
-            instruct['specials'])
-    build.main(plan, instruct)
+    # Resolve dependencies and trigger package builder
+    try:
+        plan = resolve_dependencies([GetPackage(pkgname).select() for pkgname in pkgnames], \
+                instruct['cmd_options'], \
+                instruct['use-new-opts'], \
+                instruct['specials'])
+        build.main(plan, instruct)
+    except PackageNotFound as package:
+        out.error("%s count not found in the repository." % out.color(str(package), "red"))
+    except DependencyError:
+        # TODO: Parse this exception if debug mode is enabled.
+        out.red("lpms was terminated due to some issues.\n")
