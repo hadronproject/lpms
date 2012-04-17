@@ -307,7 +307,7 @@ def pkgbuild(pkgnames, instruct):
                 instruct['cmd_options'], \
                 instruct['use-new-opts'], \
                 instruct['specials'])
-        build.main(plan, instruct)
+        build.Build().main(plan, instruct)
     except PackageNotFound as package:
         out.error("%s count not found in the repository." % out.color(str(package), "red"))
     except DependencyError:
