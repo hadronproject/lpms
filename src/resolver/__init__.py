@@ -510,6 +510,9 @@ class DependencyResolver(object):
             plan = [package.id for package in self.packages]
 
         final_plan = []
+        if lpms.getopt("--ignore-depends"):
+            return self.packages, self.package_dependencies, self.package_options
+
         for package_id in plan:
             final_plan.append(self.package_heap[package_id])
 

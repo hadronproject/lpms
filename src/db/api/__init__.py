@@ -357,48 +357,7 @@ class InstallDB:
     def delete_repository(self, repo, commit=False):
         self.database.delete_repository(repo, commit)
 
-class FilesDB(filesdb.FilesDatabase):
-    def __init__(self):
-        super(FilesDB, self).__init__(fix_path(cst.filesdb_path))
-
-class FileRelationsDB(file_relationsdb.FileRelationsDatabase):
-    def __init__(self):
-        super(FileRelationsDB, self).__init__(fix_path(cst.file_relationsdb_path))
-
-class ReverseDependsDB(reverse_dependsdb.ReverseDependsDatabase):
-    def __init__(self):
-        super(ReverseDependsDB, self).__init__(fix_path(cst.reverse_dependsdb_path))
-# For testing purposes
-"""
-a = InstallDB()
-
-dataset = LCollect()
-dataset.repo = "main"
-dataset.category = "app-editors"
-dataset.name = "nano"
-dataset.version = "2.2.6"
-dataset.slot = "0"
-dataset.summary = "Pico editor clone with enhancements"
-dataset.homepage = "http://www.nano-editor.org"
-dataset.license = "GPL-2"
-dataset.src_uri = "mirror:/hadronproject/nano-2.2.6.tar.gz"
-dataset.options = ["X", "gtk", "nls", "curses"]
-dataset.arch = "x86"
-dataset.optional_depends_build = { 'nls': ["sys-libs/ncurses"] }
-dataset.optional_depends_runtime = { 'nls': ["sys-libs/ncurses"] }
-dataset.optional_depends_postmerge = {}
-dataset.optional_depends_conflict = {}
-dataset.static_depends_build = ["sys-libs/glibc"]
-dataset.static_depends_runtime = ["sys-libs/glibc"]
-dataset.static_depends_postmerge = []
-dataset.static_depends_conflict = []
-
-dataset.optional_reverse_build = { 'nls': ["sys-libs/ncurses"] }
-dataset.optional_reverse_runtime = { 'nls': ["sys-libs/ncurses"] }
-dataset.optional_reverse_postmerge = {}
-dataset.optional_reverse_conflict = {}
-dataset.static_reverse_build = ["sys-libs/glibc"]
-dataset.static_reverse_runtime = ["sys-libs/glibc"]
-dataset.static_reverse_postmerge = []
-dataset.static_reverse_conflict = []
-"""
+# For backward compatibility
+FilesDB = filesdb.FilesDatabase
+FileRelationsDB = file_relationsdb.FileRelationsDatabase
+ReverseDependsDB = reverse_dependsdb.ReverseDependsDatabase

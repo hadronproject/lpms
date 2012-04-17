@@ -31,8 +31,7 @@ from lpms import shelltools
 from lpms import file_relations
 from lpms import constants as cst
 
-from lpms.db import dbapi
-from lpms.db import filesdb
+from lpms.db import api
 
 class Merge(internals.InternalFuncs):
     '''Main class for package installation'''
@@ -46,27 +45,21 @@ class Merge(internals.InternalFuncs):
         self.symlinks = []
         self.backup = []
         self.env = environment
-        self.instdb = dbapi.InstallDB()
+        self.instdb = api.InstallDB()
         self.conf = conf.LPMSConfig()
         self.info_files = []
         self.previous_files = []
         self.merge_conf_data = []
-        self.filesdb = dbapi.FilesDB()
-        self.file_relationsdb = dbapi.FileRelationsDB()
-        self.reverse_dependsdb = dbapi.ReverseDependsDB()
+        self.filesdb = api.FilesDB()
+        self.file_relationsdb = api.FileRelationsDB()
+        self.reverse_dependsdb = api.ReverseDependsDB()
         self.merge_conf_file = os.path.join(self.env.real_root, \
                 cst.merge_conf_file)
-        self.version_data = self.instdb.get_version(self.env.name, \
-                pkg_category = self.env.category)
-        self.previous_version = None
-        self.get_previous_files()
-
-    def get_previous_files(self):
-        for slot in self.version_data:
-            if slot == self.env.slot:
-                self.previous_version = self.version_data[slot][0]
-                self.previous_files = self.filesdb.get_paths_by_package(self.env.name, \
-                        repo=self.env.repo, category=self.env.category, version=self.previous_version)
+        #self.version_data = self.instdb.get_version(self.env.name, \
+        #        pkg_category = self.env.category)
+        self.previous_files = self.filesdb.get_paths_by_package(self.env.name, \
+                repo=self.env.repo, category=self.env.category, \
+                version=self.env.previous_version)
 
     def load_merge_conf_file(self):
         if os.path.isfile(self.merge_conf_file):
@@ -85,28 +78,15 @@ class Merge(internals.InternalFuncs):
                 pickle.dump(self.merge_conf_data, raw_data)
 
     def is_fresh(self):
-        status = self.instdb.find_pkg(self.env.name, 
-            self.env.repo, self.env.category)
-        if isinstance(status, bool) or not status or \
-            not self.env.slot in status[-1]:
-                return True
-        return False
+        return self.instdb.find_package(package_name=self.env.name, \
+                package_category=self.env.category)
 
     def is_reinstall(self):
-        versions = self.instdb.get_version(self.env.name, \
-                self.env.repo, self.env.category)
-        for slot in versions:
-            if self.env.version in versions[slot]:
-                return True
-        return False
+        return self.instdb.find_package(package_name=self.env.name, \
+                package_category=self.env.category, package_version=self.env.version)
 
     def is_different(self):
-        versions = self.instdb.get_version(self.env.name, \
-                self.env.repo, self.env.category)
-        for slot in versions:
-            if self.env.version in versions[slot]:
-                return False
-        return True
+        return self.is_reinstall()
 
     def is_parent_symlink(self, target):
         for symlink in self.symlinks:
@@ -117,7 +97,8 @@ class Merge(internals.InternalFuncs):
         '''Merge the package to the system'''
         isstrip = True
         if (hasattr(self.env, "no_strip") and self.env.no_strip) or lpms.getopt("--no-strip") \
-                or "debug" in self.env.valid_opts or utils.check_cflags("-g") \
+                or (self.env.applied_options is not None and "debug" in self.env.applied_options)\
+                or utils.check_cflags("-g") \
                 or utils.check_cflags("-ggdb") or utils.check_cflags("-g3"):
                     isstrip = False
 
@@ -130,11 +111,12 @@ class Merge(internals.InternalFuncs):
 
 
         self.filesdb.delete_item_by_pkgdata(self.env.category, self.env.name, \
-            self.previous_version, commit=True)
+            self.env.previous_version, commit=True)
 
         out.notify("merging the package to %s and creating database entries..." % self.env.real_root)
         
-        self.file_relationsdb.delete_item_by_pkgdata(self.env.category, self.env.name, self.previous_version, commit=True)
+        self.file_relationsdb.delete_item_by_pkgdata(self.env.category, \
+                self.env.name, self.env.previous_version, commit=True)
         # find content of the package
         for root_path, dirs, files in os.walk(self.env.install_dir, followlinks=True):
             root_path = root_path.split(self.env.install_dir)[1]
@@ -376,8 +358,11 @@ class Merge(internals.InternalFuncs):
         # write metadata
         # FIXME: do we need a function called update_db or like this?
         
-        installed = self.instdb.find_pkg(self.env.name, pkg_category = self.env.category)
-        
+        installed = self.instdb.find_package(
+                package_name=self.env.name, \
+                        package_category=self.env.category)
+        print self.env.package.get_raw_dict()
+        print self.env.dependencies.get_raw_dict()
         def rmpkg(data):
             '''removes installed versions from database'''
             # last object of 'data' list is a dictonary that contains
@@ -546,7 +531,8 @@ def main(environment):
     opr.clean_previous()
 
     # write to database
-    opr.write_db()
+    #opr.write_db()
+
     
     # create or update /usr/share/info/dir 
     opr.update_info_index()

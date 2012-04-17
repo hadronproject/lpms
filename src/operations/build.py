@@ -132,15 +132,6 @@ class Build(internals.InternalFuncs):
                             else:
                                 out.warn("%s not defined in your environment" % variable_type)
 
-    def options_info(self):
-        # FIXME: This is no good.
-        if self.env.options is not None:
-            self.env.options = self.env.options.split(" ")
-        else:
-            self.env.options = []
-        return [o for o in self.env.options if utils.opt(o, self.env.cmd_options, 
-            self.env.default_options)]
-
     def is_downloaded(self, url):
         return os.path.isfile(
                 os.path.join(self.config.src_cache,
@@ -195,16 +186,23 @@ class Build(internals.InternalFuncs):
                         if not interphase:
                             data = data.replace(short, self.env.__dict__[short[1:]])
                         else:
-                            if short == "$version": self.revisioned = True; self.revision = interphase.group()
+                            if short == "$version":
+                                self.revisioned = True
+                                self.revision = interphase.group()
                             result = "".join(self.env.__dict__[short[1:]].split(interphase.group()))
-                            if not short in ("$name", "$my_slot", "$slot"): setattr(self.env, "raw_"+short[1:], result)
+                            if not short in ("$name", "$my_slot", "$slot"):
+                                setattr(self.env, "raw_"+short[1:], result)
                             data = data.replace(short, result)
                     else:
-                        if short == "$version": self.revisioned = True; self.revision = interphase.group()
+                        if short == "$version":
+                            self.revisioned = True
+                            self.revision = interphase.group()
                         result = "".join(self.env.__dict__[short[1:]].split(interphase.group()))
-                        if not short in ("$name", "$my_slot", "$slot"): setattr(self.env, "raw_"+short[1:], result)
+                        if not short in ("$name", "$my_slot", "$slot"):
+                            setattr(self.env, "raw_"+short[1:], result)
                         data = data.replace(short, result)
-                except KeyError: pass
+                except KeyError:
+                    pass
             if opt:
                 self.urls.append((opt, data))
             else:
@@ -220,12 +218,12 @@ class Build(internals.InternalFuncs):
                 set_shortening(url, opt=option)
 
     def compile_script(self):
-        if not os.path.isfile(self.env.spec_file):
-            out.error("%s not found!" % self.env.spec_file)
+        if not os.path.isfile(self.spec_file):
+            out.error("%s not found!" % self.spec_file)
             raise BuildError
-        if not self.import_script(self.env.spec_file):
+        if not self.import_script(self.spec_file):
             out.error("an error occured while processing the spec: %s" \
-                    % out.color(self.env.spec_file, "red"))
+                    % out.color(self.spec_file, "red"))
             out.error("please report the above error messages to the package maintainer.")
             raise BuildError
 
@@ -233,36 +231,175 @@ class Build(internals.InternalFuncs):
         packages, dependencies, options = data
         
         if instruct["pretend"]:
+            out.write("\n")
+            out.normal("these packages will be merged, respectively:\n")
             self.pretty_print(packages, options)
+            out.write("\ntotal %s package(s) listed.\n\n" \
+                    % out.color(str(len(packages)), "green"))
             lpms.terminate()
 
+        if instruct["ask"]:
+            out.write("\n")
+            out.normal("these packages will be merged, respectively:\n")
+            self.pretty_print(packages, options)
+            utils.xterm_title("lpms: confirmation request")
+            out.write("\ntotal %s package(s) will be merged.\n\n" \
+                    % out.color(str(len(packages)), "green"))
+            if not utils.confirm("do you want to continue?"):
+                out.write("quitting...\n")
+                utils.xterm_title_reset()
+                lpms.terminate()
+
+        # clean source code extraction directory if it is wanted
+        if lpms.getopt("--clean-tmp"):
+            clean_tmp_exceptions = ("resume")
+            for item in shelltools.listdir(cst.extract_dir):
+                if item in clean_tmp_exceptions: continue
+                path = os.path.join(cst.extract_dir, item)
+                if path in clean_tmp_exceptions: continue
+                if os.path.isdir(path):
+                    shelltools.remove_dir(path)
+                else:
+                    shelltools.remove_file(path)
+
+        index = 0
         for package in packages:
+            self.env.package = package
+            self.env.dependencies = dependencies.get(package.id, None)
+            installed_package = self.instdb.find_package(package_name=package.name, \
+                    package_category=package.category, package_slot=package.slot)
+            self.env.previous_version = installed_package.get(0).version \
+                    if installed_package else None
+            # FIXME: This is no good
+            self.env.__dict__.update(instruct)
+            index += 1
             if not os.path.ismount("/proc"):
                 out.warn("/proc is not mounted. You have been warned.")
             if not os.path.ismount("/dev"):
                 out.warn("/dev is not mounted. You have been warned.")
 
-            self.spec_file = os.path.join(cst.repos, package.repo, package.category, \
+            self.spec_file = os.path.join(cst.repos, package.repo, package.category, package.name, \
                     package.name+"-"+package.version+cst.spec_suffix)
-            # Ask?
             for keyword in ('repo', 'name', 'category', 'name', \
                     'version', 'slot', 'options'):
                 setattr(self.env, keyword, getattr(package, keyword))
+            self.env.fullname = self.env.name+"-"+self.env.version
             setattr(self.env, "applied_options", options.get(package.id, None))
-            
             # set local environment variables
             if not lpms.getopt("--unset-env-variables"):
                self.set_local_environment_variables()
 
-
             interphase = re.search(r'-r[0-9][0-9]', self.env.version)
             if not interphase:
                 interphase = re.search(r'-r[0-9]', self.env.version)
-            try:
-                self.env.raw_version = self.env.version.replace(interphase.group(), "")
-            except AttributeError:
-                self.env.raw_version = self.env.version
- 
+            
+            if interphase is not None and interphase.group():
+                self.env.version = self.env.version.replace(interphase.group(), "")
+                self.env.revision = interphase.group()
+
+            self.compile_script()
+
+            metadata = utils.metadata_parser(self.env.metadata)
+            if "src_url" in metadata:
+                self.env.src_url = metadata["src_url"]
+            else:
+                if not "src_url" in self.env.__dict__.keys():
+                    self.env.src_url = None
+
+            setattr(self.env, "index", index)
+            setattr(self.env, "count", len(packages))
+            setattr(self.env, "filesdir", os.path.join(cst.repos, self.env.repo, \
+                self.env.category, self.env.name, cst.files_dir))
+            setattr(self.env, "src_cache", cst.src_cache)
+
+            if not "srcdir" in self.env.__dict__:
+                setattr(self.env, "srcdir", \
+                        self.env.name+"-"+self.env.version)
+            # FIXME: None?
+            self.env.sandbox = None
+            self.prepare_environment()
+
+            # start logging
+            # we want to save starting time of the build operation
+            lpms.logger.info("starting build (%s/%s) %s/%s/%s-%s" % (index, len(packages), self.env.repo, 
+                self.env.category, self.env.name, self.env.version))
+
+            out.normal("(%s/%s) building %s/%s from %s" % (index, len(packages),
+                out.color(self.env.category, "green"),
+                out.color(self.env.name+"-"+self.env.version, "green"), self.env.repo));
+
+            out.notify("you are using %s userland and %s kernel" % (self.config.userland, self.config.kernel))
+
+            if self.env.sandbox:
+                lpms.logger.info("sandbox enabled build")
+                out.notify("sandbox is enabled")
+            else:
+                lpms.logger.warning("sandbox disabled build")
+                out.warn_notify("sandbox is disabled")
+
+            # fetch packages which are in download_plan list
+            if self.env.src_url is not None:
+                # preprocess url tags such as $name, $version and etc
+                self.parse_url_tag()
+                # if the package is revisioned, override build_dir and install_dir. remove revision number from these variables.
+                if self.revisioned:
+                    for variable in ("build_dir", "install_dir"):
+                        new_variable = "".join(os.path.basename(getattr(self.env, variable)).split(self.revision))
+                        setattr(self.env, variable, os.path.join(os.path.dirname(getattr(self.env, \
+                                variable)), new_variable))
+
+                utils.xterm_title("lpms: downloading %s/%s/%s-%s" % (self.env.repo, self.env.category,
+                    self.env.name, self.env.version))
+                
+                self.prepare_download_plan(self.env.applied_options)
+                
+                if not fetcher.URLFetcher().run(self.download_plan):
+                    lpms.terminate("\nplease check the spec")
+
+            if self.env.applied_options is not None and len(self.env.applied_options) != 0:
+                out.notify("applied options: %s" % 
+                        " ".join(self.env.applied_options))
+                
+            if self.env.src_url is None and not self.extract_plan and hasattr(self.env, "extract"):
+                # Workaround for #208
+                self.env.extract_nevertheless = True
+
+            # remove previous sandbox log if it is exist.
+            if os.path.exists(cst.sandbox_log):
+                shelltools.remove_file(cst.sandbox_log)
+            os.chdir(self.env.build_dir)
+
+            # ccache facility
+            if "ccache" in self.config.__dict__ and self.config.ccache:
+                if os.access("/usr/lib/ccache/bin", os.R_OK):
+                    out.notify("ccache is enabled")
+                    os.environ["PATH"] = "/usr/lib/ccache/bin:%(PATH)s" % os.environ
+                    if "ccache_dir" in self.config.__dict__:
+                        os.environ["CCACHE_DIR"] = self.config.ccache_dir
+                    else:
+                        os.environ["CCACHE_DIR"] = cst.ccache_dir
+                    # sandboxed processes can access to CCACHE_DIR.
+                    os.environ["SANDBOX_PATHS"] = os.environ['CCACHE_DIR']+":%(SANDBOX_PATHS)s" % os.environ
+                else:
+                    out.warn("ccache could not be enabled. so you should check dev-util/ccache")
+
+            if not interpreter.run(self.spec_file, self.env):
+                lpms.terminate("thank you for flying with lpms.")
+
+            lpms.logger.info("finished %s/%s/%s-%s" % (self.env.repo, self.env.category, 
+                self.env.name, self.env.version))
+
+            utils.xterm_title("lpms: %s/%s finished" % (self.env.category, self.env.name))
+
+            out.notify("cleaning build directory...\n")
+            shelltools.remove_dir(os.path.dirname(self.env.install_dir))
+            catdir = os.path.dirname(os.path.dirname(self.env.install_dir))
+            if not os.listdir(catdir):
+                shelltools.remove_dir(catdir)
+
+            self.env.__dict__.clear()
+            utils.xterm_title_reset()
+
     def pretty_print(self, packages, options):
         for package in packages:
             status_bar = ['','','','']

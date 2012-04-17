@@ -167,7 +167,7 @@ def inslib(source, target='/usr/lib'):
     return shelltools.install_library(source, target, 0755)
 
 def opt(option):
-    return option in valid_opts
+    return option in applied_options
 
 def config_decide(option, secondary=None, appends=['--enable-', '--disable-']):
     result = []
@@ -408,7 +408,7 @@ def patch(*args, **kwarg):
         reverse = "-R"
 
     if not args:
-        patch_dir = os.path.join(cst.repos, repo, category, pkgname, cst.files_dir)
+        patch_dir = os.path.join(cst.repos, repo, category, name, cst.files_dir)
         if "location" in kwarg:
             patch_dir = kwarg.get("location")
 
@@ -422,7 +422,7 @@ def patch(*args, **kwarg):
     patches = []
     for patch_name in args:
         if repo != "local":
-            src = os.path.join(cst.repos, repo, category, pkgname, cst.files_dir, patch_name)
+            src = os.path.join(cst.repos, repo, category, name, cst.files_dir, patch_name)
             if "location" in kwarg:
                 src = os.path.join(kwarg.get("location"), patch_name)
         else:

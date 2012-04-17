@@ -36,6 +36,12 @@ class LpmsDatabase(object):
             self.dbpath = os.path.join(root, cst.db_path, cst.repositorydb)+cst.db_prefix
         elif self.__class__.__module__.endswith(cst.installdb):
             self.dbpath = os.path.join(root, cst.db_path, cst.installdb)+cst.db_prefix
+        elif self.__class__.__module__.endswith(cst.filesdb):
+            self.dbpath = os.path.join(root, cst.db_path, cst.filesdb)+cst.db_prefix
+        elif self.__class__.__module__.endswith(cst.file_relationsdb):
+            self.dbpath = os.path.join(root, cst.db_path, cst.file_relationsdb)+cst.db_prefix
+        elif self.__class__.__module__.endswith(cst.reverse_dependsdb):
+            self.dbpath = os.path.join(root, cst.db_path, cst.reverse_dependsdb)+cst.db_prefix
         else:
             raise Exception("%s seems an invalid child class." % self.__class__.__module__)
 

@@ -127,20 +127,6 @@ class Interpreter(internals.InternalFuncs):
                 current_length = len(self.env.libraries)
 
         self.env.libraries = list(result)
-
-    # FIXME: What is this?
-    #def startup_funcs(self):
-    #    for library in [m for m in self.env.__dict__ if "_library_start" in m]:
-    #        for func in getattr(self.env, library):
-    #            try:
-    #                # run given function that's defined in environment
-    #                func()
-    #            except:
-    #                traceback.print_exc()
-    #                out.error("an error occured while running the %s from %s library" % 
-    #                        (out.color(func.__name__, "red"), out.color(library, "red")))
-    #                lpms.terminate()
-
     def run_func(self, func_name):
         getattr(self.env, func_name)()
 
@@ -182,8 +168,8 @@ class Interpreter(internals.InternalFuncs):
             lpms.terminate()
 
     def run_configure(self):
-        utils.xterm_title("(%s/%s) lpms: configuring %s/%s-%s from %s" % (self.env.i, self.env.count, 
-            self.env.category, self.env.pkgname, self.env.version, self.env.repo))
+        utils.xterm_title("(%s/%s) lpms: configuring %s/%s-%s from %s" % (self.env.index, self.env.count, 
+            self.env.category, self.env.name, self.env.version, self.env.repo))
 
         out.normal("configuring source in %s" % self.env.build_dir)
         
@@ -205,8 +191,8 @@ class Interpreter(internals.InternalFuncs):
             lpms.terminate()
 
     def run_build(self):
-        utils.xterm_title("(%s/%s) lpms: building %s/%s-%s from %s" % (self.env.i, self.env.count, 
-            self.env.category, self.env.pkgname, self.env.version, self.env.repo))
+        utils.xterm_title("(%s/%s) lpms: building %s/%s-%s from %s" % (self.env.index, self.env.count, 
+            self.env.category, self.env.name, self.env.version, self.env.repo))
         out.normal("compiling source in %s" % self.env.build_dir)
         built_file = os.path.join(os.path.dirname(os.path.dirname(
             self.env.build_dir)), ".built")
@@ -224,8 +210,8 @@ class Interpreter(internals.InternalFuncs):
             lpms.terminate()
     
     def run_install(self):
-        utils.xterm_title("(%s/%s) lpms: installing %s/%s-%s from %s" % (self.env.i, self.env.count, 
-            self.env.category, self.env.pkgname, self.env.version, self.env.repo))
+        utils.xterm_title("(%s/%s) lpms: installing %s/%s-%s from %s" % (self.env.index, self.env.count, 
+            self.env.category, self.env.name, self.env.version, self.env.repo))
         out.normal("installing %s to %s" % (self.env.fullname, self.env.install_dir))
         installed_file = os.path.join(os.path.dirname(os.path.dirname(
             self.env.build_dir)), ".installed")
@@ -244,9 +230,9 @@ class Interpreter(internals.InternalFuncs):
                     namestr = self.env.fullname if self.env.slot != "0" else self.env.name
                     target = self.env.fix_target_path("/usr/share/doc/%s/%s" % (namestr, target_file))
                     source = os.path.join(self.env.build_dir, source_file)
-                    self.env.insfile(source, target)
-                else:
-                    self.env.insdoc(doc)
+                #    self.env.index, insfile(source, target)
+                #else:
+                #    self.env.index, insdoc(doc)
         out.notify("%s/%s installed." % (self.env.category, self.env.fullname))
         if not os.path.isfile(installed_file):
             touch(installed_file)
@@ -255,8 +241,8 @@ class Interpreter(internals.InternalFuncs):
             lpms.terminate()
 
     def run_merge(self):
-        utils.xterm_title("(%s/%s) lpms: merging %s/%s-%s from %s" % (self.env.i, self.env.count, 
-            self.env.category, self.env.pkgname, self.env.version, self.env.repo))
+        utils.xterm_title("(%s/%s) lpms: merging %s/%s-%s from %s" % (self.env.index, self.env.count, 
+            self.env.category, self.env.name, self.env.version, self.env.repo))
         if lpms.getopt("--no-merge"):
             out.write("no merging...\n")
             lpms.terminate()
@@ -264,10 +250,10 @@ class Interpreter(internals.InternalFuncs):
         merge.main(self.env)
 
     def run_remove(self):
-        utils.xterm_title("(%s/%s) lpms: removing %s/%s-%s from %s" % (self.env.i, self.env.count, 
-            self.env.category, self.env.pkgname, self.env.version, self.env.repo))
+        utils.xterm_title("(%s/%s) lpms: removing %s/%s-%s from %s" % (self.env.index, self.env.count, 
+            self.env.category, self.env.name, self.env.version, self.env.repo))
 
-        remove.main((self.env.repo, self.env.category, self.env.pkgname, 
+        remove.main((self.env.repo, self.env.category, self.env.name, 
             self.env.version), self.env.real_root)
 
     def run_post_remove(self):
@@ -461,7 +447,7 @@ def run(script, env, operation_order=None, remove=False):
     def parse_traceback(exception_type=None):
         '''Parse exceptions and show nice and more readable error messages'''
         out.write(out.color(">>", "brightred")+" %s/%s/%s-%s\n" % (ipr.env.repo, ipr.env.category, 
-            ipr.env.pkgname, ipr.env.version))
+            ipr.env.name, ipr.env.version))
         exc_type, exc_value, exc_traceback = sys.exc_info()
         formatted_lines = traceback.format_exception(exc_type, exc_value, exc_traceback)
         if not ipr.env.debug:
