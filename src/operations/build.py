@@ -430,7 +430,19 @@ class Build(internals.InternalFuncs):
                                     elif compare == 0:
                                         status_bar[1] = out.color("R", "brightyellow")
 
-            out.write("  [%s] %s/%s/%s {%s:%s} {%s} %s\n" % (
+            formatted_options = ""
+            if package.id in options:
+                formatted_options = []
+                if not status_bar[0] or not status_bar[1]:
+                    for applied_option in options[package.id]:
+                        formatted_options.append(out.color(applied_option, "red"))
+                    for option in package.options:
+                        if not option in options[package.id]:
+                            formatted_options.append(option)
+
+                formatted_options = "("+", ".join(formatted_options)+")"
+
+            out.write("  [%s] %s/%s/%s {%s:%s} {%s} %s%s\n" % (
                     " ".join(status_bar), \
                     package.repo, \
                     package.category, \
@@ -438,5 +450,6 @@ class Build(internals.InternalFuncs):
                     out.color(package.slot, "yellow"),\
                     out.color(package.version, "green"),\
                     package.arch, \
-                    other_version)
+                    other_version, \
+                    formatted_options)
             )
