@@ -250,8 +250,14 @@ class DependencyResolver(object):
                     packages.append(result)
 
         if not packages:
-            out.error("unmet dependency: %s depends on %s" % (out.color(self.current_package, \
-                    "red"), out.color(package, "red")))
+            out.error("unmet dependency: %s/%s/%s-%s:%s {%s} depends on %s" % \
+                    (self.current_package.repo, \
+                    self.current_package.category, \
+                    self.current_package.name, \
+                    self.current_package.version, \
+                    self.current_package.slot, \
+                    self.current_package.arch, \
+                    out.color(package, "red")))
             # FIXME: use an exception
             raise DependencyError
 
@@ -503,12 +509,15 @@ class DependencyResolver(object):
             # Oh my god! The package has no dependency.
             plan = [package.id for package in self.packages]
 
-        for index, i in enumerate(plan):
-            package = self.package_heap[i]
-            installed_package = self.instdb.find_package(package_name=package.name, package_category=package.category, \
-                    package_version=package.version)
-            print index+1,  package.id, package.category, package.name, package.version
+        final_plan = []
+        for package_id in plan:
+            final_plan.append(self.package_heap[package_id])
+
+        return final_plan, self.package_dependencies, self.package_options
+        #for index, i in enumerate(plan):
+        #    package = self.package_heap[i]
+        #    installed_package = self.instdb.find_package(package_name=package.name, package_category=package.category, \
+        #            package_version=package.version)
+        #    print index+1,  package.id, package.category, package.name, package.version
             #if package.id in self.package_options:
             #    print self.package_options[package.id]
-
-        exit()
