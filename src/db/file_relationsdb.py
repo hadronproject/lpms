@@ -24,6 +24,7 @@ class FileRelationsDatabase(base.LpmsDatabase):
     '''This class defines a database to store shared library and executable file relations'''
     def __init__(self):
         super(FileRelationsDatabase, self).__init__()
+        self.query = []
 
     def insert_query(self, commit=True):
         '''Inserts query'''

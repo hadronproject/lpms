@@ -21,7 +21,7 @@ import lpms
 from lpms import out
 from lpms import constants as cst
 
-from lpms.db import dbapi
+from lpms.db import api
 
 class CollisionProtect:
     def __init__(self, category, name, slot, version=None, \
@@ -29,7 +29,7 @@ class CollisionProtect:
         self.real_root = real_root
         self.files_and_links = {}
         self.source_dir = source_dir
-        self.filesdb = dbapi.FilesDB()
+        self.filesdb = api.FilesDB()
         self.prepare_files_and_links()
         self.orphans = []
         self.collisions = []

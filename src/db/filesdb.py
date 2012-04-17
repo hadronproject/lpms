@@ -24,8 +24,9 @@ from lpms.exceptions import NoSize
 
 class FilesDatabase(base.LpmsDatabase):
     '''This class defines a database to store files from packages'''
-    def __init__(self, db_path):
+    def __init__(self):
         super(FilesDatabase, self).__init__()
+        self.query = []
 
     def insert_query(self, commit=False):
         '''Inserts query items'''
