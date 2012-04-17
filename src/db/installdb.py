@@ -28,6 +28,7 @@ class InstallDatabase(base.LpmsDatabase):
     
     def insert_package(self, dataset, commit=False):
         # Firstly, convert Python data types to store in the SQLite3 database.
+        applied_options = sqlite3.Binary(pickle.dumps(dataset.applied_options, 1))
         options = sqlite3.Binary(pickle.dumps(dataset.options, 1))
         
         # Optional dependencies 
@@ -54,10 +55,10 @@ class InstallDatabase(base.LpmsDatabase):
         static_reverse_postmerge = sqlite3.Binary(pickle.dumps(dataset.static_depends_postmerge, 1))
         static_reverse_conflict = sqlite3.Binary(pickle.dumps(dataset.static_depends_conflict, 1))
  
-        self.cursor.execute('''INSERT INTO package VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, \
+        self.cursor.execute('''INSERT INTO package VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, \
                 ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', (None,  dataset.repo, dataset.category, \
                 dataset.name, dataset.version, dataset.slot, \
-                dataset.summary, dataset.homepage, dataset.license, dataset.src_uri, options, \
+                dataset.summary, dataset.homepage, dataset.license, dataset.src_uri, applied_options, options, \
                 dataset.arch, optional_depends_build, optional_depends_runtime, optional_depends_postmerge, \
                 optional_depends_conflict, static_depends_build, static_depends_runtime, static_depends_postmerge, \
                 static_depends_conflict, optional_reverse_build, optional_reverse_runtime, optional_reverse_postmerge, \
@@ -107,6 +108,7 @@ class InstallDatabase(base.LpmsDatabase):
             version, 
             slot, 
             arch, 
+            applied_options,
             options, 
             optional_depends_build, 
             optional_depends_runtime, 
@@ -173,9 +175,9 @@ class InstallDatabase(base.LpmsDatabase):
         return self.cursor.fetchone()
 
     def insert_build_info(self, dataset, commit=True):
-        self.cursor.execute('''INSERT INTO build_info VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', \
+        self.cursor.execute('''INSERT INTO build_info VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', \
                 (None, dataset.repo, dataset.category, dataset.name, dataset.version, dataset.slot, \
-                dataset.arch, dataset.start_time, dataset.end_time, dataset.requestor, \
+                dataset.arch, dataset.start_time, dataset.end_time, dataset.requestor, dataset.requestor_id, \
                 dataset.build_time, dataset.host, dataset.cflags, dataset.cxxflags, dataset.ldflags, \
                 dataset.makeopts, dataset.size)
         )
