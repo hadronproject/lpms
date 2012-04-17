@@ -409,12 +409,6 @@ def run_strip(path):
     if ret:
         out.warn("/usr/bin/strip/ --strip-unneeded command failed for %s" % path)
 
-def set_valid_options(options, cmd_options, default_options):
-    if options is None:
-        return 
-    return [o for o in options.split(' ') if opt(o, cmd_options, 
-        default_options)]
-
 def confirm(text):
     turns = 5
     while turns:
@@ -474,6 +468,7 @@ def check_path(binary):
 def export(variable, value):
     os.environ[variable] = value
 
+# FIXME: This function needs some refactoring
 def opt(option, cmd_options, default_options, from_package = []):
     def decision(data_set):
         for o in [d.strip() for d in data_set if d != ""]:
