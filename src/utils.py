@@ -47,6 +47,13 @@ def get_convenient_package(packages, locked_packages, arch_data, \
     if not packages: raise LockedPackage
 
     # Firstly, select the correct repository
+
+    # Select the convenient slot for the package
+    if slot is not None and slot.endswith("*"):
+        slots = [package.slot for package in packages if \
+                package.slot.startswith(slot[:-1])]
+        slot = best_version(slots)
+
     for repository in repositories:
         for package in packages:
             if not package.arch in convenient_arches:
