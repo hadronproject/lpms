@@ -76,3 +76,5 @@ class PackageNotFound(Exception):
 class DependencyError(Exception):
     pass
 
+class ConditionConflict(Exception):
+    pass

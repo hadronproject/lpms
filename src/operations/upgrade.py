@@ -23,7 +23,7 @@ from lpms import out
 from lpms import utils
 from lpms import constants as cst
 
-from lpms.db import dbapi
+from lpms.db import api as dbapi
 
 # Initial version of upgrade operation
 
@@ -70,43 +70,42 @@ class UpgradeSystem(object):
         return filtered_repovers
 
     def select_pkgs(self):
-        for pkg in self.instdb.get_all_names():
-            self.repo, self.category, self.name = pkg
+        for pkg in self.instdb.get_all_packages():
+            self.repo, self.category, self.name, self.version, self.slot = pkg
             # catch packages which are from the outside
-            if not self.repodb.find_pkg(self.name, pkg_category = self.category):
-                self.notfound_pkg.append((self.category, self.name))
+            if not self.repodb.find_package(package_name=self.name, \
+                    package_category=self.category):
+                if not (self.category, self.name) in self.notfound_pkg:
+                    self.notfound_pkg.append((self.category, self.name))
 
             # get version data from repository database
-            data =  self.repodb.find_pkg(self.name, pkg_category = self.category, selection=True)
-            if not data:
+            repository_items = self.repodb.find_package(package_name=self.name, \
+                    package_category=self.category)
+            if not repository_items:
+                # if the installed package could not found in the repository database
+                # add the item to not-founds list
+                self.notfound_pkg.append((self.category, self.name))
                 continue
             
-            # FIXME: this hack will be fixed in new database version
-            if isinstance(data, list):
-                repovers = self.filter_locked_packages(data[0][-1])
-            else:
-                repovers = self.filter_locked_packages(data[-1])
+            # collect available package version by slot value
+            available_versions = {}
+            for item in repository_items:
+                if item.slot in available_versions:
+                    available_versions[item.slot].append(item.version)
+                else:
+                    available_versions[item.slot] = [item.version]
 
-            # if repovers is a empty dict, the package is locked
-            if not repovers: continue
-            
             # comparise versions
-            for slot, instver in self.instdb.get_version(self.name, self.repo, self.category).items():
-                # a slot must inclue single version for installed packages database.
-                # But get_version method returns a dict and instver is a list.
-                # Hence, I used instver[0] in the code.
-                if not repovers or not slot in repovers:
-                    continue
-                best = utils.best_version(repovers[slot])
-                result = utils.vercmp(best, instver[0]) 
-
-                if result != 0:
-                    self.packages.append(os.path.join(self.category, self.name)+":"+slot)
+            for item in repository_items:
+                if item.slot == self.slot:
+                    best_version = utils.best_version(available_versions[item.slot])
+                    result = utils.vercmp(best_version, self.version) 
+                    if result != 0:
+                        self.packages.append(os.path.join(self.category, self.name)+":"+self.slot)
 
         if self.notfound_pkg:
             out.write("%s: the following packages were installed but they could not be found in the database:\n\n" 
                     % out.color("WARNING", "brightyellow"))
-            for pkg in self.notfound_pkg:
-                no_category, no_name = pkg
+            for no_category, no_name, in self.notfound_pkg:
                 out.notify("%s/%s" % (no_category, no_name))
             out.write("\n")

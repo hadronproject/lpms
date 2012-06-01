@@ -83,6 +83,7 @@ class RepositoryDatabase(base.LpmsDatabase):
         repo = kwargs.get("package_repo", None)
         category = kwargs.get("package_category", None)
         version = kwargs.get("package_version", None)
+        slot = kwargs.get("package_slot", None)
         available_arches = kwargs.get("package_available_arches", None)
         
         query_body = '''SELECT id, repo, category, name, version, slot, arch, options, \
@@ -123,6 +124,10 @@ class RepositoryDatabase(base.LpmsDatabase):
             elif repo is not None and category is not None and name is not None and version is not None:
                 self.cursor.execute('''%s FROM package WHERE repo = (?) AND category = (?) AND name = (?) AND \
                         version = (?) %s''' % (query_body, and_arches), (repo, category, name, version))
+            elif slot is not None and name is not None and category is not None:
+                self.cursor.execute('''%s FROM package WHERE category = (?) AND name = (?) AND slot = (?)''' \
+                        % query_body, (category, name, slot))
+
         return self.cursor.fetchall()
 
     def get_package_metadata(self, **kwargs):

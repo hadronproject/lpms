@@ -90,6 +90,7 @@ class Interpreter(internals.InternalFuncs):
     def get_build_libraries(self):
         result = set()
         lib_index = None
+        print self.env.libraries
         current_length = first_length = len(self.env.libraries)
 
         for lib in self.env.libraries:

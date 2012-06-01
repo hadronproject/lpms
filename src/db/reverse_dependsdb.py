@@ -27,41 +27,27 @@ class ReverseDependsDatabase(base.LpmsDatabase):
     def __init__(self):
         super(ReverseDependsDatabase, self).__init__()
 
-    def add_reverse_depend(self, data, build_dep=1, commit=False):
-        '''Registers reverse depend item for given package'''
-        repo, category, name, version = data[:4]
-        reverse_repo, reverse_category, reverse_name, \
-                reverse_version = data[4:]
-        self.cursor.execute('''insert into reverse_depends \
-                values(?, ?, ?, ?, ?, ?, ?, ?, ?)''', (repo, category, \
-                name, version, reverse_repo, reverse_category, \
-                reverse_name, reverse_version, build_dep))
+    def add_reverse_depend(self, package_id, reverse_package_id, \
+            build_dependency=1, commit=False):
+        '''Saves reverse dependency item for the given package'''
+        self.cursor.execute('''INSERT InTO reverse_depends \
+                values(?, ?, ?, ?)''', (None, package_id, reverse_package_id, \
+                build_dependency))
         if commit: self.commit()
 
-    def get_reverse_depends(self, category, name, version=None):
-        '''Gets reverse depends of given package'''
-        if version:
-            self.cursor.execute('''select reverse_repo, reverse_category, \
-                    reverse_name, reverse_version from reverse_depends where \
-                    category=(?) and name=(?) and version=(?) and build_dep=1''', (category, \
-                    name, version,))
-        else:
-            self.cursor.execute('''select reverse_repo, reverse_category, \
-                    reverse_name, reverse_version from reverse_depends where \
-                    category=(?) and name=(?) and build_dep=1''', (category, \
-                    name))
+    def get_reverse_depends(self, package_id):
+        '''Gets reverse depends of the given package'''
+        self.cursor.execute('''SELECT * FROM reverse_depends WHERE package_id = (?)''', \
+                (package_id,))
         return self.cursor.fetchall()
 
-    def get_package_by_reverse_depend(self, reverse_category, \
-            reverse_name, reverse_version):
-        '''Gets package by reverse depend'''
-        self.cursor.execute('''select repo, category, version from reverse_depends \
-                where reverse_category=(?) and reverse_name=(?) and \
-                reverse_version=(?) and build_dep=1''',
-                (category, name, version,))
+    def get_package_by_reverse_depend(self, reverse_package_id):
+        '''Gets package by the reverse depend'''
+        self.cursor.execute('''SELECT * FROM reverse_depends WHERE package_id=(?)''', \
+                ((reverse_package_id,)))
         self.cursor.fetchall()
 
-    def delete_item(self, category, name, version, commit=False):
-        '''Deletes all entries of given item'''
-        self.cursor.execute('''delete from reverse_depends where category=(?) and name=(?) and version=(?)''', (category, name, version,))
+    def delete_item(self, package_id, commit=False):
+        '''Deletes all items that added by the given item'''
+        self.cursor.execute('''DELETE FROM reverse_depends WHERE package_id=(?)''', (package_id,))
         if commit: self.commit()

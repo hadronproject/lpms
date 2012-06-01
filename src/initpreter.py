@@ -30,9 +30,9 @@ from lpms import constants as cst
 class InitializeInterpreter(internals.InternalFuncs):
     '''Base class for initialize the lpms spec interpreter
     It can be used for any purpose'''
-    def __init__(self, script, instruct, operations, remove=False):
+    def __init__(self, package, instruct, operations, remove=False):
         super(InitializeInterpreter, self).__init__()
-        self.script = script
+        self.package = package
         self.remove = remove
         self.env.__dict__.update(instruct)
         self.operations = operations
@@ -40,14 +40,14 @@ class InitializeInterpreter(internals.InternalFuncs):
 
     def initialize(self):
         '''Registers some basic environmet variables and runs the interpreter'''
-        repo, category, name, version = self.script
-
-        for key, data in {"repo": repo, "name": name, "version": version, "category": \
-                category, "pkgname": name, "fullname": name+"-"+version}.items():
+        for key, data in {"repo": self.package.repo, "name": self.package.name, \
+                "version": self.package.version, "category": \
+                self.package.category, "pkgname": self.package.name, \
+                "fullname": self.package.name+"-"+self.package.version}.items():
             setattr(self.env, key, data)
 
-        spec_file = os.path.join(cst.repos, repo, category, \
-                name, name)+"-"+version+cst.spec_suffix
+        spec_file = os.path.join(cst.repos, self.package.repo, self.package.category, \
+                self.package.name, self.package.name)+"-"+self.package.version+cst.spec_suffix
 
         # compile the script
         if os.access(spec_file, os.F_OK):

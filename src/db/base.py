@@ -45,6 +45,9 @@ class LpmsDatabase(object):
         else:
             raise Exception("%s seems an invalid child class." % self.__class__.__module__)
 
+        if not os.path.exists(os.path.dirname(self.dbpath)):
+            os.makedirs(os.path.dirname(self.dbpath))
+
         try:
             self.connection = sqlite3.connect(self.dbpath)
         except sqlite3.OperationalError:

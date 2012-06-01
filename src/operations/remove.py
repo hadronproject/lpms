@@ -24,7 +24,7 @@ from lpms import utils
 from lpms import shelltools
 from lpms import constants as cst
 
-from lpms.db import dbapi
+from lpms.db import api as dbapi
 
 # TODO:
 # (-) config protect
@@ -64,64 +64,6 @@ class Remove:
                 shelltools.remove_dir(target)
 
 def main(pkgname, real_root):
-    # FIXME: Do we need the 'select' function?
-    def select(pkgname):
-        """ Select the package version and return spec's path """
-        result = []
-        if pkgname.startswith("="):
-            name, version = utils.parse_pkgname(pkgname[1:])
-            # FIXME: if there are the same packages in different categories, 
-            # warn user.
-            for pkg in instdb.find_pkg(name):
-                instvers = []
-                map(lambda ver: instvers.extend(ver), pkg[3].values())
-                if version in instvers:
-                    repo, category, name = pkg[:-1]
-                    result = (repo, category, name, version)
-            if len(result) == 0:
-                out.error("%s not found!" % out.color(pkgname[1:], "brightred"))
-                lpms.terminate()
-        else:
-            data = instdb.find_pkg(pkgname)
-            versions = data[-1]
-            if len(versions) > 1:
-                out.warn("%s versions installed for %s:" % (len(versions), pkgname))
-                def ask():
-                    for count, ver in enumerate(versions):
-                        out.write("\t%s) %s: %s\n" % (out.color(str(count+1), "green"), ver, versions[ver][0]))
-                    out.write("\n")
-                    out.normal("select one of them: ")
-                    out.write("\nto exit, press 'Q' or 'q'\n")
-
-                while True:
-                    # run the dialog, show packages from different repositories
-                    ask()
-                    answer = sys.stdin.readline().strip()
-                    if answer == "Q" or answer == "q":
-                        lpms.terminate()
-                    elif answer.isalpha():
-                        out.warn("you must give a number.\n")
-                        continue
-
-                    try:
-                        # FIXME: we need more control
-                        version = versions.values()[int(answer)-1][0]
-                        break
-                    except:
-                        out.warn("%s seems invalid.\n" % out.color(answer, "red"))
-                        continue
-            else:
-                version = versions.values()[0][0]
-
-            if not data:
-                out.error("%s not found!" % out.color(pkgname, "brightred"))
-                lpms.terminate()
-
-            result = list(data); result.remove(data[-1])
-            result.insert(3, version)
-
-        return result
-
     instdb = dbapi.InstallDB()
     filesdb = dbapi.FilesDB()
 
@@ -137,8 +79,12 @@ def main(pkgname, real_root):
     
     # remove the package content
     rmpkg.remove_content()
-    # remove entries from metadata table
-    instdb.remove_pkg(repo, category, name, version)
+    # remove entries from the database
+    package_id = instdb.find_package(package_repo=repo, package_category=category, \
+            package_name=name, package_version=version).get(0).id
+    instdb.delete_inline_options(package_id=package_id)
+    instdb.delete_package(package_repo=repo, package_category=category, \
+            package_name=name, package_version=version, commit=True)
     # remove paths from files table
     filesdb.delete_item_by_pkgdata(category, name, version, commit=True)
     # unlock

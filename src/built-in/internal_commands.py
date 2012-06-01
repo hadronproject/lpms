@@ -167,7 +167,9 @@ def inslib(source, target='/usr/lib'):
     return shelltools.install_library(source, target, 0755)
 
 def opt(option):
-    return option in applied_options
+    if isinstance(applied_options, set):
+        return option in applied_options
+    return False
 
 def config_decide(option, secondary=None, appends=['--enable-', '--disable-']):
     result = []

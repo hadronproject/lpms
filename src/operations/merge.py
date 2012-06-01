@@ -46,6 +46,7 @@ class Merge(internals.InternalFuncs):
         self.backup = []
         self.env = environment
         self.instdb = api.InstallDB()
+        self.repodb = api.RepositoryDB()
         self.conf = conf.LPMSConfig()
         self.info_files = []
         self.previous_files = []
@@ -355,92 +356,46 @@ class Merge(internals.InternalFuncs):
                 self.env.real_root))
         
     def write_db(self):
-        # write metadata
-        # FIXME: do we need a function called update_db or like this?
+        '''Update package data in the database or create a new entry'''
+        if self.env.dependencies is not None:
+            for keyword in self.env.dependencies:
+                setattr(self.env.package, keyword, self.env.dependencies[keyword])
+
+        package_metadata = self.repodb.get_package_metadata(package_id=self.env.package.id)
+        self.env.package.applied_options = self.env.applied_options
+        for item in ('homepage', 'summary', 'license', 'src_uri'):
+            setattr(self.env.package, item, getattr(package_metadata, item))
         
-        installed = self.instdb.find_package(
-                package_name=self.env.name, \
-                        package_category=self.env.category)
-        print self.env.package.get_raw_dict()
-        print self.env.dependencies.get_raw_dict()
-        def rmpkg(data):
-            '''removes installed versions from database'''
-            # last object of 'data' list is a dictonary that contains
-            # versions with slot. It likes this:
-            # {"0": ['0.14', '0.12'], "1": ["1.2"]}
-            for key in data[-1]:
-                if key == self.env.slot:
-                    for ver in data[-1][key]:
-                        self.instdb.remove_pkg(data[0], self.env.category, 
-                                self.env.name, ver)
-
-        if installed:
-            if isinstance(installed, list):
-                # remove the db entry if the package is found more than one repositories.
-                for i in installed:
-                    rmpkg(i)
-            elif isinstance(installed, tuple):
-                # remove the db entry if the package is installed from a single repository.
-                rmpkg(installed)
-
-        data =(self.env.repo, self.env.category, 
-            self.env.name, self.env.version, 
-            self.env.summary, self.env.homepage, 
-            self.env.license, self.env.src_url, 
-            " ".join(self.env.valid_opts), self.env.slot, self.env.arch)
-
-        # FIXME: I dont like this
-        if "build" in self.env.todb:
-            builddeps = self.env.todb["build"]
-        else:
-            builddeps = []
-
-        if "runtime" in self.env.todb:
-            runtimedeps = self.env.todb["runtime"]
-        else:
-            runtimedeps = []
-
-        if "postmerge" in self.env.todb:
-            postmerge = self.env.todb["postmerge"]
-        else:
-            postmerge = []
-
-        if "conflict" in self.env.todb:
-            conflict = self.env.todb["conflict"]
-        else:
-            conflict = []
-
-        # write package data to install db
-        self.instdb.add_pkg(data, commit=True)
-        self.instdb.add_depends((self.env.repo, self.env.category, self.env.name, 
-                self.env.version, builddeps, runtimedeps, postmerge, conflict), commit=True)
+        installed_package = self.instdb.find_package(
+                package_name=self.env.name,
+                package_category=self.env.category,
+                package_slot=self.env.slot
+        )
         
-        # write reverse dependencies
-        self.reverse_dependsdb.delete_item(self.env.category, self.env.name, \
-                self.env.version, commit=True)
-        i = 0
-        for key in (runtimedeps, builddeps, postmerge, conflict):
-            i += 1
-            for reverse_data in key:
-                # a ugly workaround for conflicts
-                if len(reverse_data) == 4:
-                    # this seems a conflict
-                    reverse_repo, reverse_category, reverse_name, reverse_version = reverse_data
-                else:
-                    # a normal dependency
-                    reverse_repo, reverse_category, reverse_name, reverse_version = reverse_data[:-1]
-                if i == 2:
-                    self.reverse_dependsdb.add_reverse_depend((self.env.repo, self.env.category, \
-                            self.env.name, self.env.version, reverse_repo, reverse_category, \
-                            reverse_name, reverse_version), build_dep=0)
-                else:
-                    self.reverse_dependsdb.add_reverse_depend((self.env.repo, self.env.category, \
-                            self.env.name, self.env.version, reverse_repo, reverse_category, \
-                            reverse_name, reverse_version))
-        self.reverse_dependsdb.commit()
+        if installed_package:
+            package_id = self.env.package.package_id = installed_package.get(0).id
+            self.instdb.update_package(self.env.package, commit=True)
+        else:
+            self.instdb.insert_package(self.env.package, commit=True)
+            package_id = self.instdb.find_package(
+                    package_repo=self.env.package.repo,
+                    package_category=self.env.package.category,
+                    package_name=self.env.package.name,
+                    package_version=self.env.package.version
+            ).get(0).id
 
-        # write build info. flags, build time and etc.
-        #self.instdb.drop_buildinfo(self.env.repo, self.env.category, self.env.name, self.env.version)
+        # Create or update inline_options table entries.
+        if hasattr(self.env, "inline_option_targets"):
+            for target in self.env.inline_option_targets:
+                if self.instdb.find_inline_options(package_id=package_id, target=target):
+                    self.instdb.update_inline_options(package_id, target, \
+                            self.env.inline_option_targets[target])
+                else:
+                    self.instdb.insert_inline_options(package_id, target, \
+                            self.env.inline_option_targets[target])
+
+        #self.instdb.drop_buildinfo(self.env.repo, self.env.category, \
+        #        self.env.name, self.env.version)
         if "HOST" in os.environ:
             host = os.environ["HOST"]
         else:
@@ -460,10 +415,6 @@ class Merge(internals.InternalFuncs):
             ldflags = os.environ["LDFLAGS"]
         else:
             ldflags = ""
-
-        data = (self.env.repo, self.env.category, self.env.name, self.env.version, time.time(), 
-                host, cflags, cxxflags, ldflags, " ".join(self.env.valid_opts), self.total)
-        self.instdb.add_buildinfo(data)
 
     def clean_previous(self):
         if not self.is_fresh():
@@ -522,16 +473,16 @@ def main(environment):
     # create $info_file_name.gz archive and remove info file
     opr.create_info_archive()
     
-    # merge
+    # merge the package
     opr.merge_pkg()
 
     opr.save_merge_conf_file()
 
-    # clean previous version if it is exists
+    # clean the previous version if it is exists
     opr.clean_previous()
 
     # write to database
-    #opr.write_db()
+    opr.write_db()
 
     
     # create or update /usr/share/info/dir 
