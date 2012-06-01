@@ -30,6 +30,10 @@ class InstallDatabase(base.LpmsDatabase):
         # Firstly, convert Python data types to store in the SQLite3 database.
         applied_options = sqlite3.Binary(pickle.dumps(dataset.applied_options, 1))
         options = sqlite3.Binary(pickle.dumps(dataset.options, 1))
+
+        parent = None
+        if hasattr(dataset, "parent"):
+            parent = dataset.parent
         
         # Optional dependencies 
         optional_depends_build = sqlite3.Binary(pickle.dumps(dataset.optional_depends_build, 1))
@@ -43,32 +47,57 @@ class InstallDatabase(base.LpmsDatabase):
         static_depends_postmerge = sqlite3.Binary(pickle.dumps(dataset.static_depends_postmerge, 1))
         static_depends_conflict = sqlite3.Binary(pickle.dumps(dataset.static_depends_conflict, 1))
 
-        # Optional reverse dependencies 
-        optional_reverse_build = sqlite3.Binary(pickle.dumps(dataset.optional_depends_build, 1))
-        optional_reverse_runtime = sqlite3.Binary(pickle.dumps(dataset.optional_depends_runtime, 1))
-        optional_reverse_postmerge = sqlite3.Binary(pickle.dumps(dataset.optional_depends_postmerge, 1))
-        optional_reverse_conflict = sqlite3.Binary(pickle.dumps(dataset.optional_depends_conflict, 1))
-        
-        # Static reverse dependencies
-        static_reverse_build = sqlite3.Binary(pickle.dumps(dataset.static_depends_build, 1))
-        static_reverse_runtime = sqlite3.Binary(pickle.dumps(dataset.static_depends_runtime, 1))
-        static_reverse_postmerge = sqlite3.Binary(pickle.dumps(dataset.static_depends_postmerge, 1))
-        static_reverse_conflict = sqlite3.Binary(pickle.dumps(dataset.static_depends_conflict, 1))
- 
         self.cursor.execute('''INSERT INTO package VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, \
-                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', (None,  dataset.repo, dataset.category, \
+                ?, ?, ?, ?, ?, ?, ?)''', (None, dataset.repo, dataset.category, \
                 dataset.name, dataset.version, dataset.slot, \
                 dataset.summary, dataset.homepage, dataset.license, dataset.src_uri, applied_options, options, \
-                dataset.arch, optional_depends_build, optional_depends_runtime, optional_depends_postmerge, \
+                dataset.arch, parent, optional_depends_build, optional_depends_runtime, optional_depends_postmerge, \
                 optional_depends_conflict, static_depends_build, static_depends_runtime, static_depends_postmerge, \
-                static_depends_conflict, optional_reverse_build, optional_reverse_runtime, optional_reverse_postmerge, \
-                optional_reverse_conflict, static_reverse_build, static_reverse_runtime, static_reverse_postmerge, \
-                static_reverse_conflict))
+                static_depends_conflict))
 
         if commit:
             self.commit()
 
-    def delete_package(self, *kwargs):
+    def update_package(self, dataset, commit=False):
+        # Firstly, convert Python data types to store in the SQLite3 database.
+        applied_options = sqlite3.Binary(pickle.dumps(dataset.applied_options, 1))
+        options = sqlite3.Binary(pickle.dumps(dataset.options, 1))
+
+        # WARNING
+        parent = None
+        if hasattr(dataset, "parent"):
+            parent = dataset.parent
+        # WARNING
+
+        # Optional dependencies 
+        optional_depends_build = sqlite3.Binary(pickle.dumps(dataset.optional_depends_build, 1))
+        optional_depends_runtime = sqlite3.Binary(pickle.dumps(dataset.optional_depends_runtime, 1))
+        optional_depends_postmerge = sqlite3.Binary(pickle.dumps(dataset.optional_depends_postmerge, 1))
+        optional_depends_conflict = sqlite3.Binary(pickle.dumps(dataset.optional_depends_conflict, 1))
+        
+        # Static dependencies
+        static_depends_build = sqlite3.Binary(pickle.dumps(dataset.static_depends_build, 1))
+        static_depends_runtime = sqlite3.Binary(pickle.dumps(dataset.static_depends_runtime, 1))
+        static_depends_postmerge = sqlite3.Binary(pickle.dumps(dataset.static_depends_postmerge, 1))
+        static_depends_conflict = sqlite3.Binary(pickle.dumps(dataset.static_depends_conflict, 1))
+
+        self.cursor.execute('''UPDATE package SET repo = (?), category = (?), name = (?), \
+                version = (?), slot = (?), summary = (?), homepage = (?), license = (?), \
+                src_uri = (?), applied_options = (?), options = (?), arch = (?), parent = (?), \
+                optional_depends_build = (?), optional_depends_runtime = (?), optional_depends_postmerge = (?), \
+                optional_depends_conflict = (?), static_depends_build = (?), static_depends_runtime = (?), \
+                static_depends_postmerge = (?), static_depends_conflict = (?) WHERE id = (?)''', \
+                (dataset.repo, dataset.category, \
+                dataset.name, dataset.version, dataset.slot, dataset.summary, dataset.homepage, dataset.license, \
+                dataset.src_uri, applied_options, options, dataset.arch, parent, optional_depends_build, \
+                optional_depends_runtime, optional_depends_postmerge, optional_depends_conflict, \
+                static_depends_build, static_depends_runtime, static_depends_postmerge, \
+                static_depends_conflict, dataset.package_id))
+
+        if commit:
+            self.commit()
+
+    def delete_package(self, **kwargs):
         # Set the keywords
         name = kwargs.get("package_name", None)
         package_id = kwargs.get("package_id", None)
@@ -98,7 +127,8 @@ class InstallDatabase(base.LpmsDatabase):
         repo = kwargs.get("package_repo", None)
         category = kwargs.get("package_category", None)
         version = kwargs.get("package_version", None)
-        
+        slot = kwargs.get("package_slot", None)
+
         query_body = '''
         SELECT 
             id, 
@@ -107,7 +137,8 @@ class InstallDatabase(base.LpmsDatabase):
             name, 
             version, 
             slot, 
-            arch, 
+            arch,
+            parent,
             applied_options,
             options, 
             optional_depends_build, 
@@ -117,15 +148,7 @@ class InstallDatabase(base.LpmsDatabase):
             static_depends_build, 
             static_depends_runtime,
             static_depends_postmerge, 
-            static_depends_conflict, 
-            optional_reverse_build, 
-            optional_reverse_runtime, 
-            optional_reverse_postmerge,
-            optional_reverse_conflict, 
-            static_reverse_build, 
-            static_reverse_runtime,
-            static_reverse_postmerge, 
-            static_reverse_conflict
+            static_depends_conflict
         '''
         if package_id is not None:
             self.cursor.execute('''%s FROM package WHERE id = (?)''' % query_body, (package_id,))
@@ -154,6 +177,10 @@ class InstallDatabase(base.LpmsDatabase):
             elif repo is not None and category is not None and name is not None and version is not None:
                 self.cursor.execute('''%s FROM package WHERE repo = (?) AND category = (?) AND name = (?) AND \
                         version = (?)''' % query_body, (repo, category, name, version))
+            elif slot is not None and name is not None and category is not None:
+                self.cursor.execute('''%s FROM package WHERE category = (?) AND name = (?) AND slot = (?)''' \
+                        % query_body, (category, name, slot))
+
         return self.cursor.fetchall()
 
     def get_package_metadata(self, dataset):
@@ -198,4 +225,48 @@ class InstallDatabase(base.LpmsDatabase):
                 (repo, category, name, version))
         return self.cursor.fetchone()
 
+    def insert_inline_options(self, package_id, target, options, commit=True):
+        options = sqlite3.Binary(pickle.dumps(options, 1))
+        self.cursor.execute('''INSERT INTO inline_options VALUES (?, ?, ?)''', \
+                (package_id, target, options))
+        if commit: self.commit()
+
+    def update_inline_options(self, package_id, target, options, commit=True):
+        options = sqlite3.Binary(pickle.dumps(options, 1))
+        self.cursor.execute('''UPDATE inline_options SET options = (?) WHERE package_id = (?) AND target = (?)''', \
+                (options, package_id, target))
+        if commit: self.commit()
+
+    def find_inline_options(self, package_id, target):
+        if package_id is not None and target is None:
+            self.cursor.execute('''SELECT * FROM inline_options WHERE package_id = (?)''', (package_id,))
+        elif package_id is None and target is not None:
+            self.cursor.execute('''SELECT * FROM inline_options WHERE target = (?)''', (target,))
+        elif package_id is not None and target is not None:
+            self.cursor.execute('''SELECT * FROM inline_options WHERE target = (?) AND package_id = (?)''', \
+                    (target, package_id))
+        return self.cursor.fetchall()
+
+    def delete_inline_options(self, package_id, target, commit):
+        if package_id is not None:
+            self.cursor.execute('''DELETE FROM inline_options WHERE package_id = (?)''', (package_id,))
+        elif target is not None:
+            self.cursor.execute('''DELETE FROM inline_options WHERE target = (?)''', (target,))
+        elif target is not None and package_id is not None:
+            self.cursor.execute('''DELETE FROM inline_options WHERE package_id = (?) AND target = (?)''', \
+                    (package_id, target))
+        if commit is not None: 
+            self.commit()
+
+    def get_all_packages(self):
+        self.cursor.execute('''SELECT repo, category, name, version, slot FROM package''')
+        return self.cursor.fetchall()
+
+    def get_parent_package(self, category=None, name=None, version=None, package_id=None):
+        if package_id is not None:
+            self.cursor.execute('''SELECT parent FROM package WHERE package_id = (?)''', (package_id,))
+            return self.cursor.fetchone()[0]
+        self.cursor.execute('''SELECT parent FROM package WHERE category = (?) and name = (?) \
+                and version = (?)''', (category, name, version))
+        return self.cursor.fetchone()[0]
 

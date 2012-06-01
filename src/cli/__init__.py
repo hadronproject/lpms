@@ -45,6 +45,7 @@ help_output = (('--help', '-h', 'Shows this message.'),
         ('--content', '-c', 'Lists files of given package.'),
         ('--list-repos', 'Lists all repositories.'),
         ('--clean-tmp', 'Cleans source code extraction directory.'),
+        ('--autoremove', 'Removes unneeded packages.'),
         ('--force-upgrade', 'Forces lpms to use latest versions.'),
         ('--show-reverse-depends', 'Shows reverse dependencies of given package. It is a sub command of remove.'),
         ('--configure-pending', 'Configures pending packages if they were not configured at installation time.'),
@@ -142,6 +143,7 @@ instruct = {'ask': False, 'pretend': False, 'resume-build': False, 'resume': Fal
         'force': None, 'upgrade': None, 'remove': None, 'skip-first': False, 'sync': False, \
         'update': False, 'configure-pending': False, 'category-install': False,
         "use-new-opts": False, 'like': set(), 'show-reverse-depends': False, 'debug': False}
+
 def main():
     packages = []; invalid = []
     for command in commands:
@@ -224,6 +226,10 @@ def main():
             elif command[2:].startswith('sandbox-log-level'):
                 # FIXME: This is no good. 
                 pass
+            elif command[2:] == "autoremove":
+                from lpms.cli import autoremove
+                autoremove.Autoremove().select()
+                return
             elif command in nevermind:
                 pass
             else:

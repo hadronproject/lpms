@@ -19,12 +19,12 @@ import re
 
 import lpms
 from lpms import out
-from lpms.db import dbapi
+from lpms.db import api
 
 class Info(object):
     def __init__(self, params):
-        self.instdb = dbapi.InstallDB()
-        self.repo_db = dbapi.RepositoryDB()
+        self.instdb = api.InstallDB()
+        self.repodb = api.RepositoryDB()
         self.params = params
         self.repo = None
         self.category = None
@@ -38,51 +38,92 @@ class Info(object):
         out.write("\nrepo and category keywords are optional.\n")
         lpms.terminate()
 
-    def get_info(self, pkg):
-        def show_options():
-            return self.repo_db.get_options(self.repo, self.category, self.name), \
-                    self.instdb.get_options(self.repo, self.category, self.name)
+    def show_package(self, packages):
+        package = packages.get(0)
+        installed_packages = self.instdb.find_package(package_name=package.name, \
+                package_category=package.category)
+        metadata = self.repodb.get_package_metadata(package_id=package.id)
+        if installed_packages:
+            installed_versions, available_versions, package_options = {}, {}, {}
+            for package_item in packages:
+                if package_item.arch in available_versions:
+                    available_versions[package_item.arch].add(package_item.version)
+                else:
+                    available_versions[package_item.arch] = set([package_item.version])
 
-        self.repo, self.category, self.name, self.version = pkg
-        repo_versions = []
-        map(lambda x: repo_versions.extend(x), self.version.values())
-        out.write('%s/%s' % (out.color(self.category, "white"), out.color(self.name, 'brightgreen')+'\n'))
-        out.write('    %-20s %s' % (out.color("available versions:", 'green'), " ".join(repo_versions)+'\n'))
-        instvers = self.instdb.get_version(self.name, self.repo, self.category); inst_versions = []
-        if not isinstance(instvers, bool) and instvers:
-            map(lambda x: inst_versions.extend(x), instvers.values())
-            repo_options, installed_options = show_options()
-            out.write('    %-20s ' % (out.color('installed versions:', 'green')))
-            if len(instvers) > 1:
-                for iver in instvers.items():
-                    out.write("%s(%s) " % (out.color(iver[0], "backgroundwhite"), " ".join(iver[1])))
-                out.write('\n')
-            else:
-                out.write('%s' % " ".join(inst_versions)+'\n')
-        
-        repo_options, installed_options = show_options()
-        classified_options = {}
-        for repo_ver in repo_options:
-            if repo_options[repo_ver]:
-                classified_options[repo_ver] = []
-                if repo_ver in installed_options:
-                    for option in installed_options[repo_ver].split(" "):
-                        if option == "": continue
-                        classified_options[repo_ver].append(option+out.color("*", "brightgreen"))
-                    for option in repo_options[repo_ver].split(" "):
-                        if not option+out.color("*", "brightgreen") in classified_options[repo_ver]:
-                            classified_options[repo_ver].append(option)
-
-        for ver in classified_options:
-            if classified_options[ver]:
-                out.write('    %-15s %s {%s}\n' % (out.color('options:', 'green'), ver, " ".join(classified_options[ver])))
-
-        for tag in ('summary', 'homepage', 'license'):
-            data = getattr(self.repo_db, "get_"+tag)(self.name, self.repo, self.category)[0]
-            if data is not None:
-                out.write('    %s %s' % (out.color(tag+":", 'green'), data+'\n'))
-        out.write('    %s %s' % (out.color("repo:", 'green'), self.repo+'\n'))
-
+            for installed_package in installed_packages:
+                if installed_package.arch in installed_versions:
+                    installed_versions[installed_package.arch].add(installed_package.version)
+                else:
+                    installed_versions[installed_package.arch] = set([installed_package.version])
+                if installed_package.applied_options is None:
+                    continue
+                for option in installed_package.options:
+                    if option in installed_package.applied_options:
+                        key = out.color("{"+installed_package.slot+"} "\
+                                +installed_package.repo+"::"+installed_package.version, "yellow")
+                        if not key in package_options:
+                            package_options[key] = [out.color(option, "red")]
+                        else:
+                            package_options[key].append(out.color(option, "red"))
+                for option in installed_package.options:
+                    if not option in installed_package.applied_options:
+                        key = out.color("{"+installed_package.slot+"} "\
+                                +installed_package.repo+"::"+installed_package.version, "yellow")
+                        if not key in package_options:
+                            package_options[key] = [option]
+                        else:
+                            package_options[key].append(option)
+            versions = ""
+            for arch in available_versions:
+                versions += out.color(arch, "yellow")+"("+", ".join(available_versions[arch])+") "
+            installed_vers = ""
+            for arch in installed_versions:
+                installed_vers += out.color(arch, "yellow")+"("+", ".join(installed_versions[arch])+") "
+            out.write("[%s] %s/%s\n" % (out.color("I", "backgroundgreen"), out.color(package.category, "brightgreen"), \
+                    out.color(package.name, "brightgreen")))
+            out.write("    %s  %s\n" % (out.color("available versions:", "green"), versions))
+            out.write("    %s  %s\n" % (out.color("installed versions:", "green"), installed_vers))
+            out.write("    %s             %s\n" % (out.color("summary:", "green"), metadata.summary))
+            out.write("    %s            %s\n" % (out.color("homepage:", "green"), metadata.homepage))
+            out.write("    %s             %s\n" % (out.color("license:", "green"), metadata.license))
+            if package_options:
+                out.write("    %s  " % out.color("options:", "green"))
+                for index, version in enumerate(package_options):
+                    if index == 0:
+                        out.write("           => %s" % version+"("+", ".join(package_options[version])+")")
+                    else:
+                        out.write("                         => %s" % out.color(version, "brightblue")+\
+                                "("+", ".join(package_options[version])+")")
+                    out.write("\n")
+        else:
+            available_versions, package_options = {}, {}
+            for package_item in packages:
+                if package_item.arch in available_versions:
+                    available_versions[package_item.arch].add(package_item.version)
+                else:
+                    available_versions[package_item.arch] = set([package_item.version])
+                if package_item.options is not None:
+                    package_options["{"+package_item.slot+"} "+package_item.repo+"::"\
+                            +package_item.version] = package_item.options
+            versions = ""
+            for arch in available_versions:
+                versions += out.color(arch, "yellow")+"("+", ".join(available_versions[arch])+") "
+            out.write("%s %s/%s\n" % (out.color(" * ", "green"), package.category, out.color(package.name, "white")))
+            out.write("    %s  %s\n" % (out.color("available versions:", "green"), versions))
+            out.write("    %s             %s\n" % (out.color("summary:", "green"), metadata.summary))
+            out.write("    %s            %s\n" % (out.color("homepage:", "green"), metadata.homepage))
+            out.write("    %s             %s\n" % (out.color("license:", "green"), metadata.license))
+            if package_options:
+                out.write("    %s  " % out.color("options:", "green"))
+                for index, version in enumerate(package_options):
+                    if index == 0:
+                        out.write("           => %s" % out.color(version, "brightblue")+\
+                                "("+", ".join(package_options[version])+")")
+                    else:
+                        out.write("                         => %s" % out.color(version, \
+                                "brightblue")+"("+", ".join(package_options[version])+")")
+                    out.write("\n")
 
     def run(self):
         if lpms.getopt("--help") or len(self.params) == 0:
@@ -92,20 +133,21 @@ class Info(object):
             param = param.split("/")
             if len(param) == 3:
                 myrepo, mycategory, myname = param
-                data = self.repo_db.find_pkg(myname, myrepo, mycategory)
+                packages = self.repodb.find_package(package_name=myname, \
+                        package_repo=myrepo, package_category=mycategory)
             elif len(param) == 2:
                 mycategory, myname = param
-                data = self.repo_db.find_pkg(myname, pkg_category=mycategory)
+                packages = self.repodb.find_package(package_name=myname, \
+                        package_category=mycategory)
             elif len(param) == 1:
-                data = self.repo_db.find_pkg(param[0])
+                packages = self.repodb.find_package(package_name=param[0])
             else:
                 out.error("%s seems invalid." % out.color("/".join(param), "brightred"))
                 lpms.terminate()
-            if not data:
+            if not packages:
                 out.error("%s not found!" % out.color("/".join(param), "brightred"))
                 lpms.terminate()
-            if type(data).__name__ == 'tuple':
-                self.get_info(data)
-            else:
-                for pkg in data:
-                    self.get_info(pkg)
+            
+            # Show time!
+            self.show_package(packages)
+

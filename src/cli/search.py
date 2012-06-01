@@ -15,15 +15,17 @@
 # You should have received a copy of the GNU General Public License
 # along with lpms.  If not, see <http://www.gnu.org/licenses/>.
 
+import os
 import re
 import sys
 import sqlite3
 import cPickle as pickle
 
 import lpms
+
 from lpms import api
 from lpms import out
-from lpms.db import dbapi
+from lpms.db import api as dbapi
 from lpms import constants as cst
 
 help_output = (('--only-installed', 'Shows installed packages for given keyword.'),
@@ -43,7 +45,10 @@ class Search(object):
             if not key in ('--only-installed', '--in-name', '--in-summary', '--interactive'):
                 self.keyword += key+" "
         self.keyword = self.keyword.strip()
-        self.connection = sqlite3.connect(cst.repositorydb_path)
+        root = cst.root if instruct["real_root"] is None \
+                else instruct['real_root']
+        self.connection = sqlite3.connect(os.path.join(root, cst.db_path, \
+                cst.repositorydb)+cst.db_prefix)
         self.cursor = self.connection.cursor()
         self.repodb = dbapi.RepositoryDB()
         self.instdb = dbapi.InstallDB()
@@ -53,17 +58,20 @@ class Search(object):
         out.green("General Usage:\n")
         out.write(" $ lpms -s <keyword>\n")
         out.write("\nOther options:\n")
-        for h in help_output:
-            if len(h) == 2:
-                out.write("%-28s: %s\n" % (out.color(h[0],"green"), h[1]))
+        for item in help_output:
+            if len(item) == 2:
+                out.write("%-28s: %s\n" % (out.color(item[0],"green"), item[1]))
         lpms.terminate()
 
-    def preprocess(self, results):
-        data = []
-        for result in results:
-            if not result in data:
-                data.append(result)
-        return data
+    def classificate_packages(self, packages):
+        items = {}
+        for package in packages:
+            key = package[1], package[2]
+            if key not in items:
+                items[key] = [package]
+            else:
+                items[key].append(package)
+        return items
 
     def search(self):
         if not list(self.keyword) and lpms.getopt("--only-installed"):
@@ -85,40 +93,51 @@ class Search(object):
         available = True
         results = []
         if not lpms.getopt("--in-summary") and not lpms.getopt("--in-name"):
-            name_query = self.cursor.execute('''SELECT repo, category, name, version, summary FROM \
-                    metadata WHERE name LIKE (?)''', ("%"+self.keyword+"%",))
-            results.extend(name_query.fetchall())
-            summary_query = self.cursor.execute('''SELECT repo, category, name, version, summary FROM \
-                    metadata WHERE summary LIKE (?)''', ("%"+self.keyword+"%",))
-            results.extend(summary_query.fetchall())
+            self.cursor.execute('''SELECT repo, category, name, version, summary, slot FROM \
+                    package WHERE name LIKE (?) OR summary LIKE (?)''', ("%"+self.keyword+"%", "%"+self.keyword+"%"))
+            results.extend(self.cursor.fetchall())
         elif lpms.getopt("--in-summary"):
-            summary_query = self.cursor.execute('''SELECT repo, category, name, version, summary FROM \
-                    metadata WHERE summary LIKE (?)''', ("%"+self.keyword+"%",))
-            results.extend(summary_query.fetchall())
+            self.cursor.execute('''SELECT repo, category, name, version, summary, slot FROM \
+                    package WHERE summary LIKE (?)''', ("%"+self.keyword+"%",))
+            results.extend(self.cursor.fetchall())
         else:
-            name_query = self.cursor.execute('''SELECT repo, category, name, version, summary FROM \
-                    metadata WHERE name LIKE (?)''', ("%"+self.keyword+"%",))
-            results.extend(name_query.fetchall())
+            self.cursor.execute('''SELECT repo, category, name, version, summary, slot FROM \
+                    package WHERE name LIKE (?)''', ("%"+self.keyword+"%",))
+            results.extend(self.cursor.fetchall())
 
         if not results:
             # if no result, search given keyword in installed packages database
             connection = sqlite3.connect(cst.installdb_path)
             cursor = connection.cursor()
-            name_query = cursor.execute('''SELECT repo, category, name, version, summary FROM \
-                    metadata WHERE name LIKE (?)''', ("%"+self.keyword+"%",))
-            results.extend(name_query.fetchall())
-            summary_query = cursor.execute('''SELECT repo, category, name, version, summary FROM \
-                    metadata WHERE summary LIKE (?)''', ("%"+self.keyword+"%",))
-            results.extend(summary_query.fetchall())
+            cursor.execute('''SELECT repo, category, name, version, summary, slot FROM \
+                    package WHERE name LIKE (?) OR summary LIKE (?)''', ("%"+self.keyword+"%", "%"+self.keyword+"%"))
+            results.extend(cursor.fetchall())
             if results: 
                 out.notify("these packages are installed but no longer available.")
                 available = False
 
-        results = self.preprocess(results)
+        packages = self.classificate_packages(results)
+        
+        for package in packages:
+            category, name = package
+            out.write(out.color(category, "green")+"/"+out.color(name, "green")+" - ")
+            items = {}
+            for item in packages[package]:
+                if item[0] in items:
+                    items[item[0]].append(item[3])
+                else:
+                    items[item[0]] = [item[3]]
+            for item in items:
+                out.write(out.color(item, "yellow")+"("+", ".join(items[item])+") ")
+            out.write("\n")
+            out.write("    "+packages[package][0][4]+"\n")
+            packages[package]
+
+        """
         index = 1
         for result in results:
             repo, category, name, version_data, summary = result
-            version_data = pickle.loads(str(version_data))
+            print version_data
             version = ""
             for slot in version_data:
                 if slot != "0":
@@ -184,3 +203,4 @@ class Search(object):
                     continue
 
             if packages: api.pkgbuild(packages, self.instruct)
+        """

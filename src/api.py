@@ -129,50 +129,54 @@ def remove_package(pkgnames, instruct):
     '''Triggers remove operation for given packages'''
     if instruct['like']:
         # handle shortened package names
-        database = dbapi.InstallDB()
+        database = DBapi.InstallDB()
         for item in instruct['like']:
-            query = database.db.cursor.execute("SELECT name FROM metadata where name LIKE ?", (item,))
+            query = database.db.cursor.execute("SELECT name FROM package where name LIKE ?", (item,))
             results = query.fetchall()
             if results:
                 for result in results:
                     pkgnames.append(result[0])
         del database
-    file_relationsdb = dbapi.FileRelationsDB()
-    reverse_dependsdb = dbapi.ReverseDependsDB()
-    packages = [get_pkg(pkgname, repositorydb=False) for pkgname in pkgnames]
-    instruct['count'] = len(packages); i = 0;
-    if instruct["show-reverse-depends"]:
-        instruct["ask"] = True
-        # WARNING: the mechanism only shows directly reverse dependencies
-        # supposing that if A is a reverse dependency of B and C is depends on A.
-        # when the user removes B, A and C will be broken. But lpms will warn the user about A.
-        broken_packages = []
-        reversedb = dbapi.ReverseDependsDB()
-        out.normal("resolving primary reverse dependencies...\n")
-        for package in packages:
-            category, name, version = package[1:]
-            if lpms.getopt("--use-file-relations"):
-                broken_packages.extend(file_relations.get_packages(category, name, version))
-            else:
-                broken_packages.extend(reversedb.get_reverse_depends(category, name))
+    file_relationsdb = DBapi.FileRelationsDB()
+    try:
+        packages = [GetPackage(pkgname, installdb=True).select() for pkgname in pkgnames]
+    except PackageNotFound as package_name:
+        out.error("%s seems not installed." % package_name)
+        lpms.terminate()
 
-        if broken_packages:
-            out.warn("the following packages will be broken:\n")
-            for broken_package in broken_packages:
-                broken_repo, broken_category, broken_name, broken_version = broken_package
-                out.write(" %s %s/%s/%s-%s\n" % (out.color(">", "brightred"), broken_repo, broken_category, \
-                        broken_name, broken_version))
-        else:
-            out.warn("no reverse dependency found.")
+    instruct['count'] = len(packages); index = 0;
+    # FIXME: I must create a new reverse dependency handler implementation
 
+    #if instruct["show-reverse-depends"]:
+    #    instruct["ask"] = True
+    #    # WARNING: the mechanism only shows directly reverse dependencies
+    #    # supposing that if A is a reverse dependency of B and C is depends on A.
+    #    # when the user removes B, A and C will be broken. But lpms will warn the user about A.
+    #    broken_packages = []
+    #    reversedb = dbapi.ReverseDependsDB()
+    #    out.normal("resolving primary reverse dependencies...\n")
+    #    for package in packages:
+    #        category, name, version = package[1:]
+    #        if lpms.getopt("--use-file-relations"):
+    #            broken_packages.extend(file_relations.get_packages(category, name, version))
+    #        else:
+    #            broken_packages.extend(reversedb.get_reverse_depends(category, name))
+
+    #    if broken_packages:
+    #        out.warn("the following packages will be broken:\n")
+    #        for broken_package in broken_packages:
+    #            broken_repo, broken_category, broken_name, broken_version = broken_package
+    #            out.write(" %s %s/%s/%s-%s\n" % (out.color(">", "brightred"), broken_repo, broken_category, \
+    #                    broken_name, broken_version))
+    #    else:
+    #        out.warn("no reverse dependency found.")
 
     if instruct['ask']:
         out.write("\n")
         for package in packages:
-            repo, category, name, version = package
-            out.write(" %s %s/%s/%s-%s\n" % (out.color(">", "brightgreen"), out.color(repo, "green"), 
-                out.color(category, "green"), out.color(name, "green"), 
-                out.color(version, "green")))
+            out.write(" %s %s/%s/%s-%s\n" % (out.color(">", "brightgreen"), out.color(package.repo, "green"), 
+                out.color(package.category, "green"), out.color(package.name, "green"), 
+                out.color(package.version, "green")))
         utils.xterm_title("lpms: confirmation request")
         out.write("\nTotal %s package will be removed.\n\n" % out.color(str(instruct['count']), "green"))
         if not utils.confirm("do you want to continue?"):
@@ -182,15 +186,13 @@ def remove_package(pkgnames, instruct):
     
     realroot = instruct["real_root"] if instruct["real_root"] else cst.root
     config = conf.LPMSConfig()
-    instdb = dbapi.InstallDB()
     for package in packages:
-        repo, category, name, ver = package
-        slot = instdb.get_slot(category, name, ver)
-        fdb = file_collisions.CollisionProtect(category, name, slot, version=ver, real_root=realroot)
+        fdb = file_collisions.CollisionProtect(package.category, package.name, \
+                package.slot, version=package.version, real_root=realroot)
         fdb.handle_collisions()
         if fdb.collisions:
             out.write(out.color(" > ", "brightyellow")+"file collisions detected while removing %s/%s/%s-%s\n\n" \
-                    % (repo, category, name, ver))
+                    % (package.repo, package.category, package.name, package.version))
         for (c_package, c_path) in fdb.collisions:
             c_category, c_name, c_slot, c_version = c_package
             out.write(out.color(" -- ", "red")+c_category+"/"+c_name+"-"\
@@ -199,46 +201,47 @@ def remove_package(pkgnames, instruct):
                     lpms.getopt('--force-file-collision'):
                         out.write("\nquitting... use '--force-file-collision' to continue.\n")
                         lpms.terminate()
-        i += 1;
-        instruct['i'] = i
+        index += 1;
+        instruct['index'] = index
         if not initpreter.InitializeInterpreter(package, instruct, ['remove'], remove=True).initialize():
-            repo, category, name, version = package 
-            out.warn("an error occured during remove operation: %s/%s/%s-%s" % (repo, category, name, version))
+            out.warn("an error occured during remove operation: %s/%s/%s-%s" % (package.repo, package.category, \
+                    package.name, package.version))
         else:
-            category, name, version = package[1:]
-            file_relationsdb.delete_item_by_pkgdata(category, name, version, commit=True)
-            reverse_dependsdb.delete_item(category, name, version, commit=True)
+            file_relationsdb.delete_item_by_pkgdata(package.category, package.name, package.version, commit=True)
 
 class GetPackage:
     '''Selects a convenient package for advanced dependency resolving phases'''
-    def __init__(self, package):
+    def __init__(self, package, installdb=False):
         self.package = package
         self.repo = None
         self.category = None
         self.name = None
         self.version = None
         self.slot = None
-        self.repodb = DBapi.RepositoryDB()
         self.conf = conf.LPMSConfig()
         self.custom_arch_request = {}
         self.locked_packages = []
-        arch_file = os.path.join(cst.user_dir, "arch")
-        if os.path.isfile(arch_file):
-            with open(arch_file) as lines:
-               for line in lines.readlines():
-                    if not line.strip():
-                        continue
-                    self.custom_arch_request.update(utils.ParseArchFile(line.strip(), \
-                            self.repodb).parse())
+        if not installdb:
+            self.database = DBapi.RepositoryDB()
+            arch_file = os.path.join(cst.user_dir, "arch")
+            if os.path.isfile(arch_file):
+                with open(arch_file) as lines:
+                    for line in lines.readlines():
+                        if not line.strip():
+                            continue
+                        self.custom_arch_request.update(utils.ParseArchFile(line.strip(), \
+                                self.database).parse())
 
-        lock_file = os.path.join(cst.user_dir, "lock")
-        if os.path.isfile(lock_file):
-            with open(lock_file) as lines:
-               for line in lines.readlines():
-                    if not line.strip():
-                        continue
-                    self.locked_packages.extend(utils.ParseUserDefinedFile(line.strip(), \
-                            self.repodb).parse())
+            lock_file = os.path.join(cst.user_dir, "lock")
+            if os.path.isfile(lock_file):
+                with open(lock_file) as lines:
+                    for line in lines.readlines():
+                        if not line.strip():
+                            continue
+                        self.locked_packages.extend(utils.ParseUserDefinedFile(line.strip(), \
+                                self.database).parse())
+        else:
+            self.database = DBapi.InstallDB()
 
     def select(self):
         preform = self.package.split("/")
@@ -254,7 +257,7 @@ class GetPackage:
         
         self.name, self.version = utils.parse_pkgname(fullname)
         
-        packages = self.repodb.find_package(package_repo=self.repo, package_name=self.name, \
+        packages = self.database.find_package(package_repo=self.repo, package_name=self.name, \
                 package_category=self.category, package_version=self.version)
         
         if not packages:
@@ -281,11 +284,12 @@ class GetPackage:
             raise UnavailablePackage(self.package)
         return the_package
 
-def resolve_dependencies(packages, cmd_options, use_new_opts, specials=None):
+def resolve_dependencies(packages, cmd_options, custom_options, use_new_options):
     '''Resolve dependencies using fixit object. This function
     prepares a full operation plan for the next stages'''
     out.normal("resolving dependencies")
-    dependency_resolver = resolver.DependencyResolver(packages, cmd_options, specials)
+    dependency_resolver = resolver.DependencyResolver(packages, cmd_options, \
+            custom_options, use_new_options)
     return dependency_resolver.create_operation_plan()
 
 def pkgbuild(pkgnames, instruct):
@@ -305,8 +309,9 @@ def pkgbuild(pkgnames, instruct):
     try:
         plan = resolve_dependencies([GetPackage(pkgname).select() for pkgname in pkgnames], \
                 instruct['cmd_options'], \
-                instruct['use-new-opts'], \
-                instruct['specials'])
+                instruct['specials'], \
+                instruct['use-new-opts']
+        )
         build.Build().main(plan, instruct)
     except PackageNotFound as package:
         out.error("%s count not found in the repository." % out.color(str(package), "red"))

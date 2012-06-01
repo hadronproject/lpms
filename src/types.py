@@ -49,7 +49,19 @@ class PackageItem(list):
         return self[index]
 
     def add(self, item):
-        if not item in self: self.append(item)
+        if not item in self:
+            self.append(item)
+
+    def check_pk(self, pk):
+        for element in self:
+            if pk == element.pk:
+                return self.index(element)
+
+    def add_by_pk(self, item):
+        for element in self:
+            if element.pk == item.pk:
+                return self.index(element)
+        self.append(item)
 
     def length(self):
         return len(self)

@@ -31,25 +31,32 @@ from lpms.db import api
 from lpms.types import LCollect
 from lpms.types import PackageItem
 from lpms.resolver import topological_sorting
+
+# Get lpms' exceptions
 from lpms.exceptions import LockedPackage
 from lpms.exceptions import DependencyError
+from lpms.exceptions import ConditionConflict
 from lpms.exceptions import UnavailablePackage
 
 class DependencyResolver(object):
     '''Dependency resolving engine for lpms'''
-    def __init__(self, packages, cmd_options=None, custom_options=None):
+    def __init__(self, packages, cmd_options=[], \
+            custom_options={}, use_new_options=False):
         self.packages = packages
         self.cmd_options = cmd_options
         self.custom_options = custom_options
+        self.use_new_options = use_new_options
         self.current_package = None
         self.parent_package = None
         self.conf = conf.LPMSConfig()
         self.instdb = api.InstallDB()
         self.repodb = api.RepositoryDB()
+        self.conditional_packages = {}
         self.processed = {}
         self.package_heap = {}
         self.control_chars = ["||"]
         self.inline_options = {}
+        self.inline_option_targets = {}
         self.package_dependencies = {}
         self.package_options = {}
         self.repository_cache = {}
@@ -123,7 +130,31 @@ class DependencyResolver(object):
         return slot
 
     def get_convenient_package(self, package, instdb=False):
+        def inline_options_management():
+            # TODO: inline_options variable must be a set
+            if inline_options:
+                target = self.current_package.id if self.current_package is not \
+                        None else self.parent_package.id
+                my_package = package.category+"/"+package.name+"/"+package.slot
+                if target in self.inline_option_targets:
+                    if my_package in self.inline_option_targets[target]:
+                        for option in inline_options:
+                            self.inline_option_targets[target][my_package].add(option)
+                    else:
+                        self.inline_option_targets[target][my_package] = set(inline_options)
+                else:
+                    self.inline_option_targets[target] = {my_package: set(inline_options)}
+                
+                if package.id in self.inline_options:
+                    for option in inline_options:
+                        if not option in self.inline_options[package.id]:
+                            self.inline_options[package.id].append(option)
+                else:
+                    self.inline_options[package.id] = inline_options
+
         convenient_arches = utils.get_convenient_arches(self.conf.arch)
+        current_package = self.parent_package if self.parent_package is not \
+                None else self.current_package
         result = LCollect()
         database = self.repodb
         if instdb:
@@ -169,7 +200,7 @@ class DependencyResolver(object):
             slot = self.get_convenient_slot(results, slot)
             if not results:
                 if instdb: return
-                out.error("unmet dependency: %s depends on %s" % (out.color(self.current_package, \
+                out.error("unmet dependency: %s depends on %s" % (out.color(current_package, \
                         "red"), out.color(package, "red")))
                 raise DependencyError
             try:
@@ -180,12 +211,12 @@ class DependencyResolver(object):
                     out.error("%s/%s/%s-%s:%s {%s} is unavailable for your arch(%s)." % (result.repo, result.category, \
                             result.name, result.version, result.slot, result.arch, self.conf.arch))
                 out.write("\n")
-                out.write("%s %s/%s/%s-%s:%s {%s}\n" % (out.color("->", "brightyellow"), self.parent_package.repo, \
-                        self.parent_package.category, self.parent_package.name, self.parent_package.version, \
-                        self.parent_package.slot, self.parent_package.arch))
-                out.write(" %s %s/%s/%s-%s:%s {%s}\n" % (out.color("->", "brightyellow"), self.current_package.repo, \
-                        self.current_package.category, self.current_package.name, self.current_package.version, \
-                        self.current_package.slot, self.current_package.arch))
+                out.write("%s %s/%s/%s-%s:%s {%s}\n" % (out.color("->", "brightyellow"), current_package.repo, \
+                        current_package.category, current_package.name, current_package.version, \
+                        current_package.slot, current_package.arch))
+                out.write(" %s %s/%s/%s-%s:%s {%s}\n" % (out.color("->", "brightyellow"), current_package.repo, \
+                        current_package.category, current_package.name, current_package.version, \
+                        current_package.slot, current_package.arch))
                 raise DependencyError
             except LockedPackage:
                 out.error("these package(s) is/are locked by the system administrator:")
@@ -193,21 +224,16 @@ class DependencyResolver(object):
                     out.error_notify("%s/%s/%s-%s:%s {%s}" % (result.repo, result.category, \
                             result.name, result.version, result.slot, result.arch))
                 out.write("\n")
-                out.write("%s %s/%s/%s-%s:%s {%s}\n" % (out.color("->", "brightyellow"), self.parent_package.repo, \
-                        self.parent_package.category, self.parent_package.name, self.parent_package.version, \
-                        self.parent_package.slot, self.parent_package.arch))
-                out.write(" %s %s/%s/%s-%s:%s {%s}\n" % (out.color("->", "brightyellow"), self.current_package.repo, \
-                        self.current_package.category, self.current_package.name, self.current_package.version, \
-                        self.current_package.slot, self.current_package.arch))
+                out.write("%s %s/%s/%s-%s:%s {%s}\n" % (out.color("->", "brightyellow"), current_package.repo, \
+                        current_package.category, current_package.name, current_package.version, \
+                        current_package.slot, current_package.arch))
+                out.write(" %s %s/%s/%s-%s:%s {%s}\n" % (out.color("->", "brightyellow"), current_package.repo, \
+                        current_package.category, current_package.name, current_package.version, \
+                        current_package.slot, current_package.arch))
                 raise DependencyError
 
-            if inline_options:
-                if package.id in self.inline_options:
-                    for option in inline_options:
-                        if not option in self.inline_options[package.id]:
-                            self.inline_options[package.id].append(option)
-                else:
-                    self.inline_options[package.id] = inline_options
+            # Set some variables to manage inline options
+            inline_options_management()
 
             return package
 
@@ -223,27 +249,40 @@ class DependencyResolver(object):
             self.repository_cache[(category, name)] = results
         slot = self.get_convenient_slot(results, slot)
         packages = []
+        decision_point = {}
+        owner_package = current_package.repo+"/"+current_package.category+\
+                "/"+current_package.name+"-"+current_package.version
         if gte:
+            decision_point = {"type": ">=", "version": version, \
+                    "owner_package": owner_package}
             for result in results:
                 comparison = utils.vercmp(result.version, version)
                 if comparison == 1 or comparison == 0:
                     packages.append(result)
         elif lte:
+            decision_point = {"type": "<=", "version": version, \
+                    "owner_package": owner_package}
             for result in results:
                 comparison = utils.vercmp(result.version, version)
                 if comparison == -1 or comparison == 0:
                     packages.append(result)
         elif lt:
+            decision_point = {"type": "<", "version": version, \
+                    "owner_package": owner_package}
             for result in results:
                 comparison = utils.vercmp(result.version, version)
                 if comparison == -1:
                     packages.append(result)
         elif gt:
+            decision_point = {"type": ">", "version": version, \
+                    "owner_package": owner_package}
             for result in results:
                 comparison = utils.vercmp(result.version, version)
                 if comparison == 1:
                     packages.append(result)
         elif et:
+            decision_point = {"type": "==", "version": version, \
+                    "owner_package": owner_package}
             for result in results:
                 comparison = utils.vercmp(result.version, version)
                 if comparison == 0:
@@ -251,30 +290,32 @@ class DependencyResolver(object):
 
         if not packages:
             out.error("unmet dependency: %s/%s/%s-%s:%s {%s} depends on %s" % \
-                    (self.current_package.repo, \
-                    self.current_package.category, \
-                    self.current_package.name, \
-                    self.current_package.version, \
-                    self.current_package.slot, \
-                    self.current_package.arch, \
+                    (current_package.repo, \
+                    current_package.category, \
+                    current_package.name, \
+                    current_package.version, \
+                    current_package.slot, \
+                    current_package.arch, \
                     out.color(package, "red")))
-            # FIXME: use an exception
             raise DependencyError
 
         try:
-            package = utils.get_convenient_package(results, self.locked_packages, self.custom_arch_requests, \
-                    convenient_arches, slot)
+            package = utils.get_convenient_package(results if not packages else packages, \
+                    self.locked_packages, \
+                    self.custom_arch_requests, \
+                    convenient_arches, \
+                    slot)
         except UnavailablePackage:
             for result in results:
                 out.error("%s/%s/%s-%s:%s {%s}is unavailable for your arch(%s)." % (result.repo, result.category, \
                         result.name, result.version, result.slot, result.arch, self.conf.arch))
             out.write("\n")
-            out.write("%s %s/%s/%s-%s:%s {%s}\n" % (out.color("->", "brightyellow"), self.parent_package.repo, \
-                    self.parent_package.category, self.parent_package.name, self.parent_package.version, \
-                    self.parent_package.slot, self.parent_package.arch))
-            out.write(" %s %s/%s/%s-%s:%s {%s}\n" % (out.color("->", "brightyellow"), self.current_package.repo, \
-                    self.current_package.category, self.current_package.name, self.current_package.version, \
-                    self.current_package.slot, self.current_package.arch))
+            out.write("%s %s/%s/%s-%s:%s {%s}\n" % (out.color("->", "brightyellow"), current_package.repo, \
+                    current_package.category, current_package.name, current_package.version, \
+                    current_package.slot, current_package.arch))
+            out.write(" %s %s/%s/%s-%s:%s {%s}\n" % (out.color("->", "brightyellow"), current_package.repo, \
+                    current_package.category, current_package.name, current_package.version, \
+                    current_package.slot, current_package.arch))
             raise DependencyError
         except LockedPackage:
             out.error("these package(s) is/are locked by the system administrator:")
@@ -282,21 +323,21 @@ class DependencyResolver(object):
                 out.error_notify("%s/%s/%s-%s:%s {%s}" % (result.repo, result.category, \
                         result.name, result.version, result.slot, result.arch))
             out.write("\n")
-            out.write("%s %s/%s/%s-%s:%s {%s}\n" % (out.color("->", "brightyellow"), self.parent_package.repo, \
-                    self.parent_package.category, self.parent_package.name, self.parent_package.version, \
-                    self.parent_package.slot, self.parent_package.arch))
-            out.write(" %s %s/%s/%s-%s:%s {%s}\n" % (out.color("->", "brightyellow"), self.current_package.repo, \
-                    self.current_package.category, self.current_package.name, self.current_package.version, \
-                    self.current_package.slot, self.current_package.arch))
+            out.write("%s %s/%s/%s-%s:%s {%s}\n" % (out.color("->", "brightyellow"), current_package.repo, \
+                    current_package.category, current_package.name, current_package.version, \
+                    current_package.slot, current_package.arch))
+            out.write(" %s %s/%s/%s-%s:%s {%s}\n" % (out.color("->", "brightyellow"), current_package.repo, \
+                    current_package.category, current_package.name, current_package.version, \
+                    current_package.slot, current_package.arch))
             raise DependencyError
 
-        if inline_options:
-            if package.id in self.inline_options:
-                for option in inline_options:
-                    if not option in self.inline_options[package.id]:
-                        self.inline_options[package.id].append(option)
-            else:
-                self.inline_options[package.id] = inline_options
+        # Set some variables to manage inline options
+        inline_options_management()
+
+        if package.id in self.conditional_packages:
+            self.conditional_packages[package.id].append(decision_point)
+        else:
+            self.conditional_packages[package.id] = [decision_point]
 
         return package
 
@@ -379,21 +420,20 @@ class DependencyResolver(object):
                 if option[1:] in options:
                     options.remove(option[1:])
             else:
-                if not option in options:
-                    options.add(option)
+                options.add(option)
 
-        # Set global options(from /etc/lpms/build.conf) for the package
+        # Set the global options(from /etc/lpms/build.conf) for the package
         options = self.global_options
         if package.id in self.user_defined_options:
             for option in self.user_defined_options[package.id]:
                 process_option(option)
         
-        # Set options that given via command line
+        # Set the options that given via command line
         for cmd_option in self.cmd_options:
             if not cmd_option in options:
                 process_option(cmd_option)
 
-        # Set options that given via command line with package name and version
+        # Set the options that given via command line with package name and version
         for keyword in self.custom_options:
             name, version = utils.parse_pkgname(keyword)
             if package.name == name:
@@ -410,11 +450,22 @@ class DependencyResolver(object):
         if package.id in self.inline_options:
             for option in self.inline_options[package.id]:
                 process_option(option)
-       
+
+        previous_targets = self.instdb.find_inline_options(target=package.category+"/"\
+                +package.name+"/"+package.slot)
+        for previous_target in previous_targets:
+            if self.instdb.find_package(package_id=previous_target.package_id):
+                for option in previous_target.options:
+                    process_option(option)
+
         # Set the options that used by the package
-        for option in options:
-            if package.options and option in package.options:
-                current_options.add(option)
+        if package.options:
+            for option in options:
+                if option in package.options:
+                    if not package.id in self.package_options:
+                        self.package_options[package.id] = set([option])
+                        continue
+                    self.package_options[package.id].add(option)
 
         #Firstly, check static dependencies
         for keyword in self.dependency_keywords:
@@ -425,12 +476,6 @@ class DependencyResolver(object):
                             already_added[dependency.id] == options:
                                 continue
                     already_added[dependency.id] = options
-                    if current_options:
-                        if package.id in self.package_options:
-                            for option in current_options:
-                                self.package_options[package.id].add(option)
-                        else:
-                            self.package_options[package.id] = current_options
                     self.keep_dependency_information(package.id, keyword, dependency)
                     dependencies.append(dependency)
 
@@ -453,18 +498,45 @@ class DependencyResolver(object):
                         dependencies.append(dependency)
         return dependencies
 
+    def handle_condition_conflict(self, decision_point, final_plan, primary_key, \
+            condition_set, result_set):
+        conflict_condition, decision_condition = condition_set
+        result = final_plan.check_pk(primary_key)
+        if isinstance(result, int):
+            conflict_id = final_plan[result].id
+            if conflict_id not in self.conditional_packages:
+                final_plan[result] = package
+                return False
+            for conflict_point in self.conditional_packages[conflict_id]:
+                if conflict_point["type"].startswith(conflict_condition):
+                    if decision_point["type"].startswith(decision_condition):
+                        compare_result = utils.vercmp(decision_point["version"], \
+                                conflict_point["version"])
+                        if compare_result in result_set:
+                            self.conflict_point = conflict_point
+                            raise ConditionConflict(conflict_point)
+
     def create_operation_plan(self):
+        '''Resolve dependencies and prepares a convenient operation plan'''
+        single_packages = PackageItem()
         for package in self.packages:
             self.parent_package = package
+            self.current_package = None
             self.package_heap[package.id] = package
             dependencies = []
+            package_dependencies = self.collect_dependencies(package)
+            if not package_dependencies:
+                single_packages.add(package)
+                continue
             # Create a list that consists of parent and child items
-            for dependency in self.collect_dependencies(package):
+            for dependency in package_dependencies:
+                dependency.parent = package.category+"/"+package.name+"/"+package.slot
                 dependencies.append((package.id, dependency))
             while True:
                 buff = []
                 for parent, dependency in dependencies:
                     self.current_package = dependency
+                    self.parent_package = None
                     self.package_query.append((dependency.id, parent))
                     if dependency.id in self.processed:
                         if self.processed[dependency.id] == self.package_options.get(dependency.id, None):
@@ -485,6 +557,7 @@ class DependencyResolver(object):
                         continue
                     # Create a list that consists of parent and child items
                     for item in package_collection:
+                        item.parent = package.category+"/"+package.name+"/"+package.slot
                         buff.append((dependency.id, item))
                 if not buff:
                     # End of the node
@@ -505,22 +578,131 @@ class DependencyResolver(object):
             out.write("\n")
             raise DependencyError
         
-        if not plan:
-            # Oh my god! The package has no dependency.
-            plan = [package.id for package in self.packages]
+        # This part detects inline option conflicts
+        removed = {}
+        option_conflict = set()
+        for package_id in self.inline_option_targets:
+            for target in self.inline_option_targets[package_id]:
+                for option in self.inline_option_targets[package_id][target]:
+                    if option.startswith("-"):
+                        if option in removed:
+                            removed[option].add((package_id, target))
+                        else:
+                            removed[option] = set([(package_id, target)])
+                    else:
+                        if "-"+option in removed:
+                            for (my_pkg_id, my_target)  in removed["-"+option]:
+                                if my_target == target:
+                                    option_conflict.add((my_target, \
+                                            self.package_heap[package_id], \
+                                            self.package_heap[my_pkg_id],\
+                                            option))
+        if option_conflict:
+            out.error("option conflict detected:\n")
+            for (pkg, add, remove, option)in option_conflict:
+                out.error(out.color(option, "red")+" option on "+pkg+"\n")
+                out.warn("%s/%s/%s/%s adds the option." % (add.repo, add.category, \
+                        add.name, add.version))
+                out.warn("%s/%s/%s/%s removes the option." % (remove.repo, remove.category, \
+                        remove.name, remove.version))
+            lpms.terminate()
 
-        final_plan = []
+        # TODO: I think I must use most professional way for ignore-depends feature.
         if lpms.getopt("--ignore-depends"):
-            return self.packages, self.package_dependencies, self.package_options
+            return self.packages, self.package_dependencies, \
+                    self.package_options, self.inline_option_targets
 
+        final_plan = PackageItem()
+        required_package_ids = [package.id for package in self.packages]
         for package_id in plan:
-            final_plan.append(self.package_heap[package_id])
+            package = self.package_heap[package_id]
+            continue_conditional = False
+            # If a package has a conditional decision point,
+            # we should consider the condition
+            if package.id not in self.conditional_packages:
+                for c_package_id in self.conditional_packages:
+                    c_package = self.package_heap[c_package_id]
+                    if package.pk == c_package.pk:
+                        continue_conditional = True
+                        if package_id in required_package_ids:
+                            final_plan.add_by_pk(c_package)
+                            break                           
+                if package_id in required_package_ids:
+                    if continue_conditional is False:
+                        final_plan.add_by_pk(package)
+            if continue_conditional: continue
 
-        return final_plan, self.package_dependencies, self.package_options
-        #for index, i in enumerate(plan):
-        #    package = self.package_heap[i]
-        #    installed_package = self.instdb.find_package(package_name=package.name, package_category=package.category, \
-        #            package_version=package.version)
-        #    print index+1,  package.id, package.category, package.name, package.version
-            #if package.id in self.package_options:
-            #    print self.package_options[package.id]
+            installed_package = self.instdb.find_package(
+                    package_category=package.category,
+                    package_name=package.name, 
+                    package_slot=package.slot
+            )
+            if installed_package:
+                if package.id in self.inline_options:
+                    if installed_package.get(0).applied_options is None:
+                        final_plan.add_by_pk(package)
+                        continue
+                    continue_inline = False
+                    for inline_option in self.inline_options[package.id]:
+                        if not inline_option in installed_package.get(0).applied_options:
+                            final_plan.add_by_pk(package)
+                            continue_inline = True
+                            break
+                    if continue_inline: continue
+
+                try:
+                    if package.id in self.conditional_packages:
+                        decision_points = self.conditional_packages[package.id]
+                        for decision_point in decision_points:
+                            comparison = utils.vercmp(installed_package.get(0).version, \
+                                        decision_point["version"])
+                            if decision_point["type"] == ">=":
+                                if self.handle_condition_conflict(decision_point, final_plan, \
+                                        package.pk, ("<", ">"), (0, 1)) is False:
+                                    continue
+                                if not comparison in (1, 0):
+                                    final_plan.add_by_pk(package)
+                            elif decision_point["type"] == "<":
+                                if self.handle_condition_conflict(decision_point, final_plan, \
+                                        package.pk, (">", "<"), (0, -1)) is False:
+                                    continue
+                                if comparison != -1:
+                                    final_plan.add_by_pk(package)
+                            elif decision_point["type"] == ">":
+                                if self.handle_condition_conflict(decision_point, final_plan, \
+                                        package.pk, ("<", ">"), (0, 1)) is False:
+                                    continue
+                                if comparison != 1:
+                                    final_plan.add_by_pk(package)
+                            elif decision_point["type"] == "<=":
+                                if self.handle_condition_conflict(decision_point, final_plan, \
+                                        package.pk, (">", "<"), (0, -1)) is False:
+                                    continue
+                                if comparison in (-1, 0):
+                                    final_plan.add_by_pk(package)
+                            elif decision_point["type"] == "==":
+                                if comparison != 0:
+                                    final_plan.add_by_pk(package)
+                except ConditionConflict:
+                    out.error("while selecting a convenient version of %s, a conflict detected:\n" % \
+                            out.color(package.pk, "red"))
+                    out.notify(decision_point["owner_package"]+" wants "+\
+                            decision_point["type"]+decision_point["version"])
+                    out.notify(self.conflict_point["owner_package"]+" wants "+\
+                            self.conflict_point["type"]+self.conflict_point["version"])
+                    lpms.terminate("\nplease contact the package maintainers.")
+            else:
+                final_plan.add_by_pk(package)
+
+        # Oh my god! Some packages have no dependency.
+        if single_packages:
+            for single_package in single_packages:
+                for item_id in plan:
+                    if self.package_heap[item_id].pk == single_package.pk:
+                        single_packages.remove(single_package)
+                        break
+            # FIXME: This is not a Pythonic way
+            final_plan = single_packages+final_plan
+
+        return final_plan, self.package_dependencies, \
+                self.package_options, self.inline_option_targets

@@ -182,14 +182,15 @@ def db_backup():
     from lpms.shelltools import copy, remove_file
 
     # remove previous database backup
-    dirname = os.path.dirname(cst.repositorydb_path)
+    dirname = os.path.join(cst.root, cst.db_path)
     for _file in os.listdir(dirname):
         if _file.startswith("repositorydb") and _file.count(".") == 2:
             remove_file(os.path.join(dirname, _file))
 
     # create a backup with UNIX timestamp
     timestamp = int(time.time())
-    copy(cst.repositorydb_path, cst.repositorydb_path+".%s" % timestamp)
+    repositorydb = os.path.join(cst.root, cst.db_path, cst.repositorydb)+cst.db_prefix
+    copy(repositorydb, repositorydb+".%s" % timestamp)
 
 def main(params):
     # determine operation type

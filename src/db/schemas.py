@@ -31,6 +31,7 @@ def installdb():
             applied_options BLOB,
             options BLOB,
             arch TEXT,
+            parent TEXT,
             optional_depends_runtime BLOB,
             optional_depends_build BLOB,
             optional_depends_postmerge BLOB,
@@ -38,19 +39,10 @@ def installdb():
             static_depends_runtime BLOB,
             static_depends_build BLOB,
             static_depends_postmerge BLOB,
-            static_depends_conflict BLOB,
-            optional_reverse_runtime BLOB,
-            optional_reverse_build BLOB,
-            optional_reverse_postmerge BLOB,
-            optional_reverse_conflict BLOB,
-            static_reverse_runtime BLOB,
-            static_reverse_build BLOB,
-            static_reverse_postmerge BLOB,
-            static_reverse_conflict BLOB
+            static_depends_conflict BLOB
         );
 
         CREATE TABLE build_info(
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
             repo TEXT,
             category TEXT,
             name TEXT,
@@ -68,7 +60,17 @@ def installdb():
             makeopts TEXT,
             size FLOAT
         );
-        
+
+        CREATE TABLE inline_options(
+            package_id INTEGER,
+            target TEXT,
+            options BLOB
+        );
+
+        CREATE INDEX inline_options_package_id_target_id_idx ON inline_options (package_id, target_id);
+        CREATE INDEX inline_options_package_id_options_idx ON inline_options (package_id, options);
+        CREATE INDEX inline_options_target_id_options_idx ON inline_options (target_id, options);
+
         CREATE INDEX package_repo_category_idx ON package (repo, category);
         CREATE INDEX package_repo_name_idx ON package (repo, name);
         CREATE INDEX package_category_name_idx ON package (category, name);
@@ -139,16 +141,11 @@ def file_relationsdb():
 
 def reverse_dependsdb():
     return """
-        create table reverse_depends (
-            repo text,
-            category text,
-            name text,
-            version text,
-            reverse_repo text,
-            reverse_category text,
-            reverse_name text,
-            reverse_version text,
-            build_dep integer
+        CREATE TABLE reverse_depends (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            package_id INTEGER,
+            reverse_package_id INTEGER,
+            build_dependency INTEGER
         );
     """
 
