@@ -146,11 +146,20 @@ class DependencyResolver(object):
                     self.inline_option_targets[target] = {my_package: set(inline_options)}
                 
                 if package.id in self.inline_options:
+                    if not package.id in self.package_options:
+                        self.package_options[package.id] = set()
                     for option in inline_options:
                         if not option in self.inline_options[package.id]:
                             self.inline_options[package.id].append(option)
+                            if package.id in self.package_options:
+                                self.package_options[package.id].add(option)
                 else:
                     self.inline_options[package.id] = inline_options
+                    if package.id in self.package_options:
+                        for inline_option in inline_options:
+                            self.package_options[package.id] = add(inline_option)
+                    else:
+                        self.package_options[package.id] = set(inline_options)
 
         convenient_arches = utils.get_convenient_arches(self.conf.arch)
         current_package = self.parent_package if self.parent_package is not \
@@ -254,35 +263,35 @@ class DependencyResolver(object):
                 "/"+current_package.name+"-"+current_package.version
         if gte:
             decision_point = {"type": ">=", "version": version, \
-                    "owner_package": owner_package}
+                    "owner_package": owner_package, "owner_id": current_package.id}
             for result in results:
                 comparison = utils.vercmp(result.version, version)
                 if comparison == 1 or comparison == 0:
                     packages.append(result)
         elif lte:
             decision_point = {"type": "<=", "version": version, \
-                    "owner_package": owner_package}
+                    "owner_package": owner_package, "owner_id": current_package.id}
             for result in results:
                 comparison = utils.vercmp(result.version, version)
                 if comparison == -1 or comparison == 0:
                     packages.append(result)
         elif lt:
             decision_point = {"type": "<", "version": version, \
-                    "owner_package": owner_package}
+                    "owner_package": owner_package, "owner_id": current_package.id}
             for result in results:
                 comparison = utils.vercmp(result.version, version)
                 if comparison == -1:
                     packages.append(result)
         elif gt:
             decision_point = {"type": ">", "version": version, \
-                    "owner_package": owner_package}
+                    "owner_package": owner_package, "owner_id": current_package.id}
             for result in results:
                 comparison = utils.vercmp(result.version, version)
                 if comparison == 1:
                     packages.append(result)
         elif et:
             decision_point = {"type": "==", "version": version, \
-                    "owner_package": owner_package}
+                    "owner_package": owner_package, "owner_id": current_package.id}
             for result in results:
                 comparison = utils.vercmp(result.version, version)
                 if comparison == 0:
@@ -607,10 +616,25 @@ class DependencyResolver(object):
                         remove.name, remove.version))
             lpms.terminate()
 
+        self.conditional_versions = {}
+        for (key, values) in self.conditional_packages.items():
+            for value in values:
+                target_package = self.package_heap[key]
+                my_item = {
+                            "type": value["type"],
+                            "version": value["version"],
+                            "target": target_package.category+"/"+target_package.name+\
+                                    "/"+target_package.slot,
+                }
+                if not value["owner_id"] in self.conditional_versions:
+                    self.conditional_versions[value["owner_id"]] = [my_item]
+                else:
+                    self.conditional_versions[value["owner_id"]].append(my_item)
+
         # TODO: I think I must use most professional way for ignore-depends feature.
         if lpms.getopt("--ignore-depends"):
-            return self.packages, self.package_dependencies, \
-                    self.package_options, self.inline_option_targets
+            return self.packages, self.package_dependencies, self.package_options, \
+                    self.inline_option_targets, self.conditional_versions
 
         final_plan = PackageItem()
         required_package_ids = [package.id for package in self.packages]
@@ -630,8 +654,8 @@ class DependencyResolver(object):
                 if package_id in required_package_ids:
                     if continue_conditional is False:
                         final_plan.add_by_pk(package)
-            if continue_conditional: continue
-
+            if continue_conditional: 
+                continue
             installed_package = self.instdb.find_package(
                     package_category=package.category,
                     package_name=package.name, 
@@ -648,9 +672,19 @@ class DependencyResolver(object):
                             final_plan.add_by_pk(package)
                             continue_inline = True
                             break
-                    if continue_inline: continue
-
+                    if continue_inline: 
+                        continue
                 try:
+                    conditional_versions_query = self.instdb.find_conditional_versions(
+                            target=package.category+"/"+package.name+"/"+package.slot)
+                    if conditional_versions_query:
+                        for item in conditional_versions_query:
+                            item.decision_point["package_id"]=item.package_id
+                            if package.id in self.conditional_packages:
+                                if not item.decision_point in self.conditional_packages[package.id]:
+                                    self.conditional_packages[package.id].append(item.decision_point)
+                            else:
+                                self.conditional_packages[package.id] = [item.decision_point]
                     if package.id in self.conditional_packages:
                         decision_points = self.conditional_packages[package.id]
                         for decision_point in decision_points:
@@ -684,6 +718,14 @@ class DependencyResolver(object):
                                 if comparison != 0:
                                     final_plan.add_by_pk(package)
                 except ConditionConflict:
+                    if not "owner_package" in decision_point:
+                        conflict_package = self.instdb.find_package(package_id=\
+                                decision_point["package_id"]).get(0)
+                        decision_point["owner_package"] = conflict_package.repo+"/"+ \
+                        conflict_package.category+"/"+ \
+                        conflict_package.name+"/"+ \
+                        conflict_package.version
+
                     out.error("while selecting a convenient version of %s, a conflict detected:\n" % \
                             out.color(package.pk, "red"))
                     out.notify(decision_point["owner_package"]+" wants "+\
@@ -691,6 +733,14 @@ class DependencyResolver(object):
                     out.notify(self.conflict_point["owner_package"]+" wants "+\
                             self.conflict_point["type"]+self.conflict_point["version"])
                     lpms.terminate("\nplease contact the package maintainers.")
+                
+                # Use new options if the package is effected
+                if self.use_new_options and not package in final_plan:
+                    if package.id in self.package_options:
+                        for option in self.package_options[package.id]:
+                            if not option in installed_package.get(0).applied_options:
+                                final_plan.add_by_pk(package)
+                                break
             else:
                 final_plan.add_by_pk(package)
 
@@ -704,5 +754,5 @@ class DependencyResolver(object):
             # FIXME: This is not a Pythonic way
             final_plan = single_packages+final_plan
 
-        return final_plan, self.package_dependencies, \
-                self.package_options, self.inline_option_targets
+        return final_plan, self.package_dependencies, self.package_options, \
+                self.inline_option_targets, self.conditional_versions

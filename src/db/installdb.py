@@ -258,6 +258,39 @@ class InstallDatabase(base.LpmsDatabase):
         if commit is not None: 
             self.commit()
 
+    def insert_conditional_versions(self, package_id, target, decision_point, commit=True):
+        decision_point = sqlite3.Binary(pickle.dumps(decision_point, 1))
+        self.cursor.execute('''INSERT INTO conditional_versions VALUES (?, ?, ?)''', \
+                (package_id, target, decision_point))
+        if commit: self.commit()
+
+    def update_conditional_versions(self, package_id, target, decision_point, commit=True):
+        decision_point = sqlite3.Binary(pickle.dumps(decision_point, 1))
+        self.cursor.execute('''UPDATE conditional_versions SET decision_point = (?) WHERE package_id = (?) AND target = (?)''', \
+                (decision_point, package_id, target))
+        if commit: self.commit()
+
+    def find_conditional_versions(self, package_id, target):
+        if package_id is not None and target is None:
+            self.cursor.execute('''SELECT * FROM conditional_versions WHERE package_id = (?)''', (package_id,))
+        elif package_id is None and target is not None:
+            self.cursor.execute('''SELECT * FROM conditional_versions WHERE target = (?)''', (target,))
+        elif package_id is not None and target is not None:
+            self.cursor.execute('''SELECT * FROM conditional_versions WHERE target = (?) AND package_id = (?)''', \
+                    (target, package_id))
+        return self.cursor.fetchall()
+
+    def delete_conditional_versions(self, package_id, target, commit):
+        if package_id is not None:
+            self.cursor.execute('''DELETE FROM conditional_versions WHERE package_id = (?)''', (package_id,))
+        elif target is not None:
+            self.cursor.execute('''DELETE FROM conditional_versions WHERE target = (?)''', (target,))
+        elif target is not None and package_id is not None:
+            self.cursor.execute('''DELETE FROM conditional_versions  WHERE package_id = (?) AND target = (?)''', \
+                    (package_id, target))
+        if commit is not None: 
+            self.commit()
+
     def get_all_packages(self):
         self.cursor.execute('''SELECT repo, category, name, version, slot FROM package''')
         return self.cursor.fetchall()
