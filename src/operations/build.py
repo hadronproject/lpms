@@ -231,7 +231,8 @@ class Build(object):
             raise BuildError
 
     def main(self, data, instruct):
-        packages, dependencies, options, inline_option_targets = data
+        packages, dependencies, options, \
+                inline_option_targets, conditional_versions = data
         if instruct["pretend"]:
             out.write("\n")
             out.normal("these packages will be merged, respectively:\n")
@@ -264,10 +265,11 @@ class Build(object):
                 else:
                     shelltools.remove_file(path)
 
-        index = 0
-        for package in packages:
+        for index, package in enumerate(packages, 1):
             if package.id in inline_option_targets:
                 self.internals.env.inline_option_targets = inline_option_targets[package.id]
+            if package.id in conditional_versions:
+                self.internals.env.conditional_versions = conditional_versions[package.id]
             self.internals.env.package = package
             self.internals.env.dependencies = dependencies.get(package.id, None)
             installed_package = self.instdb.find_package(package_name=package.name, \
@@ -276,7 +278,6 @@ class Build(object):
                     if installed_package else None
             # FIXME: This is no good
             self.internals.env.__dict__.update(instruct)
-            index += 1
             if not os.path.ismount("/proc"):
                 out.warn("/proc is not mounted. You have been warned.")
             if not os.path.ismount("/dev"):
@@ -474,6 +475,10 @@ class Build(object):
                             formatted_options.append(out.color("*"+option, "brightyellow"))
                         else:
                             formatted_options.append(option)
+            else:
+                if hasattr(installed_package, "applied_options") and installed_package.applied_options is not None:
+                    formatted_options = [out.color("%"+applied_option, "brightyellow") \
+                            for applied_option in installed_package.applied_options]
 
             out.write("  [%s] %s/%s/%s {%s:%s} {%s} %s%s\n" % (
                     " ".join(status_bar), \
@@ -484,6 +489,6 @@ class Build(object):
                     out.color(package.version, "green"),\
                     package.arch, \
                     other_version, \
-                    "("+", ".join(formatted_options)+")" if formatted_options else ""
+                    " ("+", ".join(formatted_options)+")" if formatted_options else ""
                     )
             )

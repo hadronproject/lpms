@@ -394,6 +394,18 @@ class Merge(internals.InternalFuncs):
                     self.instdb.insert_inline_options(package_id, target, \
                             self.env.inline_option_targets[target])
 
+        # Create or update conditional_versions table entries.
+        if hasattr(self.env, "conditional_versions"):
+            for decision_point in self.env.conditional_versions:
+                target = decision_point["target"]
+                del decision_point["target"]
+                if not self.instdb.find_conditional_versions(package_id=package_id, target=target):
+                    self.instdb.insert_conditional_versions(package_id, target, \
+                            decision_point)
+                else:
+                    self.instdb.update_conditional_versions(package_id, target, \
+                            decision_point)
+
         #self.instdb.drop_buildinfo(self.env.repo, self.env.category, \
         #        self.env.name, self.env.version)
         if "HOST" in os.environ:

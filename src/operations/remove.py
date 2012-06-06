@@ -82,6 +82,7 @@ def main(pkgname, real_root):
     # remove entries from the database
     package_id = instdb.find_package(package_repo=repo, package_category=category, \
             package_name=name, package_version=version).get(0).id
+    instdb.delete_conditional_versions(package_id=package_id)
     instdb.delete_inline_options(package_id=package_id)
     instdb.delete_package(package_repo=repo, package_category=category, \
             package_name=name, package_version=version, commit=True)

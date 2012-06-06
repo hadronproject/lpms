@@ -61,10 +61,16 @@ def installdb():
             size FLOAT
         );
 
+        CREATE TABLE conditional_versions(
+            package_id INTEGER,
+            target TEXT,
+            decision_point BLOB
+        );
+
         CREATE TABLE inline_options(
             package_id INTEGER,
             target TEXT,
-            options BLOB
+            optios BLOB
         );
 
         CREATE INDEX inline_options_package_id_target_id_idx ON inline_options (package_id, target_id);
