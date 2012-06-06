@@ -366,24 +366,27 @@ def get_primary_repository():
     return None
 
 def is_lpms_running():
-    for _dir in os.listdir("/proc"):
-        if not _dir.isdigit():
-            continue
-        
-        if int(_dir) == os.getpid():
-            continue
+    def check_lpms_process():
+        for _dir in os.listdir("/proc"):
+            if not _dir.isdigit():
+                continue
+            if int(_dir) == os.getpid():
+                continue
+            if get_process_name(_dir) == "lpms":
+                return True
+        return False
 
-        if get_process_name(_dir) == "lpms":
-            return True
-    return False
+    while True:
+        try:
+            result = check_lpms_process()
+        except IOError:
+            continue
+        if isinstance(result, bool):
+            return result
 
 def get_process_name(pid):
-    f = open("/proc/%s/stat" % pid)
-    try:
-        name = f.read().split(' ')[1].replace('(', '').replace(')', '')
-    finally:
-        f.close()
-        # XXX - gets changed later and probably needs refactoring
+    with open("/proc/%s/stat" % pid) as data:
+        name = data.read().split(' ')[1].replace('(', '').replace(')', '')
     return name
 
 def get_pid_list():
