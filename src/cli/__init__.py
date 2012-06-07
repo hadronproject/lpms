@@ -33,9 +33,10 @@ from lpms.operations import update
 
 commands = sys.argv[1:]
 
-lpms_version = '1.1_alpha1'
+lpms_version = '1.1_alpha2'
 
-help_output = (('--help', '-h', 'Shows this message.'),
+help_output = (
+        ('--help', '-h', 'Shows this message.'),
         ('--version', '-v', 'Shows version.'),
         ('--no-color', '-n', 'Disables color output.'),
         ('--remove', '-r', 'Removes given package.'),
@@ -52,9 +53,11 @@ help_output = (('--help', '-h', 'Shows this message.'),
         ('--reload-previous-repodb', 'Reloads previous repository database backup.'),
         ('--verbose', 'Prints more output if possible.'),
         ('--quiet', 'Hides outputs if possible.'),
-        ('--debug', 'Enables debug mode.'))
+        ('--debug', 'Enables debug mode.')
+)
 
-build_help = (('--pretend', '-p', 'Shows operation steps.'),
+build_help_output = (
+        ('--pretend', '-p', 'Shows operation steps.'),
         ('--ask', '-a', 'Asks to the user before operation.'),
         ('--fetch-only', '-F', 'Only fetches packages, do not install.(not yet)'),
         ('--search', '-s', 'Searches given keyword in database.'),
@@ -77,95 +80,168 @@ build_help = (('--pretend', '-p', 'Shows operation steps.'),
         ('--no-merge', 'Does not merge the package.'),
         ('--ask-repo', 'Shows repo selection dialog if necessary.'),
         ('--unset-env-variables', 'Unsets environment variables that are defined in lpms.conf.'),
-        ('--opts', 'Determines options of the package.'))
+        ('--opts', 'Determines options of the package.')
+)
 
 def version():
     out.write(('lpms %s\n' % lpms_version))
     lpms.terminate()
 
 def usage():
-    out.normal(('lpms -- %s Package Management System on %s' % (out.color('L', 'red'), conf.LPMSConfig().distribution)))
+    out.normal('lpms -- %s Package Management System %s' % (out.color('L', 'red'), \
+            out.color("v"+lpms_version, "brightgreen")))
     out.write('\nIn order to build a package:\n')
     out.write(' # lpms <package-name> <extra-command>\n\n')
     out.write('To see extra commands use --help parameter.\n\n')
     out.write('Build related commands:\n')
 
-    for cmd in build_help:
-        if len(cmd) == 3:
+    for item in build_help_output:
+        if len(item) == 3:
+            long_command, short_command, description = item
             if lpms.getopt("--no-color") or lpms.getopt("-n"):
-                out.write(('%-24s %-10s : %s\n' % (out.color(cmd[0], 'green'),
-                out.color(cmd[1], 'green'),
-                cmd[2])))
+                out.write(('%-24s %-10s : %s\n' % (out.color(long_command, 'green'),
+                out.color(short_command, 'green'),
+                description)))
             else:
-                out.write(('%-32s %-10s : %s\n' % (out.color(cmd[0], 'green'),
-                out.color(cmd[1], 'green'),
-                cmd[2])))
+                out.write(('%-32s %-10s : %s\n' % (out.color(long_command, 'green'),
+                out.color(short_command, 'green'),
+                description)))
         else:
-            out.write(('%-35s : %s\n' % (out.color(cmd[0], 'green'), cmd[1])))
+            long_command, description = item
+            out.write(('%-35s : %s\n' % (out.color(long_command, 'green'), description)))
 
     out.write('\nOther Commands:\n')
-    for cmd in help_output:
-        if len(cmd) == 3:
+    for item in help_output:
+        if len(item) == 3:
+            long_command, short_command, description = item
             if lpms.getopt("--no-color") or lpms.getopt("-n"):
-                out.write(('%-24s %-10s : %s\n' % (out.color(cmd[0], 'green'),
-                out.color(cmd[1], 'green'),
-                cmd[2])))
+                out.write(('%-24s %-10s : %s\n' % (out.color(long_command, 'green'),
+                out.color(short_command, 'green'),
+                description)))
             else:
-                out.write(('%-32s %-10s : %s\n' % (out.color(cmd[0], 'green'),
-                out.color(cmd[1], 'green'),
-                cmd[2])))
+                out.write(('%-32s %-10s : %s\n' % (out.color(long_command, 'green'),
+                out.color(short_command, 'green'),
+                description)))
         else:
-            out.write(('%-35s : %s\n' % (out.color(cmd[0], 'green'), cmd[1])))
-
+            long_command, description = item
+            out.write(('%-35s : %s\n' % (out.color(long_command, 'green'), description)))
     lpms.terminate()
 
 
-nevermind = ('--ignore-depends', '--quiet', '--verbose', '--force-upgrade', '--reset', \
-        '--disable-sandbox', '--force-unpack', '--enable-sandbox', '--ignore-conflicts', 
-        '--no-configure', '--ignore-reserve-files', '--reload-previous-repodb',
-        '--list-repos', '--no-strip', '--unset-env-variables', '--use-file-relations', 
-        '--in-name', '--in-summary', '--only-installed', '--force-file-collision',
-        '--clean-tmp', '--ignore-reinstall')
+exceptional_commands = (
+        '--ignore-depends', 
+        '--quiet', 
+        '--verbose', 
+        '--force-upgrade', 
+        '--reset',
+        '--disable-sandbox', 
+        '--force-unpack', 
+        '--enable-sandbox', 
+        '--ignore-conflicts', 
+        '--no-configure', 
+        '--ignore-reserve-files', 
+        '--reload-previous-repodb',
+        '--list-repos', 
+        '--no-strip', 
+        '--unset-env-variables', 
+        '--use-file-relations', 
+        '--in-name', 
+        '--in-summary', 
+        '--only-installed', 
+        '--force-file-collision',
+        '--clean-tmp', 
+        '--ignore-reinstall'
+)
 
-exceptions = ('change-root', 'opts', 'stage')
+exceptions = (
+        'change-root', 
+        'opts', 
+        'stage'
+)
 
-toinstruct = ('ask', 'a', 'resume-build', 'resume', 'pretend', 'p', 'fetch-only', 'F', \
-        'no-merge', 'remove', 'r', 'upgrade', 'U',  'skip-first', 'sync', 'S', 'update', 'u', \
-        'configure-pending', 'category-install', 'C', 'use-new-opts', 'N', \
-        'show-reverse-depends', 'debug')
+to_instruct = (
+        'ask', 'a', 
+        'resume-build', 
+        'resume', 
+        'pretend', 'p', 
+        'fetch-only', 'F',
+        'no-merge', 
+        'remove', 'r', 
+        'upgrade', 'U',  
+        'skip-first', 
+        'sync', 'S', 
+        'update', 'u',
+        'configure-pending', 
+        'category-install', 'C', 
+        'use-new-opts', 'N', \
+        'show-reverse-depends', 
+        'debug'
+)
 
-regular = ('help', 'h', 'version', 'v', 'belong', 'b', 'content', 'c', 'remove', 'r', \
-        'no-color', 'n', 'update', 'u', 'search', 's', 'upgrade', 'U', 'ask-repo', 'C', 'show-deps')
+regular = (
+        'help', 'h', 
+        'version', 'v', 
+        'belong', 'b', 
+        'content', 'c', 
+        'remove', 'r',
+        'no-color', 'n', 
+        'update', 'u', 
+        'search', 's', 
+        'upgrade', 'U', 
+        'ask-repo', 'C', 
+        'show-deps'
+)
 
-instruct = {'ask': False, 'pretend': False, 'resume-build': False, 'resume': False, \
-        'pretend': False, 'no-merge': False, 'fetch-only': False, 'real_root': None, \
-        'cmd_options': [], 'specials': {}, 'ignore-deps': False, 'sandbox': None,'stage': None, \
-        'force': None, 'upgrade': None, 'remove': None, 'skip-first': False, 'sync': False, \
-        'update': False, 'configure-pending': False, 'category-install': False,
-        "use-new-opts": False, 'like': set(), 'show-reverse-depends': False, 'debug': False}
+instruct = {
+        'ask': False, 
+        'pretend': False, 
+        'resume-build': False, 
+        'resume': False,
+        'pretend': False, 
+        'no-merge': False, 
+        'fetch-only': False, 
+        'real_root': None,
+        'cmd_options': [], 
+        'specials': {}, 
+        'ignore-deps': False, 
+        'sandbox': None,
+        'stage': None,
+        'force': None, 
+        'upgrade': None, 
+        'remove': None, 
+        'skip-first': False, 
+        'sync': False,
+        'update': False, 
+        'configure-pending': False, 
+        'category-install': False,
+        "use-new-opts": False, 
+        'like': set(), 
+        'show-reverse-depends': False, 
+        'debug': False
+}
 
 def main():
     packages = []; invalid = []
     for command in commands:
         if command.startswith('-') and not command.startswith('--'):
-            for cmd in command[1:]:
-                if (cmd == 'h'):
+            for cli_element in command[1:]:
+                if (cli_element == 'h'):
                     usage()
-                elif (cmd == 'v'):
+                elif (cli_element == 'v'):
                     version()
-                elif (cmd == 'b'):
+                elif (cli_element == 'b'):
                     from lpms.cli import belong
                     results = [command for command in commands if not \
                             command.startswith("-")]
                     belong.Belong(results[0]).main()
                     return
-                elif (cmd == 'i'):
+                elif (cli_element == 'i'):
                     from lpms.cli import info
                     results = [command for command in commands if not \
                             command.startswith("-")]
                     info.Info(results).run()
                     return
-                elif (cmd == 'c'):
+                elif (cli_element == 'c'):
                     from lpms.cli import list_files
                     results = [command for command in commands if not \
                             command.startswith("-")]
@@ -175,38 +251,44 @@ def main():
                     for name in results:
                         list_files.ListFiles(name).main()
                     return
-                elif (cmd == 's'):
+                elif (cli_element == 's'):
                     from lpms.cli import search
                     results = [command for command in commands if not \
                             command.startswith("-")]
                     search.Search(results, instruct).search()
                     return
                 else:
-                    if cmd not in regular and cmd not in toinstruct:
-                        invalid.append(('-' + cmd))
+                    if cli_element not in regular and cli_element not in to_instruct:
+                        invalid.append(('-' + cli_element))
 
         elif command.startswith('--'):
-            if command[2:] == 'help':
+            cli_element = command[2:]
+            if cli_element.startswith('sandbox-log-level'):
+                continue
+            if command in exceptional_commands:
+                continue
+
+            if cli_element == 'help':
                 usage()
-            elif command[2:] == 'version':
+            elif cli_element == 'version':
                 version()
-            elif command[2:] == 'list-repos':
+            elif cli_element == 'list-repos':
                 from lpms.cli import list_repos
                 list_repos.main()
                 return
-            elif command[2:] == 'info':
+            elif cli_element == 'info':
                 from lpms.cli import info
                 results = [command for command in commands if not \
                             command.startswith("-")]
                 info.Info(results).run()
                 return
-            elif command[2:] == 'belong':
+            elif cli_element == 'belong':
                 from lpms.cli import belong
                 results = [command for command in commands if not \
                             command.startswith("-")]
                 belong.Belong(results[0]).main()
                 return
-            elif command[2:] == 'content':
+            elif cli_element == 'content':
                 from lpms.cli import list_files
                 commands.remove(command)
                 results = [command for command in commands if not \
@@ -217,50 +299,47 @@ def main():
                 for name in results:
                     list_files.ListFiles(name).main()
                 return
-            elif command[2:] == 'search':
+            elif cli_element == 'search':
                 from lpms.cli import search
                 results = [command for command in commands if not \
                             command.startswith("-")]
                 search.Search(results).search()
                 return
-            elif command[2:].startswith('sandbox-log-level'):
-                # FIXME: This is no good. 
-                pass
-            elif command[2:] == "autoremove":
+            elif cli_element == "autoremove":
                 from lpms.cli import autoremove
                 autoremove.Autoremove().select()
                 return
-            elif command in nevermind:
-                pass
             else:
-                if command[2:] not in regular and command[2:] not in toinstruct and \
-                        command[2:].split('=')[0] not in exceptions and \
-                        not command[2:].startswith("opts"):
+                if cli_element not in regular and cli_element not in to_instruct and \
+                        cli_element.split('=')[0] not in exceptions and \
+                        not cli_element.startswith("opts"):
                     invalid.append(command)
         else:
-            if "%" in command: instruct['like'].add(command); continue
+            if "%" in cli_element:
+                instruct['like'].add(command); continue
             packages.append(unicode(command))
 
     for command in commands:
+        cli_element = command[2:]
         if command.startswith('-') and not command.startswith('--'):
-            for cmd in command[1:]:
-                if cmd in toinstruct:
-                    instruct[toinstruct[(toinstruct.index(cmd) - 1)]] = True
+            for cli_element in command[1:]:
+                if cli_element in to_instruct:
+                    instruct[to_instruct[(to_instruct.index(cli_element) - 1)]] = True
 
         else:
-            if command[2:] in toinstruct or command[2:].split('=')[0] in exceptions or \
-                    command[2:].split("=")[0].split("-")[0] in exceptions:
-                if command[2:].startswith('change-root'):
-                    instruct['real_root'] = command[2:].split('=')[1]
-                if command[2:].startswith('opts-'):
-                    data = command[2:].split("opts-", 1)[1]
+            if cli_element in to_instruct or cli_element.split('=')[0] in exceptions or \
+                    cli_element.split("=")[0].split("-")[0] in exceptions:
+                if cli_element.startswith('change-root'):
+                    instruct['real_root'] = cli_element.split('=')[1]
+                if cli_element.startswith('opts-'):
+                    data = cli_element.split("opts-", 1)[1]
                     name, opts = data.split("=", 1)
                     instruct["specials"].update({name: opts.split(" ")})
-                if command[2:].startswith('opts='):
-                    instruct['cmd_options'] = command[2:].split('=')[1].split(' ')
-                if command[2:].startswith('stage'):
-                    instruct['stage'] = command[2:].split('=')[1].strip()
-                instruct[command[2:]] = True
+                if cli_element.startswith('opts='):
+                    instruct['cmd_options'] = cli_element.split('=')[1].split(' ')
+                if cli_element.startswith('stage'):
+                    instruct['stage'] = cli_element.split('=')[1].strip()
+                instruct[cli_element] = True
 
     if invalid:
         out.warn("invalid: "+", ".join(invalid))
