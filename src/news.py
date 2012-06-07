@@ -30,7 +30,7 @@ metadata_keys = ('from', 'summary', 'date', 'priority')
 class News(object):
     def __init__(self):
         self.news_read_file = os.path.join(cst.repos, cst.news_read)
-        self.valid_repos = utils.valid_repos()
+        self.available_repositories = utils.available_repositories()
         self.data = []
 
     def import_repo_news(self, repo):
@@ -50,7 +50,7 @@ class News(object):
 
     def get_all_news(self):
         '''Collects available news'''
-        for repo in self.valid_repos:
+        for repo in self.available_repositories:
             self.import_repo_news(repo)
 
     def mark_as_read(self, item):

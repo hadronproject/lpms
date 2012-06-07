@@ -38,7 +38,7 @@ from lpms.exceptions import UnavailablePackage
 def get_convenient_package(packages, locked_packages, arch_data, \
         convenient_arches, slot=None): 
     results = []
-    repositories = valid_repos()
+    repositories = available_repositories()
     primary = None
 
     # Remove locked packages from the package list
@@ -292,7 +292,7 @@ def check_cflags(flag):
 
 def set_parser(set_name):
     sets = []
-    for repo in valid_repos():
+    for repo in available_repositories():
         repo_set_file = os.path.join(cst.repos, repo, "info/sets", "%s.set" % set_name)
         if os.path.isfile((repo_set_file)):
             sets.append(repo_set_file)
@@ -335,22 +335,22 @@ def set_parser(set_name):
             if not line.startswith("#") and line != ""]
 
 def select_repo(data):
-    valid = valid_repos()
+    available_repositories =  available_repositories()
 
-    if not valid:
+    if not available_repositories:
         out.error("repo.conf is empty or not found. Please check it.")
         lpms.terminate()
 
     sorting = []
     
-    for d in data:
-        if d in valid:
-            sorting.append(valid.index(d))
+    for item in data:
+        if item in available_repositories:
+            sorting.append(valid.index(item))
     if not sorting:
         return sorting
     return valid[sorted(sorting)[0]]
 
-def valid_repos():
+def available_repositories():
     if not os.path.isfile(cst.repo_conf):
         out.warn("%s not found!" % cst.repo_conf)
         return []
@@ -360,7 +360,7 @@ def valid_repos():
                 if repo.startswith("[") and repo.endswith("]")]
 
 def get_primary_repository():
-    repos = valid_repos()
+    repos = available_repositories()
     if repos: 
         return repos[0]
     return None

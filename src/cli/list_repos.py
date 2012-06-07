@@ -23,13 +23,13 @@ from lpms import utils
 from lpms import constants as cst
 
 def main():
-    valid_repos = utils.valid_repos()
+    available_repositories = utils.available_repositories()
     for item in os.listdir(cst.repos):
         repo_conf = os.path.join(cst.repos, item, cst.repo_file)
         if os.access(repo_conf, os.F_OK):
             with open(repo_conf) as data:
                 data = conf.ReadConfig(data.read().splitlines(), delimiter="@")
-            if item in valid_repos:
+            if item in available_repositories:
                 out.normal("%s [%s]" % (item, out.color("enabled", "brightgreen")))
             else:
                 out.normal("%s [%s]" % (item, out.color("disabled", "brightred")))
