@@ -117,10 +117,13 @@ class Search(object):
                 available = False
 
         packages = self.classificate_packages(results)
-        
-        for package in packages:
+
+        for index, package in enumerate(packages, 1):
             category, name = package
-            out.write(out.color(category, "green")+"/"+out.color(name, "green")+" - ")
+            if lpms.getopt("--interactive"):
+                out.write("["+str(index)+"] "+out.color(category, "green")+"/"+out.color(name, "green")+" - ")
+            else:
+                out.write(out.color(category, "green")+"/"+out.color(name, "green")+" - ")
             items = {}
             for item in packages[package]:
                 if item[0] in items:
@@ -131,52 +134,10 @@ class Search(object):
                 out.write(out.color(item, "yellow")+"("+", ".join(items[item])+") ")
             out.write("\n")
             out.write("    "+packages[package][0][4]+"\n")
-            packages[package]
 
-        """
-        index = 1
-        for result in results:
-            repo, category, name, version_data, summary = result
-            print version_data
-            version = ""
-            for slot in version_data:
-                if slot != "0":
-                    version += slot+": "+", ".join(version_data[slot])+" "
-                else:
-                    version += ", ".join(version_data[slot])+" "
-            version = version.strip()
-            pkg_status = ""; other_repo = ""
-            instdb_repo_query = self.instdb.get_repo(category, name) 
-            if instdb_repo_query == repo or not available:
-                pkg_status = "["+out.color("I", "brightgreen")+"] "
-            else:
-                if instdb_repo_query and isinstance(instdb_repo_query, list):
-                    other_repo = "%s installed from %s" % (out.color("=>", "red"), \
-                            ",".join(instdb_repo_query))
-
-            if lpms.getopt("--only-installed") and pkg_status == "":
-                continue
-
-            if lpms.getopt("--interactive"):
-                out.write("%s-) %s%s/%s/%s (%s) %s\n    %s" % (out.color(str(index), "green"), 
-                    pkg_status, 
-                    out.color(repo, "green"),  
-                    out.color(category, "green"),
-                    out.color(name, "green"),
-                    version,
-                    other_repo,
-                    summary+'\n'))
-                index += 1
-            else:
-                out.write("%s%s/%s/%s (%s) %s\n    %s" % (pkg_status, out.color(repo, "green"),  
-                    out.color(category, "green"),
-                    out.color(name, "green"),
-                    version,
-                    other_repo,
-                    summary+'\n'))
-
+        # shows a dialogue, selects the packages and triggers api's build function
         if results and lpms.getopt("--interactive"):
-            packages = []
+            my_packages = []
             def ask():
                 out.write("\ngive number(s):\n")
                 out.write("in order to select more than one package, use space between numbers:\n")
@@ -195,12 +156,13 @@ class Search(object):
                         else:
                             targets.add(answer)
                 try:
+                    my_items = packages.keys()
                     for target in targets:
-                        packages.append("/".join(results[int(target)-1][:3]))
+                        my_packages.append("/".join(my_items[int(target)-1]))
                     break
                 except (IndexError, ValueError):
                     out.warn("invalid command.")
                     continue
 
-            if packages: api.pkgbuild(packages, self.instruct)
-        """
+            if my_packages: 
+                api.pkgbuild(my_packages, self.instruct)
