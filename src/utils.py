@@ -672,40 +672,6 @@ def parse_url_tag(urls, name, version):
             download_list.append((result[0], url))
     return download_list
 
-def pkg_selection_dialog(data):
-    if not lpms.getopt("--ask-repo"):
-        repo = select_repo([d[0] for d in data])
-        result = [pkg for pkg in data if pkg[0] == repo]
-        if len(result) == 1:
-            return result
-
-    out.normal("this package is contained by more than one repositories.\n")
-    def ask():
-        for count, pkg in enumerate(data):
-            repo, category, name, version = pkg
-            out.write("\t%s) %s/%s/%s\n" % (out.color(str(count+1), "green"), out.color(repo, "red"), 
-                    category, name))
-        out.write("\n")
-        out.normal("select one of them: ")
-        out.write("\nto exit, press 'Q' or 'q'\n")
-
-    while True:
-        # run the dialog, show packages from different repositories
-        ask()
-        answer = sys.stdin.readline().strip()
-        if answer == "Q" or answer == "q":
-            lpms.terminate()
-        elif answer.isalpha():
-            out.warn("you must give a number.\n")
-            continue
-        
-        try:
-            # FIXME: we need more control
-            return data[int(answer)-1]
-        except:
-            out.warn("%s seems invalid.\n" % out.color(answer, "red"))
-            continue
-
 def metadata_parser(data, keys=None):
     metadata = collections.OrderedDict()
     if not keys:
