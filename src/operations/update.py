@@ -209,7 +209,7 @@ def main(params):
         out.normal("updating repository database...")
         operation.repodb.database.begin_transaction()
         for repo_name in os.listdir(cst.repos):
-            if not repo_name in utils.valid_repos():
+            if not repo_name in utils.available_repositories():
                 continue
             if os.path.isfile(os.path.join(cst.repos, repo_name, "info/repo.conf")):
                 out.write(out.color(" * ", "red") + repo_name+"\n")
@@ -223,7 +223,7 @@ def main(params):
         if repo_name == ".":
             current_path = os.getcwd()
             for repo_path in [os.path.join(cst.repos, item) \
-                    for item in utils.valid_repos()]:
+                    for item in utils.available_repositories()]:
                 if current_path == repo_path or len(current_path.split(repo_path)) == 2:
                     # convert it a valid repo_name variable from the path
                     repo_name = current_path.split(cst.repos)[1][1:]
@@ -238,7 +238,7 @@ def main(params):
             repo, category = repo_name.split("/")
             repo_path = os.path.join(cst.repos, repo)
             
-            if not repo in utils.valid_repos():
+            if not repo in utils.available_repositories():
                 out.error("%s is not a repository." % out.color(repo, "red"))
                 lpms.terminate()
 
@@ -263,7 +263,7 @@ def main(params):
                     out.error("you must use %s" % (out.color("="+repo_name, "red")))
                     lpms.terminate()
             
-            if not repo in utils.valid_repos():
+            if not repo in utils.available_repositories():
                 out.error("%s is not a repository." % out.color(repo, "red"))
                 lpms.terminate()
 
@@ -274,7 +274,7 @@ def main(params):
             operation.repodb.database.commit()
         
         else:
-            if not repo_name in utils.valid_repos():
+            if not repo_name in utils.available_repositories():
                 out.error("%s is not a repository." % out.color(repo_name, "red"))
                 lpms.terminate()
             
@@ -295,7 +295,7 @@ def main(params):
     
     # Drop inactive repository from the database
     for name in operation.repodb.get_repository_names():
-        if not name in utils.valid_repos():
+        if not name in utils.available_repositories():
             operation.repodb.delete_repository(name, commit=True)
             out.warn("%s dropped." % name)
     
