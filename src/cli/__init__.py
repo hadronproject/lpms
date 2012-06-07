@@ -78,7 +78,6 @@ build_help_output = (
         ('--force-file-collision', 'Disables collision protect.'),
         ('--no-strip', 'No strip files.'),
         ('--no-merge', 'Does not merge the package.'),
-        ('--ask-repo', 'Shows repo selection dialog if necessary.'),
         ('--unset-env-variables', 'Unsets environment variables that are defined in lpms.conf.'),
         ('--opts', 'Determines options of the package.')
 )
@@ -188,7 +187,6 @@ regular = (
         'update', 'u', 
         'search', 's', 
         'upgrade', 'U', 
-        'ask-repo', 'C', 
         'show-deps'
 )
 
