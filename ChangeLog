@@ -1,3 +1,12 @@
+2012-06-07 Burak Sezer <purak@hadronproject.org>
+	* lpms-1.1_alpha2
+
+	Dependency resolver has been rewritten.
+
+	Refactoring on lpms core operation modules.
+
+	Numerous fixes.
+
 2012-04-06 Burak Sezer <purak@hadronproject.org>
 	* lpms-1.1_alpha1
 
