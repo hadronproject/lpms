@@ -733,7 +733,7 @@ class DependencyResolver(object):
                                 if self.handle_condition_conflict(decision_point, final_plan, \
                                         package.pk, (">", "<"), (0, -1)) is False:
                                     continue
-                                if comparison in (-1, 0):
+                                if not comparison in (-1, 0):
                                     final_plan.add_by_pk(package)
                             elif decision_point["type"] == "==":
                                 if comparison != 0:
