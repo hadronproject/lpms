@@ -26,7 +26,6 @@ import hashlib
 import collections
 
 import lpms
-
 from lpms import out
 from lpms import conf
 from lpms import shelltools
@@ -36,7 +35,7 @@ from lpms.exceptions import LockedPackage
 from lpms.exceptions import UnavailablePackage
 
 def get_convenient_package(packages, locked_packages, arch_data, \
-        convenient_arches, slot=None): 
+        convenient_arches, instdb, slot=None): 
     results = []
     repositories = available_repositories()
     primary = None
@@ -74,9 +73,38 @@ def get_convenient_package(packages, locked_packages, arch_data, \
                 continue
         if repository != primary: continue
 
-    # Second, select the best version
+    # Secondly, select the best version
+    my_package = results[0].category+"/"+results[0].name+"/"+results[0].slot
     versions = [result.version for result in results]
-    the_best_version = best_version(versions)
+    # Is this a convenient way for getting instance's class name?
+    if instdb.__class__.__name__ != "InstallDB":
+        from lpms.db import api
+        instdb = api.InstallDB()
+    conditions = instdb.find_conditional_versions(target=my_package)
+    if conditions:
+        convenient_versions = []
+        for condition in conditions:
+            for version in versions:
+                compare_result = vercmp(version, \
+                        condition.decision_point["version"])
+                if condition.decision_point["type"] == ">=":
+                    if compare_result in (1, 0):
+                        convenient_versions.append(version)
+                elif condition.decision_point["type"] == "<=":
+                    if compare_result in (-1, 0):
+                        convenient_versions.append(version)
+                elif condition.decision_point["type"] == "<":
+                    if compare_result == -1:
+                        convenient_versions.append(version)
+                elif condition.decision_point["type"] == ">":
+                    if compare_result == 1:
+                        convenient_versions.append(version)
+                elif condition.decision_point["type"] == "==":
+                    if compare_result == 0:
+                        convenient_versions.append(version) 
+        the_best_version = best_version(convenient_versions)
+    else:
+        the_best_version = best_version(versions)
     for result in results:
         if result.version == the_best_version:
             return result

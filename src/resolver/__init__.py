@@ -225,8 +225,14 @@ class DependencyResolver(object):
                         "red"), out.color(package, "red")))
                 raise DependencyError
             try:
-                package = utils.get_convenient_package(results, self.locked_packages, \
-                        self.custom_arch_requests, convenient_arches, slot)
+                package = utils.get_convenient_package(
+                        results, 
+                        self.locked_packages,
+                        self.custom_arch_requests, 
+                        convenient_arches, 
+                        self.instdb, 
+                        slot
+                )
             except UnavailablePackage:
                 for result in results:
                     out.error("%s/%s/%s-%s:%s {%s} is unavailable for your arch(%s)." % (result.repo, result.category, \
@@ -321,11 +327,14 @@ class DependencyResolver(object):
             raise DependencyError
 
         try:
-            package = utils.get_convenient_package(results if not packages else packages, \
-                    self.locked_packages, \
-                    self.custom_arch_requests, \
-                    convenient_arches, \
-                    slot)
+            package = utils.get_convenient_package(
+                    results if not packages else packages,
+                    self.locked_packages,
+                    self.custom_arch_requests,
+                    convenient_arches,
+                    self.instdb,
+                    slot
+                    )
         except UnavailablePackage:
             for result in results:
                 out.error("%s/%s/%s-%s:%s {%s}is unavailable for your arch(%s)." % (result.repo, result.category, \
