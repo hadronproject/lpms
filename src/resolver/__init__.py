@@ -130,8 +130,20 @@ class DependencyResolver(object):
         return slot
 
     def get_convenient_package(self, package, instdb=False):
-        def inline_options_management():
+        def inline_options_management(inline_options):
             # TODO: inline_options variable must be a set
+            # Check inline options, if an option is not available for the package, warn the user
+            for inline_option in inline_options:
+                if not inline_option in package.options:
+                    out.warn("%s option is not available for %s/%s/%s-%s. So that the option is removing..." % (
+                        inline_option,
+                        package.repo,
+                        package.category,
+                        package.name,
+                        package.version
+                    ))
+                    inline_options.remove(inline_option)
+
             if inline_options:
                 target = self.current_package.id if self.current_package is not \
                         None else self.parent_package.id
@@ -242,7 +254,7 @@ class DependencyResolver(object):
                 raise DependencyError
 
             # Set some variables to manage inline options
-            inline_options_management()
+            inline_options_management(inline_options)
 
             return package
 
@@ -341,7 +353,7 @@ class DependencyResolver(object):
             raise DependencyError
 
         # Set some variables to manage inline options
-        inline_options_management()
+        inline_options_management(inline_options)
 
         if package.id in self.conditional_packages:
             self.conditional_packages[package.id].append(decision_point)
