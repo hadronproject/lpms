@@ -267,7 +267,7 @@ class GetPackage:
 
         try:
             the_package = utils.get_convenient_package(packages, self.locked_packages, \
-                    self.custom_arch_request, convenient_arches, self.slot)
+                    self.custom_arch_request, convenient_arches, self.database, self.slot)
         except UnavailablePackage:
             for package in packages:
                 out.error("%s/%s/%s-%s:%s is unavailable for your arch(%s)." % (package.repo, package.category, \
