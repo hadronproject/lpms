@@ -58,6 +58,7 @@ class DependencyResolver(object):
         self.inline_options = {}
         self.inline_option_targets = {}
         self.package_dependencies = {}
+        self.postmerge_dependencies = set()
         self.package_options = {}
         self.repository_cache = {}
         self.user_defined_options = {}
@@ -508,6 +509,8 @@ class DependencyResolver(object):
                     already_added[dependency.id] = options
                     self.keep_dependency_information(package.id, keyword, dependency)
                     dependencies.append(dependency)
+                    if keyword.endswith("postmerge"):
+                        self.postmerge_dependencies.add((dependency.id, package.id))
 
         # Check optional dependencies
         for keyword in self.dependency_keywords:
@@ -526,6 +529,8 @@ class DependencyResolver(object):
                                 self.package_options[package.id] = current_options
                         self.keep_dependency_information(package.id, keyword, dependency)
                         dependencies.append(dependency)
+                        if keyword.endswith("postmerge"):
+                            self.postmerge_dependencies.add((dependency.id, package.id))
         return dependencies
 
     def handle_condition_conflict(self, decision_point, final_plan, primary_key, \
@@ -656,6 +661,11 @@ class DependencyResolver(object):
         if lpms.getopt("--ignore-depends"):
             return self.packages, self.package_dependencies, self.package_options, \
                     self.inline_option_targets, self.conditional_versions
+
+        # Workaround for postmerge dependencies
+        for (id_dependency, id_package) in self.postmerge_dependencies:
+            plan.remove(id_dependency)
+            plan.insert(plan.index(id_package)+1, id_dependency)
 
         final_plan = PackageItem()
         required_package_ids = [package.id for package in self.packages]
