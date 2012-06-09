@@ -20,28 +20,20 @@ import re
 import lpms
 
 from lpms import out
-from lpms.db import dbapi
+from lpms.db import api
 
 class Belong:
     def __init__(self, keyword):
         self.keyword = keyword
-        self.filesdb = dbapi.FilesDB()
-        self.installdb = dbapi.InstallDB()
-
-    def usage(self):
-        out.normal("Searchs given keyword in files database")
-        out.write("no extra command found\n")
-        lpms.terminate()
-
+        self.filesdb = api.FilesDB()
+        self.instdb = api.InstallDB()
+    
     def search(self):
         self.filesdb.cursor.execute('''SELECT repo, category, name, version, path \
                 FROM files WHERE path LIKE (?)''', ('%'+self.keyword+'%',))
         return self.filesdb.cursor.fetchall()
 
     def main(self):
-        if lpms.getopt("--help"):
-            self.usage()
-
         out.normal("searching for %s\n" % self.keyword)
 
         for (repo, category, name, version, path) in self.search():
