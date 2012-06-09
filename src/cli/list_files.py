@@ -19,51 +19,64 @@ import os
 import lpms
 
 from lpms import out
-from lpms.db import dbapi
+from lpms import utils
+from lpms.db import api
 
 class ListFiles:
     def __init__(self, pkgname):
         self.pkgname = pkgname
-        self.filesdb = dbapi.FilesDB()
-        self.installdb = dbapi.InstallDB()
-
-    def usage(self):
-        out.normal("Lists files of the given package")
-        out.write("no extra command found.\n")
-        lpms.terminate()
+        self.filesdb = api.FilesDB()
+        self.instdb = api.InstallDB()
 
     def main(self):
-        if lpms.getopt("--help"):
-            self.usage()
+        parsed = self.pkgname.split("/")
+        if len(parsed) == 3:
+            repo, category, name = parsed
+            name, version = utils.parse_pkgname(name)
+            packages = self.instdb.find_package(
+                    package_repo=repo,
+                    package_category=category,
+                    package_name=name,
+                    package_version=version
+                    )
+        elif len(parsed) == 2:
+            category, name = parsed
+            name, version = utils.parse_pkgname(name)
+            packages = self.instdb.find_package(
+                    package_category=category,
+                    package_name=name,
+                    package_version=version
+                    )
+        elif len(parsed) == 1:
+            name, version = utils.parse_pkgname(self.pkgname)
+            packages = self.instdb.find_package(
+                    package_name=name,
+                    package_version=version
+                    )
+        else:
+            out.error("%s could not be recognized." % self.pkgname)
+            lpms.terminate()
 
-        pkgdata = self.installdb.find_pkg(self.pkgname)
-
-        if not pkgdata:
+        if not packages:
             out.error("%s not installed." % self.pkgname)
             lpms.terminate()
         
-        for pkg in pkgdata:
-            repo, cat, name, version_data =  pkg
-            
-            versions = []
-            map(lambda x: versions.extend(x), version_data.values())
-
+        for package in packages:        
             symdirs = {}
-            for ver in versions:
-                out.normal("%s/%s/%s-%s" % (repo, cat, name, ver))
-
-                content = self.filesdb.get_paths_by_package(name, category=cat, version=ver)
-                for item in content:
-                    item = item[0]
-                    if os.path.islink(item):
-                        out.write("%s -> %s\n" % (out.color(item, "green"), os.readlink(item)))
-                        if os.path.isdir(os.path.realpath(item)):
-                            symdirs[os.path.realpath(item)+"/"] = item+"/"
-                    else:
-                        out.write(item+"\n")
-
-                    if symdirs:
-                        for symdir in symdirs:
-                            if item.startswith(symdir):
-                                out.write("%s -> %s\n" % (out.color(item.replace(symdir, \
-                                        symdirs[symdir]), "brightwhite"), out.color(item, "brightwhite")))
+            out.normal("%s/%s/%s-%s" % (package.repo, package.category, \
+                    package.name, package.version))
+            content = self.filesdb.get_paths_by_package(package.name, \
+                    category=package.category, version=package.version)
+            for item in content:
+                item = item[0]
+                if os.path.islink(item):
+                    out.write("%s -> %s\n" % (out.color(item, "green"), os.readlink(item)))
+                    if os.path.isdir(os.path.realpath(item)):
+                        symdirs[os.path.realpath(item)+"/"] = item+"/"
+                else:
+                    out.write(item+"\n")
+                if symdirs:
+                    for symdir in symdirs:
+                        if item.startswith(symdir):
+                            out.write("%s -> %s\n" % (out.color(item.replace(symdir, \
+                                    symdirs[symdir]), "brightwhite"), out.color(item, "brightwhite")))
