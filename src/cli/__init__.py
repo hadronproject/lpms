@@ -263,9 +263,6 @@ def main():
             cli_element = command[2:]
             if cli_element.startswith('sandbox-log-level'):
                 continue
-            if command in exceptional_commands:
-                continue
-
             if cli_element == 'help':
                 usage()
             elif cli_element == 'version':
@@ -308,6 +305,8 @@ def main():
                 autoremove.Autoremove().select()
                 return
             else:
+                if command in exceptional_commands:
+                    continue
                 if cli_element not in regular and cli_element not in to_instruct and \
                         cli_element.split('=')[0] not in exceptions and \
                         not cli_element.startswith("opts"):
