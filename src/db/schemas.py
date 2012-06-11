@@ -43,12 +43,7 @@ def installdb():
         );
 
         CREATE TABLE build_info(
-            repo TEXT,
-            category TEXT,
-            name TEXT,
-            version TEXT,
-            slot TEXT,
-            arch TEXT,
+            package_id INTEGER,
             start_time INTEGER,
             end_time INTEGER,
             requestor TEXT,
@@ -57,8 +52,9 @@ def installdb():
             cflags TEXT,
             cxxflags TEXT,
             ldflags TEXT,
-            makeopts TEXT,
-            size FLOAT
+            jobs TEXT,
+            cc TEXT,
+            cxx TEXT
         );
 
         CREATE TABLE conditional_versions(
@@ -86,16 +82,6 @@ def installdb():
         CREATE INDEX package_repo_category_name_version_slot_idx ON package (repo, category, name, version, slot);
         CREATE INDEX package_category_name_version_slot_idx ON package (category, name, version, slot);
         CREATE INDEX package_name_version_slot_idx ON package (name, version, slot);
-
-        CREATE INDEX build_info_repo_category_idx ON build_info (repo, category);
-        CREATE INDEX build_info_repo_name_idx ON build_info (repo, name);
-        CREATE INDEX build_info_category_name_idx ON build_info (category, name);
-        CREATE INDEX build_info_category_name_version_idx ON build_info (category, name, version);
-        CREATE INDEX build_info_repo_category_name_idx ON build_info (repo, category, name);
-        CREATE INDEX build_info_repo_category_name_version_idx ON build_info (repo, category, name, version);
-        CREATE INDEX build_info_repo_category_name_version_slot_idx ON build_info (repo, category, name, version, slot);
-        CREATE INDEX build_info_category_name_version_slot_idx ON build_info (category, name, version, slot);
-        CREATE INDEX build_info_name_version_slot_idx ON build_info (name, version, slot);
     """
 
 def repositorydb():

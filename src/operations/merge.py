@@ -406,27 +406,33 @@ class Merge(internals.InternalFuncs):
                     self.instdb.update_conditional_versions(package_id, target, \
                             decision_point)
 
-        #self.instdb.drop_buildinfo(self.env.repo, self.env.category, \
-        #        self.env.name, self.env.version)
-        if "HOST" in os.environ:
-            host = os.environ["HOST"]
-        else:
-            host = ""
-
-        if "CFLAGS" in os.environ:
-            cflags = os.environ["CFLAGS"]
-        else:
-            cflags = ""
-         
-        if "CXXFLAGS" in os.environ:
-            cxxflags = os.environ["CXXFLAGS"]
-        else:
-            cxxflags = ""
-
-        if "LDFLAGS" in os.environ:
-            ldflags = os.environ["LDFLAGS"]
-        else:
-            ldflags = ""
+        self.instdb.database.delete_build_info(package_id)
+        
+        # requestor values are temporary
+        requestor = os.getlogin()
+        requestor_id = os.getuid()
+        end_time = time.time()
+        host = os.environ["HOST"] if "HOST" in os.environ else ""
+        cflags = os.environ["CFLAGS"] if "CFLAGS" in os.environ else ""
+        cxxflags = os.environ["CXXFLAGS"] if "CXXFLAGS" in os.environ else ""
+        ldflags = os.environ["LDFLAGS"] if "LDFLAGS" in os.environ else "" 
+        jobs = os.environ["JOBS"] if "JOBS" in os.environ else ""
+        cc = os.environ["CC"] if "CC" in os.environ else ""
+        cxx = os.environ["CXX"] if "CXX" in os.environ else ""
+        self.instdb.database.insert_build_info(
+                package_id, 
+                self.env.start_time,
+                end_time,
+                requestor,
+                requestor_id,
+                host,
+                cflags,
+                cxxflags,
+                ldflags,
+                jobs,
+                cc,
+                cxx,
+        )
 
     def clean_previous(self):
         if not self.is_fresh():

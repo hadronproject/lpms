@@ -17,6 +17,7 @@
 
 import os
 import re
+import time
 import glob
 
 import lpms
@@ -388,6 +389,7 @@ class Build(object):
                 else:
                     out.warn("ccache could not be enabled. so you should check dev-util/ccache")
 
+            self.internals.env.start_time = time.time()
             if not interpreter.run(self.spec_file, self.internals.env):
                 lpms.terminate("thank you for flying with lpms.")
 
