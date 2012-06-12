@@ -425,35 +425,7 @@ class InstallDB:
 
     def get_all_packages(self):
         return self.database.get_all_packages()
-
-    def insert_build_info(self, **kwargs):
-        fields = ('repo',
-            'category',
-            'name',
-            'version',
-            'slot',
-            'arch',
-            'start_time',
-            'end_time',
-            'requestor',
-            'requestor_id',
-            'host',
-            'cflags',
-            'cxxflags',
-            'ldflags',
-            'makeopts',
-            'size'
-        )
-        
-        data_obj = LCollect()
-        
-        for field in fields:
-            if not field in kwargs:
-                raise MissingInternalParameter("%s is missing." % field)
-            else:
-                setattr(data_obj, field, kwargs[field])
-        self.database.insert_build_info(data_obj)
-
+    
     def get_parent_package(self, **kwargs):
         if "package_id" in kwargs:
             parent = self.database.get_parent_package(package_id=kwargs["package_id"])
