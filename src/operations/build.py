@@ -232,12 +232,16 @@ class Build(object):
             raise BuildError
 
     def main(self, data, instruct):
-        packages, dependencies, options, \
-                inline_option_targets, conditional_versions = data
+        packages, \
+                dependencies, \
+                options, \
+                inline_option_targets, \
+                conditional_versions, \
+                conflicts = data
         if instruct["pretend"]:
             out.write("\n")
             out.normal("these packages will be merged, respectively:\n")
-            self.pretty_print(packages, options)
+            self.pretty_print(packages, conflicts, options)
             out.write("\ntotal %s package(s) listed.\n\n" \
                     % out.color(str(len(packages)), "green"))
             lpms.terminate()
@@ -245,7 +249,7 @@ class Build(object):
         if instruct["ask"]:
             out.write("\n")
             out.normal("these packages will be merged, respectively:\n")
-            self.pretty_print(packages, options)
+            self.pretty_print(packages, conflicts, options)
             utils.xterm_title("lpms: confirmation request")
             out.write("\ntotal %s package(s) will be merged.\n\n" \
                     % out.color(str(len(packages)), "green"))
@@ -277,6 +281,20 @@ class Build(object):
                     package_category=package.category, package_slot=package.slot)
             self.internals.env.previous_version = installed_package.get(0).version \
                     if installed_package else None
+            if package.id in conflicts:
+                conflict_instruct = instruct
+                conflict_instruct["count"] = len(conflicts[package.id])
+                for index, conflict in enumerate(conflicts[package.id], 1):
+                    conflict_instruct['index'] = index
+                    conflict_category, conflict_name, conflict_slot = conflict.split("/")
+                    conflict_package = self.instdb.find_package(package_name=conflict_name, \
+                            package_category=conflict_category, \
+                            package_slot=conflict_slot).get(0)
+                    if not initpreter.InitializeInterpreter(conflict_package, conflict_instruct, 
+                            ['remove'], remove=True).initialize():
+                        out.error("an error occured during remove operation: %s/%s/%s-%s" % \
+                                (conflict_package.repo, conflict_package.category, \
+                                conflict_package.name, conflict_package.version))
             # FIXME: This is no good
             self.internals.env.__dict__.update(instruct)
             if not os.path.ismount("/proc"):
@@ -415,7 +433,7 @@ class Build(object):
                 self.download_plan = []
             utils.xterm_title_reset()
 
-    def pretty_print(self, packages, options):
+    def pretty_print(self, packages, conflicts, options):
         for package in packages:
             status_bar = [' ', '  ']
             other_version = ""
@@ -494,3 +512,17 @@ class Build(object):
                     " ("+", ".join(formatted_options)+")" if formatted_options else ""
                     )
             )
+            
+            if package.id in conflicts:
+                for conflict in conflicts[package.id]:
+                    category, name, slot = conflict.split("/")
+                    conflict = self.instdb.find_package(package_name=name, \
+                            package_category=category, \
+                            package_slot = slot).get(0)
+                    out.write("\t %s %s/%s/%s-%s" % (out.color(">> conflict:", "green"), \
+                        conflict.repo,\
+                                conflict.category, \
+                                conflict.name, \
+                                conflict.version
+                        ))
+

@@ -33,6 +33,7 @@ from lpms.types import PackageItem
 from lpms.resolver import topological_sorting
 
 # Get lpms' exceptions
+from lpms.exceptions import ConflictError
 from lpms.exceptions import LockedPackage
 from lpms.exceptions import DependencyError
 from lpms.exceptions import ConditionConflict
@@ -46,6 +47,7 @@ class DependencyResolver(object):
         self.cmd_options = cmd_options
         self.custom_options = custom_options
         self.use_new_options = use_new_options
+        self.conflicts = {}
         self.current_package = None
         self.parent_package = None
         self.conf = conf.LPMSConfig()
@@ -178,9 +180,7 @@ class DependencyResolver(object):
         current_package = self.parent_package if self.parent_package is not \
                 None else self.current_package
         result = LCollect()
-        database = self.repodb
-        if instdb:
-            database = self.instdb
+        database = self.repodb if instdb is False else self.instdb
         slot = None
         gte, lte, lt, gt, et = False, False, False, False, False
         slot_parsed = package.split(":")
@@ -372,7 +372,7 @@ class DependencyResolver(object):
 
         return package
 
-    def parse_suboptional_dependencies(self, bundle, options):
+    def parse_suboptional_dependencies(self, bundle, options, instdb=False):
         added = []
         result = []
         for parent in bundle:
@@ -385,13 +385,13 @@ class DependencyResolver(object):
                 if pass_parent: 
                     if "||" in bundle[parent]:
                         for package in bundle[parent][bundle[parent].index("||")+1:]:
-                            result.append(self.get_convenient_package(package))
+                            result.append(self.get_convenient_package(package, instdb))
                     continue
             else:
                 if not parent in options: 
                     if "||" in bundle[parent]:
                         for package in bundle[parent][bundle[parent].index("||")+1:]:
-                            result.append(self.get_convenient_package(package))
+                            result.append(self.get_convenient_package(package, instdb))
                     continue
 
             for child in bundle[parent]:
@@ -407,7 +407,7 @@ class DependencyResolver(object):
                     if pass_child:
                         if "||" in packages:
                             for package in packages[packages.index("||")+1:]:
-                                result.append(self.get_convenient_package(package)) 
+                                result.append(self.get_convenient_package(package, instdb)) 
                         continue
                     raw_option = raw_option.split("&&")[0].rstrip()
                     if raw_option.count("\t") != 1:
@@ -419,15 +419,15 @@ class DependencyResolver(object):
                     if previous_child in options:
                         added.append(raw_option)
                         for package in packages:
-                            result.append(self.get_convenient_package(package))
+                            result.append(self.get_convenient_package(package, instdb))
                     else:
                         if "||" in packages:
                             for package in packages[packages.index("||")+1:]:
-                                result.append(self.get_convenient_package(package))
+                                result.append(self.get_convenient_package(package, instdb))
                 else:
                     if child in self.control_chars:
                         continue
-                    result.append(self.get_convenient_package(child))
+                    result.append(self.get_convenient_package(child, instdb))
         return result
     
     def keep_dependency_information(self, package_id, keyword, dependency):
@@ -498,25 +498,69 @@ class DependencyResolver(object):
                         continue
                     self.package_options[package.id].add(option)
 
+        def check_conflicts():
+            for item in self.conflicts:
+                if dependency.pk in self.conflicts[item]:
+                    out.error("%s/%s/%s-%s has a conflict with %s" % (
+                        self.package_heap[item].repo,
+                        self.package_heap[item].category,
+                        self.package_heap[item].name,
+                        self.package_heap[item].version,
+                        dependency.pk)
+                    )
+                    out.error("on the other hand, %s/%s/%s-%s wants to install with %s" % (
+                        package.repo,
+                        package.category,
+                        package.name,
+                        package.version,
+                        dependency.pk
+                    ))
+                    raise ConflictError
+
         #Firstly, check static dependencies
         for keyword in self.dependency_keywords:
             if keyword.startswith("static"):
                 for dependency in getattr(package, keyword):
+                    if keyword.endswith("conflict"):
+                        dependency = self.get_convenient_package(dependency, instdb=True)
+                        # The package is not installed.
+                        if dependency is None:
+                            continue
+                        self.keep_dependency_information(package.id, keyword, dependency)
+                        self.package_heap[dependency.id] = dependency
+                        if package.id in self.conflicts:
+                            self.conflicts[package.id].add(dependency.pk)
+                        else:
+                            self.conflicts[package.id] = set([dependency.pk])
+                        continue
                     dependency = self.get_convenient_package(dependency)
                     if dependency.id in already_added and \
                             already_added[dependency.id] == options:
                                 continue
                     already_added[dependency.id] = options
                     self.keep_dependency_information(package.id, keyword, dependency)
+                    check_conflicts()
                     dependencies.append(dependency)
                     if keyword.endswith("postmerge"):
                         self.postmerge_dependencies.add((dependency.id, package.id))
 
-        # Check optional dependencies
+        # Secondly, Check optional dependencies
         for keyword in self.dependency_keywords:
             if keyword.startswith("optional"):
                 for dependency_bundle in getattr(package, keyword):
-                    for dependency in self.parse_suboptional_dependencies(dependency_bundle, options):
+                    instdb = True if keyword.endswith("conflict") else False
+                    optional_dependencies = self.parse_suboptional_dependencies(dependency_bundle, options, instdb)
+                    for dependency in optional_dependencies:
+                        if keyword.endswith("conflict"):
+                            if dependency is None:
+                                continue
+                            self.keep_dependency_information(package.id, keyword, dependency)
+                            self.package_heap[dependency.id] = dependency
+                            if package.id in self.conflicts:
+                                self.conflicts[package.id].add(dependency.pk)
+                            else:
+                                self.conflicts[package.id] = set([dependency.pk])
+                            continue
                         if dependency.id in already_added and \
                                 already_added[dependency.id] == options:
                                     continue
@@ -528,6 +572,7 @@ class DependencyResolver(object):
                             else:
                                 self.package_options[package.id] = current_options
                         self.keep_dependency_information(package.id, keyword, dependency)
+                        check_conflicts()
                         dependencies.append(dependency)
                         if keyword.endswith("postmerge"):
                             self.postmerge_dependencies.add((dependency.id, package.id))
@@ -659,8 +704,12 @@ class DependencyResolver(object):
 
         # TODO: I think I must use most professional way for ignore-depends feature.
         if lpms.getopt("--ignore-depends"):
-            return self.packages, self.package_dependencies, self.package_options, \
-                    self.inline_option_targets, self.conditional_versions
+            return self.packages, \
+                    self.package_dependencies, \
+                    self.package_options, \
+                    self.inline_option_targets, \
+                    self.conditional_versions, \
+                    self.conflicts
 
         # Workaround for postmerge dependencies
         for (id_dependency, id_package) in self.postmerge_dependencies:
@@ -785,5 +834,10 @@ class DependencyResolver(object):
             # FIXME: This is not a Pythonic way
             final_plan = single_packages+final_plan
 
-        return final_plan, self.package_dependencies, self.package_options, \
-                self.inline_option_targets, self.conditional_versions
+        return final_plan, \
+                self.package_dependencies, \
+                self.package_options, \
+                self.inline_option_targets, \
+                self.conditional_versions, \
+                self.conflicts
+

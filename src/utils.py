@@ -46,7 +46,7 @@ def get_convenient_package(packages, locked_packages, arch_data, \
     if not packages: raise LockedPackage
 
     # Firstly, select the correct repository
-
+    
     # Select the convenient slot for the package
     if slot is not None and slot.endswith("*"):
         slots = [package.slot for package in packages if \
@@ -74,6 +74,8 @@ def get_convenient_package(packages, locked_packages, arch_data, \
         if repository != primary: continue
 
     # Secondly, select the best version
+    if not results:
+        return None
     my_package = results[0].category+"/"+results[0].name+"/"+results[0].slot
     versions = [result.version for result in results]
     # Is this a convenient way for getting instance's class name?

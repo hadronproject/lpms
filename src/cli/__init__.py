@@ -312,7 +312,7 @@ def main():
                         not cli_element.startswith("opts"):
                     invalid.append(command)
         else:
-            if "%" in cli_element:
+            if "%" in command:
                 instruct['like'].add(command); continue
             packages.append(unicode(command))
 

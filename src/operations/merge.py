@@ -409,7 +409,7 @@ class Merge(internals.InternalFuncs):
         self.instdb.database.delete_build_info(package_id)
         
         # requestor values are temporary
-        requestor = os.getlogin()
+        requestor = os.getenv("USER")
         requestor_id = os.getuid()
         end_time = time.time()
         host = os.environ["HOST"] if "HOST" in os.environ else ""
