@@ -43,6 +43,7 @@ from lpms.operations import update
 from lpms.operations import remove
 from lpms.operations import upgrade
 
+from lpms.exceptions import ConflictError
 from lpms.exceptions import LockedPackage
 from lpms.exceptions import DependencyError
 from lpms.exceptions import PackageNotFound
@@ -315,6 +316,6 @@ def pkgbuild(pkgnames, instruct):
         build.Build().main(plan, instruct)
     except PackageNotFound as package:
         out.error("%s count not found in the repository." % out.color(str(package), "red"))
-    except DependencyError:
+    except ConflictError, DependencyError:
         # TODO: Parse this exception if debug mode is enabled.
         out.red("lpms was terminated due to some issues.\n")
