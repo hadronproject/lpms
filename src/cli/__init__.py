@@ -46,6 +46,7 @@ help_output = (
         ('--content', '-c', 'Lists files of given package.'),
         ('--list-repos', 'Lists all repositories.'),
         ('--clean-tmp', 'Cleans source code extraction directory.'),
+        ('--build-info', 'Shows build environment variables.'),
         ('--autoremove', 'Removes unneeded packages.'),
         ('--force-upgrade', 'Forces lpms to use latest versions.'),
         ('--show-reverse-depends', 'Shows reverse dependencies of given package. It is a sub command of remove.'),
@@ -303,6 +304,12 @@ def main():
             elif cli_element == "autoremove":
                 from lpms.cli import autoremove
                 autoremove.Autoremove().select()
+                return
+            elif cli_element == "build-info":
+                from lpms.cli import build_info
+                results = [command for command in commands if not \
+                        command.startswith("-")]
+                build_info.BuildInfo(results).run()
                 return
             else:
                 if command in exceptional_commands:
