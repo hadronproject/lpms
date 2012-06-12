@@ -1,3 +1,18 @@
+2012-06-12 Burak Sezer <purak@hadronproject.org>
+	* lpms-1.1_beta1
+
+	Build info table is back.
+
+	Post merge package selection mechanism is back.
+	
+	Package conflicts mechanism is back.
+
+	Consider conditional versions in lpms api.
+
+	Remove a inline option if it is invalid anymore.
+
+	Various bugfixes and cleaning
+
 2012-06-07 Burak Sezer <purak@hadronproject.org>
 	* lpms-1.1_alpha2
 
