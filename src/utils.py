@@ -34,6 +34,15 @@ from lpms import constants as cst
 from lpms.exceptions import LockedPackage
 from lpms.exceptions import UnavailablePackage
 
+
+def check_group_membership(my_group):
+    '''Checks membership of the current user for the given group.'''
+    groups = os.popen("/bin/groups")
+    if my_group in [group.strip() for group in \
+            groups.readline().split(" ")]:
+        return True
+    return False
+
 def get_convenient_package(packages, locked_packages, arch_data, \
         convenient_arches, instdb, slot=None): 
     results = []

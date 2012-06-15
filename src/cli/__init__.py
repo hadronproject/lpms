@@ -391,8 +391,6 @@ def main():
     if instruct["resume"]:
         packages = []
 
-    utils.check_root()
-
     set_remove = []
 
     for package in packages:

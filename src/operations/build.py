@@ -253,6 +253,10 @@ class Build(object):
             utils.xterm_title("lpms: confirmation request")
             out.write("\ntotal %s package(s) will be merged.\n\n" \
                     % out.color(str(len(packages)), "green"))
+
+            if os.getenv("USER") != "root":
+                lpms.terminate("you must be root to build and merge a package.")
+
             if not utils.confirm("do you want to continue?"):
                 out.write("quitting...\n")
                 utils.xterm_title_reset()
@@ -520,8 +524,8 @@ class Build(object):
                             package_category=category, \
                             package_slot = slot).get(0)
                     out.write("\t %s %s/%s/%s-%s" % (out.color(">> conflict:", "green"), \
-                        conflict.repo,\
-                                conflict.category, \
+                    conflict.repo,\
+                            conflict.category, \
                                 conflict.name, \
                                 conflict.version
                         ))

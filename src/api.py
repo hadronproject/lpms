@@ -51,6 +51,10 @@ from lpms.exceptions import UnavailablePackage
 
 def configure_pending(packages, instruct):
     '''Configure packages that do not configured after merge operation'''
+
+    if os.getenv("USER") != "root":
+        lpms.terminate("you must be root.")
+
     root = instruct["real_root"]
     if not root:
         root = cst.root
@@ -84,6 +88,9 @@ def configure_pending(packages, instruct):
 
 def update_repository(cmdline):
     '''Runs repository update operation'''
+    if os.getenv("USER") != "root":
+        lpms.terminate("you must be root.")
+
     if utils.is_lpms_running():
         out.warn("Ehmm... Seems like another lpms process is still going on. Please try again later.")
         lpms.terminate()
@@ -92,6 +99,9 @@ def update_repository(cmdline):
 def syncronize(cmdline, instruct):
     '''Syncronizes package repositories via any SCM
     and run update and upgrade operations if wanted'''
+    if os.getenv("USER") != "root":
+        lpms.terminate("you must be root.")
+
     query = cmdline
     available_repositories = utils.available_repositories()
 
@@ -128,6 +138,9 @@ def upgrade_system(instruct):
 
 def remove_package(pkgnames, instruct):
     '''Triggers remove operation for given packages'''
+    if os.getenv("USER") != "root":
+        lpms.terminate("you must be root.")
+
     if instruct['like']:
         # handle shortened package names
         database = DBapi.InstallDB()
