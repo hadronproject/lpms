@@ -23,7 +23,7 @@ from lpms import out
 from lpms import utils
 from lpms import shelltools
 
-from lpms.db import dbapi
+from lpms.db import api
 from lpms.exceptions import FileNotFound
 
 ldd_path = "/usr/bin/ldd"
@@ -58,7 +58,7 @@ def get_depends(file_path):
     return depends
 
 def get_packages(category, name, version):
-    relationsdb = dbapi.FileRelationsDB()
+    relationsdb = api.FileRelationsDB()
     files = relationsdb.get_file_paths_by_package(name, category=category, version=version)
     broken_packages = []
     for _file in remove_duplications(files):

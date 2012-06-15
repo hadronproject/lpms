@@ -34,8 +34,7 @@ from lpms import file_relations
 from lpms import file_collisions
 from lpms import constants as cst
 
-from lpms.db import dbapi
-from lpms.db import api as DBapi
+from lpms.db import api as dbapi
 
 from lpms.operations import sync
 from lpms.operations import build
@@ -143,7 +142,7 @@ def remove_package(pkgnames, instruct):
 
     if instruct['like']:
         # handle shortened package names
-        database = DBapi.InstallDB()
+        database = dbapi.InstallDB()
         for item in instruct['like']:
             query = database.db.cursor.execute("SELECT name FROM package where name LIKE ?", (item,))
             results = query.fetchall()
@@ -151,7 +150,7 @@ def remove_package(pkgnames, instruct):
                 for result in results:
                     pkgnames.append(result[0])
         del database
-    file_relationsdb = DBapi.FileRelationsDB()
+    file_relationsdb = dbapi.FileRelationsDB()
     try:
         packages = [GetPackage(pkgname, installdb=True).select() for pkgname in pkgnames]
     except PackageNotFound as package_name:
@@ -236,7 +235,7 @@ class GetPackage:
         self.custom_arch_request = {}
         self.locked_packages = []
         if not installdb:
-            self.database = DBapi.RepositoryDB()
+            self.database = dbapi.RepositoryDB()
             arch_file = os.path.join(cst.user_dir, "arch")
             if os.path.isfile(arch_file):
                 with open(arch_file) as lines:
@@ -255,7 +254,7 @@ class GetPackage:
                         self.locked_packages.extend(utils.ParseUserDefinedFile(line.strip(), \
                                 self.database).parse())
         else:
-            self.database = DBapi.InstallDB()
+            self.database = dbapi.InstallDB()
 
     def select(self):
         preform = self.package.split("/")
@@ -310,7 +309,7 @@ def pkgbuild(pkgnames, instruct):
     '''Starting point of the build operation'''
     # Get package name or names if the user uses joker character
     if instruct['like']:
-        mydb = DBapi.RepositoryDB()
+        mydb = dbapi.RepositoryDB()
         for item in instruct['like']:
             query = mydb.database.cursor.execute("SELECT name FROM package where \
                     name LIKE ?", (item,))
