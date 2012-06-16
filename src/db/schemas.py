@@ -66,12 +66,12 @@ def installdb():
         CREATE TABLE inline_options(
             package_id INTEGER,
             target TEXT,
-            optios BLOB
+            options BLOB
         );
 
-        CREATE INDEX inline_options_package_id_target_id_idx ON inline_options (package_id, target_id);
+        CREATE INDEX inline_options_package_id_target_idx ON inline_options (package_id, target);
         CREATE INDEX inline_options_package_id_options_idx ON inline_options (package_id, options);
-        CREATE INDEX inline_options_target_id_options_idx ON inline_options (target_id, options);
+        CREATE INDEX inline_options_target_options_idx ON inline_options (target, options);
 
         CREATE INDEX package_repo_category_idx ON package (repo, category);
         CREATE INDEX package_repo_name_idx ON package (repo, name);

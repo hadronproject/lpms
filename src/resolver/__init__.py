@@ -432,14 +432,14 @@ class DependencyResolver(object):
     
     def keep_dependency_information(self, package_id, keyword, dependency):
         bundle = (dependency.category, dependency.name, \
-                dependency.version, dependency.arch)
+                dependency.version, dependency.slot, dependency.arch)
         if not package_id in self.package_dependencies:
             self.package_dependencies[package_id] = { keyword: set([bundle]) }
         else:
             if keyword in self.package_dependencies[package_id]:
                 self.package_dependencies[package_id][keyword].add(bundle)
             else:
-                self.package_dependencies[package_id].update({ keyword: set(bundle) })
+                self.package_dependencies[package_id].update({ keyword: set([bundle]) })
 
     def collect_dependencies(self, package):
         dependencies = []
