@@ -54,7 +54,7 @@ class BuildInfo(object):
                 if index == 2:
                     delta = datetime.datetime.fromtimestamp(items[2])-\
                             datetime.datetime.fromtimestamp(items[1])
-                    operation_time = str(float(delta.seconds)/60)+" minutes" if delta.seconds >= 60 \
+                    operation_time = str(round(float(delta.seconds)/60, 1))+" minutes" if delta.seconds >= 60 \
                             else str(delta.seconds)+" seconds"
                     out.write("%s: %s\n" % (out.color("Operation Time", "green"), operation_time))
                 continue
