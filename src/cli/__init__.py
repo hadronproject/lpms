@@ -47,7 +47,7 @@ help_output = (
         ('--list-repos', 'Lists all repositories.'),
         ('--clean-tmp', 'Cleans source code extraction directory.'),
         ('--build-info', 'Shows build environment variables.'),
-        ('--autoremove', 'Removes unneeded packages.'),
+        ('--clean-system', 'Removes unneeded packages.'),
         ('--force-upgrade', 'Forces lpms to use latest versions.'),
         ('--show-reverse-depends', 'Shows reverse dependencies of given package. It is a sub command of remove.'),
         ('--configure-pending', 'Configures pending packages if they were not configured at installation time.'),
@@ -150,7 +150,8 @@ exceptional_commands = (
         '--only-installed', 
         '--force-file-collision',
         '--clean-tmp', 
-        '--ignore-reinstall'
+        '--ignore-reinstall',
+        '--clean-system'
 )
 
 exceptions = (
@@ -301,9 +302,9 @@ def main():
                             command.startswith("-")]
                 search.Search(results).search()
                 return
-            elif cli_element == "autoremove":
-                from lpms.cli import autoremove
-                autoremove.Autoremove().select()
+            elif cli_element == "clean-system":
+                from lpms.cli import clean_system
+                clean_system.CleanSystem().run(instruct)
                 return
             elif cli_element == "build-info":
                 from lpms.cli import build_info
