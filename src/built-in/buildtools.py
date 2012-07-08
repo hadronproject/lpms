@@ -69,10 +69,11 @@ def conf(*args, **kwargs):
                 --sysconfdir=/%s \
                 --localstatedir=/%s \
                 --libexecdir=/%s \
+                --libdir=/%s \
                 %s' % (conf_command, cst.prefix, \
                 cfg.LPMSConfig().CHOST, cst.man, \
                 cst.info, cst.data, \
-                cst.conf, cst.localstate, cst.libexec, " ".join(args))
+                cst.conf, cst.localstate, cst.libexec, cst.libdir, " ".join(args))
             args = " ".join([member for member in args.split(" ") if member != ""])
             out.notify("running %s" % args)
             if not system(args):

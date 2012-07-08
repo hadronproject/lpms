@@ -111,6 +111,7 @@ class ConstantValues:
                     self.val.data = 'usr/share'
                     self.val.libexec = 'usr/libexec'
                     self.val.prefix = 'usr'
+                    self.val.libdir = 'usr/lib'
                     break
                 elif line.startswith("userland") and line.split("=")[1].strip() == "BSD":
                     self.val.doc = 'usr/local/share/doc'
