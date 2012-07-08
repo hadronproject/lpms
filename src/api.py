@@ -331,3 +331,6 @@ def pkgbuild(pkgnames, instruct):
     except ConflictError, DependencyError:
         # TODO: Parse this exception if debug mode is enabled.
         out.red("lpms was terminated due to some issues.\n")
+    except UnavailablePackage as package:
+        out.error("%s is unavailable for you." % out.color(str(package), "red"))
+        out.error("this issue may be related with inconvenient arch or slotting.")
