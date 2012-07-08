@@ -456,6 +456,8 @@ def run(script, env, operation_order=None, remove=False):
                 if item.startswith("File"):
                     regex = re.compile(r'(\w+)\S*$')
                     regex = regex.search(item)
+                    if regex is None:
+                        continue
                     if regex.group() in operation_order:
                         line = re.compile(r'[^\d.]+')
                         line = line.sub('', item)
