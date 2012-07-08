@@ -730,15 +730,15 @@ class DependencyResolver(object):
                         continue_conditional = True
                         if package_id in required_package_ids:
                             final_plan.add_by_pk(c_package)
-                            break                           
+                            break
                 if package_id in required_package_ids:
                     if continue_conditional is False:
                         final_plan.add_by_pk(package)
-            if continue_conditional: 
+            if continue_conditional:
                 continue
             installed_package = self.instdb.find_package(
                     package_category=package.category,
-                    package_name=package.name, 
+                    package_name=package.name,
                     package_slot=package.slot
             )
             if installed_package:
@@ -752,7 +752,7 @@ class DependencyResolver(object):
                             final_plan.add_by_pk(package)
                             continue_inline = True
                             break
-                    if continue_inline: 
+                    if continue_inline:
                         continue
                 try:
                     conditional_versions_query = self.instdb.find_conditional_versions(
@@ -774,7 +774,7 @@ class DependencyResolver(object):
                                 if self.handle_condition_conflict(decision_point, final_plan, \
                                         package.pk, ("<", ">"), (0, 1)) is False:
                                     continue
-                                if not comparison in (1, 0):
+                                if not comparison in (1, 0) or package.id in required_package_ids:
                                     final_plan.add_by_pk(package)
                             elif decision_point["type"] == "<":
                                 if self.handle_condition_conflict(decision_point, final_plan, \
@@ -786,16 +786,16 @@ class DependencyResolver(object):
                                 if self.handle_condition_conflict(decision_point, final_plan, \
                                         package.pk, ("<", ">"), (0, 1)) is False:
                                     continue
-                                if comparison != 1:
+                                if comparison != 1 or package.id in required_package_ids:
                                     final_plan.add_by_pk(package)
                             elif decision_point["type"] == "<=":
                                 if self.handle_condition_conflict(decision_point, final_plan, \
                                         package.pk, (">", "<"), (0, -1)) is False:
                                     continue
-                                if not comparison in (-1, 0):
+                                if not comparison in (-1, 0) or package.id in required_package_ids:
                                     final_plan.add_by_pk(package)
                             elif decision_point["type"] == "==":
-                                if comparison != 0:
+                                if comparison != 0 or package.id in required_package_ids:
                                     final_plan.add_by_pk(package)
                 except ConditionConflict:
                     if not "owner_package" in decision_point:
@@ -813,7 +813,7 @@ class DependencyResolver(object):
                     out.notify(self.conflict_point["owner_package"]+" wants "+\
                             self.conflict_point["type"]+self.conflict_point["version"])
                     lpms.terminate("\nplease contact the package maintainers.")
-                
+
                 # Use new options if the package is effected
                 if self.use_new_options and not package in final_plan:
                     if package.id in self.package_options:
@@ -840,4 +840,3 @@ class DependencyResolver(object):
                 self.inline_option_targets, \
                 self.conditional_versions, \
                 self.conflicts
-
