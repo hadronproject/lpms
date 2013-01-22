@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 # Copyright 2009 - 2011 Burak Sezer <purak@hadronproject.org>
 # 
 # This file is part of lpms
@@ -16,18 +16,22 @@
 # You should have received a copy of the GNU General Public License
 # along with lpms.  If not, see <http://www.gnu.org/licenses/>.
 
-import lpms
+import os
+import sys
 import signal
+
+# Append lpms' path to Python path
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+
+from lpms import cli, terminate
 
 def exit_handler(signum, frame):
     signal.signal(signal.SIGINT, signal.SIG_IGN)
     signal.signal(signal.SIGTERM, signal.SIG_IGN)
-    lpms.terminate("lpms terminated by the user. So this may be harmful!")
+    terminate("lpms terminated by the user. So this may be harmful!")
 
 signal.signal(signal.SIGINT, exit_handler)
 signal.signal(signal.SIGTERM, exit_handler)
 signal.signal(signal.SIGPIPE, signal.SIG_DFL)
-
-from lpms import cli
 
 cli.main()
