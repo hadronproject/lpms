@@ -43,9 +43,10 @@ class Update(internals.InternalFuncs):
         self.repodb.database.delete_repository(repo_name, commit=True)
         repo_path = os.path.join(cst.repos, repo_name)
         for category in os.listdir(repo_path):
-            if category in exceptions:
+            target_directory = os.path.join(repo_path, category)
+            if category in exceptions or not os.path.isdir(target_directory):
                 continue
-            packages = os.listdir(os.path.join(repo_path, category))
+            packages = os.listdir(target_directory)
             try:
                 packages.remove("info.xml")
             except ValueError:
