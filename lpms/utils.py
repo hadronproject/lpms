@@ -446,11 +446,8 @@ def get_mimetype(path):
         return data.split(":", 1)[1].split(";")[0].strip()
 
     import magic
-    m = magic.open(magic.MIME_TYPE)
-    m.load()
-    mimetype = m.file(path.encode('utf-8'))
-    m.close()
-    return mimetype
+    # TODO: Does magic eat RAM?
+    return magic.from_file(path.encode('utf-8'), mime=True)
 
 def run_strip(path):
     p = os.popen("/usr/bin/strip --strip-unneeded %s" % path)
