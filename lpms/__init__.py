@@ -31,18 +31,6 @@ del values
 
 from lpms import out
 
-def set_proc_name(newname):
-    libc = cdll.LoadLibrary('libc.so.6')
-    buff = create_string_buffer(len(newname)+1)
-    buff.value = newname
-    libc.prctl(15, byref(buff), 0, 0, 0)
-    
-def get_proc_name():
-    libc = cdll.LoadLibrary('libc.so.6')
-    buff = create_string_buffer(128)
-    libc.prctl(16, byref(buff), 0, 0, 0)
-    return buff.value
-
 def terminate(msg=None):
     if msg is not None:
         sys.stdout.write(out.color(msg, "brightred")+'\n')
@@ -97,9 +85,6 @@ def init_logging():
         logger.setLevel(logging.INFO)
     
     return logger
-
-
-set_proc_name("lpms")
 
 # lpms uses utf-8 encoding as default
 reload(sys)
