@@ -15,8 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with lpms.  If not, see <http://www.gnu.org/licenses/>.
 
-import sys
 import glob
+from os import path as osp
 
 from lpms import singleton
 from lpms import exceptions
@@ -51,7 +51,7 @@ class ConstantValues:
                 'post_install', 'post_remove', 'pre_merge', 'pre_remove')
         self.val.config_dir = "/etc/lpms"
         self.val.xmlfile_suffix = ".xml"
-        self.val.lpms_path = "/usr/lib/python%s.%s/site-packages/lpms" % (sys.version_info[0], sys.version_info[1])
+        self.val.lpms_path = osp.dirname(__file__)
         self.val.logfile = "/var/log/lpms.log"
         self.val.user_dir = "/etc/lpms/user"
         self.val.user_defined_files = ('%s/arch' % self.val.user_dir, '%s/lock' % self.val.user_dir, \
