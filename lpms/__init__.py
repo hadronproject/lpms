@@ -19,7 +19,6 @@ import os
 import sys
 import logging
 import inspect
-from ctypes import cdll, byref, create_string_buffer
 
 # firstly, override this for backward compatibility
 ###################################################
