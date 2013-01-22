@@ -51,7 +51,7 @@ from lpms.exceptions import UnavailablePackage
 def configure_pending(packages, instruct):
     '''Configure packages that do not configured after merge operation'''
 
-    if os.getenv("USER") != "root":
+    if not utils.check_root(msg=False):
         lpms.terminate("you must be root.")
 
     root = instruct["real_root"]
@@ -87,7 +87,7 @@ def configure_pending(packages, instruct):
 
 def update_repository(cmdline):
     '''Runs repository update operation'''
-    if os.getenv("USER") != "root":
+    if not utils.check_root(msg=False):
         lpms.terminate("you must be root.")
 
     if utils.is_lpms_running():
@@ -98,7 +98,7 @@ def update_repository(cmdline):
 def syncronize(cmdline, instruct):
     '''Syncronizes package repositories via any SCM
     and run update and upgrade operations if wanted'''
-    if os.getenv("USER") != "root":
+    if not utils.check_root(msg=False):
         lpms.terminate("you must be root.")
 
     query = cmdline
@@ -137,7 +137,7 @@ def upgrade_system(instruct):
 
 def remove_package(pkgnames, instruct):
     '''Triggers remove operation for given packages'''
-    if os.getenv("USER") != "root":
+    if not utils.check_root(msg=False):
         lpms.terminate("you must be root.")
 
     if instruct['like']:

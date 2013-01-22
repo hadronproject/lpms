@@ -254,7 +254,7 @@ class Build(object):
             out.write("\ntotal %s package(s) will be merged.\n\n" \
                     % out.color(str(len(packages)), "green"))
 
-            if os.getenv("USER") != "root":
+            if not utils.check_root(msg=False):
                 utils.xterm_title_reset()
                 lpms.terminate("you must be root to build and merge a package.")
 
