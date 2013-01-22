@@ -409,6 +409,7 @@ class Merge(internals.InternalFuncs):
         self.instdb.database.delete_build_info(package_id)
         
         # requestor values are temporary
+        # TODO: requestor and related fields are going to be removed 
         requestor = os.getenv("USER")
         requestor_id = os.getuid()
         end_time = time.time()
