@@ -168,7 +168,7 @@ class Build(object):
             self.internals.env.category, self.internals.env.fullname, "source", self.internals.env.srcdir)
         self.internals.env.install_dir = os.path.join(self.config.build_dir, 
             self.internals.env.category, self.internals.env.fullname, "install")
-        
+
         try:
             if not lpms.getopt("--resume-build") and len(os.listdir(self.internals.env.install_dir)) != 0:
                 shelltools.remove_dir(self.internals.env.install_dir)
@@ -321,9 +321,9 @@ class Build(object):
             interphase = re.search(r'-r[0-9][0-9]', self.internals.env.version)
             if not interphase:
                 interphase = re.search(r'-r[0-9]', self.internals.env.version)
-            
+
             if interphase is not None and interphase.group():
-                self.internals.env.version = self.internals.env.version.replace(interphase.group(), "")
+                self.internals.env.raw_version = self.internals.env.version.replace(interphase.group(), "")
                 self.internals.env.revision = interphase.group()
 
             self.compile_script()
@@ -343,7 +343,7 @@ class Build(object):
 
             if not "srcdir" in self.internals.env.__dict__:
                 setattr(self.internals.env, "srcdir", \
-                        self.internals.env.name+"-"+self.internals.env.version)
+                        self.internals.env.name+"-"+self.internals.env.version.replace(self.internals.env.revision, ""))
             # FIXME: None?
             self.internals.env.sandbox = None
             self.prepare_environment()
