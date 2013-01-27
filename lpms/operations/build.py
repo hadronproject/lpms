@@ -469,35 +469,41 @@ class Build(object):
                             elif package.version == installed_package.version:
                                 status_bar[0] = out.color("R", "brightyellow")
 
+            class FormattedOptions(list):
+                def __init__(self, data):
+                    super(FormattedOptions, self).extend(data)
+
+                def append(self, item, color=None):
+                    self.remove(item)
+                    if color is not None:
+                        super(FormattedOptions, self).insert(0, out.color("*"+item, color))
+                    else:
+                        super(FormattedOptions, self).insert(0, item)
+
             formatted_options = []
             if package.options is not None:
+                formatted_options = FormattedOptions(package.options)
                 if package.id in options:
                     if not status_bar[0].strip() or not status_bar[1].strip():
                         for applied_option in options[package.id]:
                             if installed_package:
                                 if installed_package.applied_options is not None and not \
                                         applied_option in installed_package.applied_options:
-                                    formatted_options.append(out.color("*"+applied_option, "brightgreen"))
+                                    formatted_options.append(applied_option, "brightgreen")
                                     continue
                                 elif installed_package.applied_options is None:
-                                    formatted_options.append(out.color("*"+applied_option, "brightgreen"))
+                                    formatted_options.append(applied_option, "brightgreen")
                                     continue
-                            formatted_options.append(out.color(applied_option, "red"))
+                            formatted_options.append(applied_option, "red")
                         if installed_package and installed_package.applied_options is not None:
                             for applied_option in installed_package.applied_options:
                                 if not applied_option in options[package.id]:
-                                    formatted_options.append(out.color("*"+applied_option, "brightyellow"))
-                        for option in package.options:
-                            if not option in options[package.id] and installed_package is not \
-                                    None and not option in installed_package.applied_options:
-                                formatted_options.append(option)
-                            elif not option in options[package.id] and installed_package is None:
-                                formatted_options.append(option)
+                                    formatted_options.append(applied_option, "brightyellow")
                 else:
                     for option in package.options:
                         if installed_package and installed_package.applied_options is not None and \
                                 option in installed_package.applied_options:
-                            formatted_options.append(out.color("*"+option, "brightyellow"))
+                            formatted_options.append(option, "brightyellow")
                         else:
                             formatted_options.append(option)
             else:
