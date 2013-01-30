@@ -322,6 +322,11 @@ class Build(object):
             if not interphase:
                 interphase = re.search(r'-r[0-9]', self.internals.env.version)
 
+            # Before setting raw_version and revision, set their initial values
+            self.internals.env.revision = ""
+            self.internals.env.raw_version = self.internals.env.version
+
+            # Now, set real values of these variables if package revisioned. 
             if interphase is not None and interphase.group():
                 self.internals.env.raw_version = self.internals.env.version.replace(interphase.group(), "")
                 self.internals.env.revision = interphase.group()
@@ -341,9 +346,11 @@ class Build(object):
                 self.internals.env.category, self.internals.env.name, cst.files_dir))
             setattr(self.internals.env, "src_cache", cst.src_cache)
 
+            # Cut revision number from srcdir prevent unpacking fails 
             if not "srcdir" in self.internals.env.__dict__:
                 setattr(self.internals.env, "srcdir", \
                         self.internals.env.name+"-"+self.internals.env.version.replace(self.internals.env.revision, ""))
+
             # FIXME: None?
             self.internals.env.sandbox = None
             self.prepare_environment()
