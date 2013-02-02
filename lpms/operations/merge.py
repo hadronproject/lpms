@@ -289,7 +289,7 @@ class Merge(internals.InternalFuncs):
                                         os.path.realpath(path),
                                         self.env.slot
                                     )
-                            )                   
+                            )
                         # We don't need the following operations
                         continue
 
@@ -298,11 +298,11 @@ class Merge(internals.InternalFuncs):
                     realpath = os.readlink(source)
                     if self.env.install_dir in realpath:
                         realpath = realpath.split(self.env.install_dir)[1]
-                    if not os.path.isdir(target):
-                        if os.path.isfile(target):
-                            shelltools.remove_file(target)
-                    else:
+
+                    if os.path.isdir(target):
                         shelltools.remove_dir(target)
+                    elif os.path.isfile(target) or os.path.islink(target):
+                        shelltools.remove_file(target)
                     shelltools.make_symlink(realpath, target)
                 else:
                     sha1sum = utils.sha1sum(source)
