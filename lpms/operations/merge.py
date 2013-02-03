@@ -56,8 +56,6 @@ class Merge(internals.InternalFuncs):
         self.reverse_dependsdb = api.ReverseDependsDB()
         self.merge_conf_file = os.path.join(self.env.real_root, \
                 cst.merge_conf_file)
-        #self.version_data = self.instdb.get_version(self.env.name, \
-        #        pkg_category = self.env.category)
         self.previous_files = self.filesdb.get_paths_by_package(self.env.name, \
                 repo=self.env.repo, category=self.env.category, \
                 version=self.env.previous_version)
@@ -78,22 +76,11 @@ class Merge(internals.InternalFuncs):
             with open(self.merge_conf_file, "wb") as raw_data:
                 pickle.dump(self.merge_conf_data, raw_data)
 
-    def is_fresh(self):
-        return self.instdb.find_package(package_name=self.env.name, \
-                package_category=self.env.category)
-
-    def is_reinstall(self):
-        return self.instdb.find_package(package_name=self.env.name, \
-                package_category=self.env.category, package_version=self.env.version)
-
-    def is_different(self):
-        return self.is_reinstall()
-
     def is_parent_symlink(self, target):
         for symlink in self.symlinks:
             if target.startswith(symlink):
                 return True
- 
+
     def merge_pkg(self):
         '''Merge the package to the system'''
         isstrip = True
@@ -435,31 +422,34 @@ class Merge(internals.InternalFuncs):
                 cxx,
         )
 
-    def clean_previous(self):
-        if not self.is_fresh():
-            if self.is_different() or self.is_reinstall():
-                obsolete = self.comparison()
+    def clean_obsolete_content(self):
+        '''Cleans obsolete content which belogs to previous installs'''
+        if self.instdb.find_package(package_name=self.env.name, \
+                package_category=self.env.category):
+            obsolete = self.compare_different_versions()
+            if not obsolete:
+                return
+            out.normal("cleaning obsolete content")
+            directories = []
+            for item in obsolete:
+                target = os.path.join(self.env.real_root, item[0][1:])
+                if not os.path.exists(target):
+                    continue
+                if os.path.islink(target):
+                    os.unlink(target)
+                elif os.path.isfile(target):
+                    shelltools.remove_file(target)
+                else:
+                    directories.append(target)
 
-                if not obsolete: return
+            directories.reverse()
+            for directory in directories:
+                if not os.listdir(directory):
+                    # Remove directory if it does not include anything
+                    shelltools.remove_dir(directory)
 
-                out.normal("cleaning obsolete content")
-                dirs = []
-                for item in obsolete:
-                    target = os.path.join(self.env.real_root, item[0][1:])
-                    if not os.path.exists(target):
-                        continue
-                    if os.path.islink(target):
-                        os.unlink(target)
-                    elif os.path.isfile(target):
-                        shelltools.remove_file(target)
-                    else:
-                        dirs.append(target)
-
-                dirs.reverse()
-                for item in dirs:
-                    if not os.listdir(item): shelltools.remove_dir(item)
-
-    def comparison(self):
+    def compare_different_versions(self):
+        '''Compares file lists of different installations of the same package and finds obsolete content'''
         current_files = self.filesdb.get_paths_by_package(self.env.name, \
                         repo=self.env.repo, category=self.env.category, version=self.env.version)
         obsolete = []
@@ -467,7 +457,7 @@ class Merge(internals.InternalFuncs):
             if not item in current_files:
                 obsolete.append(item)
         return obsolete
-    
+
     def create_info_archive(self):
         info_path = os.path.join(self.env.install_dir, cst.info)
         if not os.path.isdir(info_path): return
@@ -486,24 +476,24 @@ class Merge(internals.InternalFuncs):
 
 def main(environment):
     opr = Merge(environment)
-    
+
     opr.load_merge_conf_file()
-    
+
     # create $info_file_name.gz archive and remove info file
     opr.create_info_archive()
-    
+
     # merge the package
     opr.merge_pkg()
 
     opr.save_merge_conf_file()
 
     # clean the previous version if it is exists
-    opr.clean_previous()
+    opr.clean_obsolete_content()
 
     # write to database
     opr.write_db()
 
-    
+
     # create or update /usr/share/info/dir 
     opr.update_info_index()
 
