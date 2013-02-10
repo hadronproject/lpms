@@ -292,7 +292,9 @@ def isexists(target, ignore_fix_target=False):
         target = fix_target_path(target)
     return shelltools.is_exists(target)
 
-def cd(target=None):
+def cd(target=None, ignore_fix_target=False):
+    if current_stage == "install" and not ignore_fix_target:
+        target = fix_target_path(target)
     shelltools.cd(target)
 
 def copytree(source, target, sym=True, ignore_fix_target=False):
