@@ -31,10 +31,10 @@ def standard_extract():
     target = os.path.dirname(build_dir)
     for url in extract_plan:
         out.write("   %s %s\n" % (out.color(">", "green"), os.path.join(cfg.LPMSConfig().src_cache,\
-                    os.path.basename(url))))        
+                    os.path.basename(url))))
         archive_path = os.path.join(cfg.LPMSConfig().src_cache, os.path.basename(url))
         try:
-            partial = [atom.strip() for atom in partial.split(" ") 
+            partial = [atom.strip() for atom in partial.split(" ")
                     if atom != "#"]
             archive.extract(str(archive_path), str(target), partial)
         except NameError:
@@ -74,20 +74,20 @@ def conf(*args, **kwargs):
                 cfg.LPMSConfig().CHOST, cst.man, \
                 cst.info, cst.data, \
                 cst.conf, cst.localstate, cst.libexec, cst.libdir, " ".join(args))
-            args = " ".join([member for member in args.split(" ") if member != ""])
-            out.notify("running %s" % args)
-            if not system(args):
-                lpms.terminate()
+            args = [arg for arg in args.split(" ") if arg.strip()]
+            out.notify("running %s" % "\n\t".join(args))
+            if not system(" ".join(args)):
+                raise BuildError("conf failed.")
         else:
-            #FIXME: bu bir hata mı yoksa yapilmasi gerekenler mi var?
-            out.warn("configure script is not executable.")
+            raise BuildError("configure script is not executable.")
     else:
         out.warn("no configure script found.")
 
 def raw_configure(*parameters, **kwargs):
     '''Runs configure script with only given parameters'''
-    out.notify("running ./configure %s" % " ".join(parameters))
     conf_command = './configure'
+    args_pretty = conf_command+" "+"\n\t".join(parameters)
+    out.notify("running %s" % args_pretty)
     if "run_dir" in kwargs:
         conf_command = os.path.join(kwargs["run_dir"], "configure")
 
@@ -138,7 +138,7 @@ def linstall(parameters='', arg='install'):
                     }
 
     args = " ".join([member for member in args.split(" ") if member != ""])
-    out.notify("running %s" % args) 
+    out.notify("running %s" % args)
     if not system(args):
         raise BuildError("linstall failed.")
     else:
@@ -200,3 +200,4 @@ def installd(*params, **kwargs):
     '''Runs raw_install with standard parameters'''
     arg = kwargs.get("arg", "install")
     raw_install("DESTDIR=%s %s" % (install_dir, " ".join(params)), arg)
+
