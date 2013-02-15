@@ -5,13 +5,20 @@ L Package Management System -- lpms
 About
 -------
 
-lpms is a package manager which was designed to provide advanced control and 
-optimization over the packages. It is written in Python entirely and uses custom 
-Python scripts to build packages.
+Package manager of Hadron GNU/Linux is lpms. It is acronym of L Package Management System. 
+L is meaningless.
 
-lpms aims to be functional, user-friendly, fast and powerful.
+It's written with Python. Designed to be fast, functional, ergonomic and user-friendly(KISS). 
+lpms builds source codes with help of special Python scripts from repositories.
 
-It is the heart of Hadron Project.
+It can be used to install bleeding-edge packages. You can create a script to create a package 
+that uses directly upstream code. We call these "live packages".
+
+Developers/maintainers can create repositories managed by Git, Subversion or other version control systems. 
+lpms can synchronize directly from content management systems.
+
+Information about packages given via these scripts, but lpms has SQL backend to manage 
+the huge information about packages and dependencies.
 
 
 Dependencies
@@ -19,7 +26,7 @@ Dependencies
 
 * lpms is written in Python-2.7
 
-* Python-2.7.x must be compiled with sqlite3 support. So lpms depends on sqlite3.
+* Python-2.7.x must be compiled with sqlite3 support.
 
 * Uses sydbox as sandboxing application.
  
@@ -32,9 +39,7 @@ Dependencies
 Installation
 -------------
 
-lpms runs as a standard Python module. So you should copy 'src' directory to Python's 
-site-packages directory. Note that, src directory is named as 'lpms'. For details, 
-see lpms' build script.
+See main/sys-apps/lpms-x.y.z.py
 
 
 Contact
@@ -42,4 +47,4 @@ Contact
 
 Web site: http://hadronproject.org
 E-mail: purak__at__hadronproject.org
-IRC Channel: #hadron, #lpms, #hadron-devel on Freenode
+IRC Channel: #hadron, #lpms, #hadron-devel on freenode
