@@ -56,14 +56,14 @@ class Archive:
         f.close()
 
     def extract_lzma(self, path):
-        if not os.access("/bin/tar", os.X_OK) or not os.access("/bin/tar", os.F_OK):
+        if not executable_path("tar"):
             lpms.terminate("please check app-arch/tar package")
 
         current = os.getcwd()
         os.chdir(self.location)
-        cmd = "/bin/tar --lzma xvf %s" % path
+        cmd = executable_path("tar") + " --lzma xvf %s" % path
         if path.endswith(".xz"):
-            cmd = "/bin/tar Jxvf %s" % path
+            cmd = executable_path("tar") + " Jxvf %s" % path
 
         stdout = subprocess.PIPE; stderr=subprocess.PIPE
         result = subprocess.Popen(cmd, shell=True, stdout=stdout, stderr=stderr)
