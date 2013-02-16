@@ -35,9 +35,25 @@ from lpms.exceptions import LockedPackage
 from lpms.exceptions import UnavailablePackage
 
 
+def executable_path(executable, path=None):
+    """Mostly taken from distutils.spawn"""
+    if path is None:
+        path = os.environ['PATH']
+    paths = path.split(os.pathsep)
+
+    if not os.path.isfile(executable):
+        for p in paths:
+            f = os.path.join(p, executable)
+            if os.path.isfile(f) and os.access(f, os.X_OK):
+                # the file exists, we have a shot at spawn working
+                return f
+        return None
+    else:
+        return executable
+
 def check_group_membership(my_group):
     '''Checks membership of the current user for the given group.'''
-    groups = os.popen("/bin/groups")
+    groups = os.popen(executable_path("groups"))
     if my_group in [group.strip() for group in \
             groups.readline().split(" ")]:
         return True

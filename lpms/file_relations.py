@@ -26,7 +26,7 @@ from lpms import shelltools
 from lpms.db import api
 from lpms.exceptions import FileNotFound
 
-ldd_path = "/usr/bin/ldd"
+ldd_path = executable_path("ldd")
 
 def remove_duplications(data): return list(set(data))
 
