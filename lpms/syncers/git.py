@@ -21,6 +21,7 @@ import os
 import lpms
 
 from lpms import out
+from lpms import utils
 from lpms import shelltools
 from lpms import constants as cst
 
@@ -30,7 +31,7 @@ class GITSync(object):
     def __init__(self, repo, remote):
         self.repo = repo
         self.remote = remote
-        self.git_binary = executable_path("git")
+        self.git_binary = utils.executable_path("git")
         self.repo_path = os.path.join(cst.repos, repo)
 
     def git_repo(self):
@@ -38,9 +39,9 @@ class GITSync(object):
             if os.path.isdir(self.repo_path+"/"+".git"):
                 return True
         return False
-    
+
     # parse_uri method is borrowed from pkgcore: sync/git.py
-    def parse_uri(self):                                                                                                                                                                 
+    def parse_uri(self):                                                                                                                                               
         if not self.remote.startswith("git+") and not self.remote.startswith("git://"):
             raise InvalidURI(self.remote, "doesn't start with git+ nor git://")
         if self.remote.startswith("git+"):
