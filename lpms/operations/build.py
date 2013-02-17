@@ -489,6 +489,10 @@ class Build(object):
 
             formatted_options = []
             if package.options is not None:
+                installed_package = None
+                for item in installed_packages:
+                    if item.slot == package.slot:
+                        installed_package = item
                 formatted_options = FormattedOptions(package.options)
                 if package.id in options:
                     if not status_bar[0].strip() or not status_bar[1].strip():

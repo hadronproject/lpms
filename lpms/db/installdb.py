@@ -128,7 +128,6 @@ class InstallDatabase(base.LpmsDatabase):
         category = kwargs.get("package_category", None)
         version = kwargs.get("package_version", None)
         slot = kwargs.get("package_slot", None)
-
         query_body = '''
         SELECT 
             id, 
@@ -156,6 +155,9 @@ class InstallDatabase(base.LpmsDatabase):
             if repo is None and category is None and version is None:
                 self.cursor.execute('''%s FROM package where name = (?)''' \
                         % query_body, (name,))
+            elif slot is not None and name is not None and category is not None:
+                self.cursor.execute('''%s FROM package WHERE category = (?) AND name = (?) AND slot = (?)''' \
+                        % query_body, (category, name, slot))
             elif repo is not None and category is None and version is None:
                 self.cursor.execute('''%s FROM package where repo = (?) and name = (?)''' \
                         % query_body, (repo, name,))
@@ -177,10 +179,6 @@ class InstallDatabase(base.LpmsDatabase):
             elif repo is not None and category is not None and name is not None and version is not None:
                 self.cursor.execute('''%s FROM package WHERE repo = (?) AND category = (?) AND name = (?) AND \
                         version = (?)''' % query_body, (repo, category, name, version))
-            elif slot is not None and name is not None and category is not None:
-                self.cursor.execute('''%s FROM package WHERE category = (?) AND name = (?) AND slot = (?)''' \
-                        % query_body, (category, name, slot))
-
         return self.cursor.fetchall()
 
     def get_package_metadata(self, dataset):

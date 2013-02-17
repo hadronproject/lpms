@@ -343,7 +343,7 @@ class Merge(internals.InternalFuncs):
                 self.env.real_root))
         
     def write_db(self):
-        '''Update package data in the database or create a new entry'''
+        '''Updates package data in the database or create a new entry'''
         if self.env.dependencies is not None:
             for keyword in self.env.dependencies:
                 setattr(self.env.package, keyword, self.env.dependencies[keyword])
@@ -425,7 +425,8 @@ class Merge(internals.InternalFuncs):
     def clean_obsolete_content(self):
         '''Cleans obsolete content which belogs to previous installs'''
         if self.instdb.find_package(package_name=self.env.name, \
-                package_category=self.env.category):
+                package_category=self.env.category,
+                package_slot=self.env.slot):
             obsolete = self.compare_different_versions()
             if not obsolete:
                 return
