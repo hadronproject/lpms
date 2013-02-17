@@ -30,7 +30,7 @@ class GITSync(object):
     def __init__(self, repo, remote):
         self.repo = repo
         self.remote = remote
-        self.git_binary = "/usr/bin/git"
+        self.git_binary = executable_path("git")
         self.repo_path = os.path.join(cst.repos, repo)
 
     def git_repo(self):

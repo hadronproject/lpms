@@ -94,7 +94,7 @@ class ConstantValues:
         self.val.news_read = "news.read"
         self.val.ccache_dir = "/var/cache/ccache"
         self.val.sandbox_log = '/var/log/sydbox.log'
-        self.val.sandbox_app = '/usr/bin/sydbox'
+        self.val.sandbox_app = executable_path("sydbox")
         self.val.sandbox_config = '/etc/sydbox.conf'
         self.val.sandbox_paths = (self.val.repos, self.val.extract_dir, self.val.src_cache)
         self.val.sandbox_exception_stages = ['post_install', 'post_remove', 'pre_remove', 'pre_merge']
