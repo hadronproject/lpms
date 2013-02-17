@@ -62,9 +62,9 @@ class Archive:
 
         current = os.getcwd()
         os.chdir(self.location)
-        cmd = executable_path("tar") + " --lzma xvf %s" % path
+        cmd = utils.executable_path("tar") + " --lzma xvf %s" % path
         if path.endswith(".xz"):
-            cmd = executable_path("tar") + " Jxvf %s" % path
+            cmd = utils.executable_path("tar") + " Jxvf %s" % path
 
         stdout = subprocess.PIPE; stderr=subprocess.PIPE
         result = subprocess.Popen(cmd, shell=True, stdout=stdout, stderr=stderr)
