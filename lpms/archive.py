@@ -26,6 +26,7 @@ from collections import OrderedDict
 import lpms
 
 from lpms import out
+from lpms import utils
 
 class Archive:
     def __init__(self, location, partial):
@@ -56,7 +57,7 @@ class Archive:
         f.close()
 
     def extract_lzma(self, path):
-        if not executable_path("tar"):
+        if not utils.executable_path("tar"):
             lpms.terminate("please check app-arch/tar package")
 
         current = os.getcwd()

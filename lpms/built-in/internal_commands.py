@@ -377,7 +377,7 @@ def sed(*parameters):
 # * chgrp/sed/chmod/chown
 
 def svn(*parameters):
-    svn_binary = executable_path("svn")
+    svn_binary = utils.executable_path("svn")
     if not os.access(svn_binary, os.X_OK):
         raise exceptions.NotExecutable("%s is not executable." % svn_binary)
     if not system('%s %s' % (svn_binary, " ".join(parameters))):
@@ -385,7 +385,7 @@ def svn(*parameters):
     return True
 
 def git(*parameters):
-    git_binary = executable_path("git")
+    git_binary = utils.executable_path("git")
     if not os.access(git_binary, os.X_OK):
         raise exceptions.NotExecutable("%s is not executable." % git_binary)
     if not system('%s %s' % (git_binary, " ".join(parameters))):
