@@ -20,6 +20,7 @@ import os
 import sys
 import stat
 import glob
+import magic
 import string
 import decimal
 import hashlib
@@ -461,9 +462,11 @@ def get_mimetype(path):
         data = os.popen("file -i %s" % path).read().strip()
         return data.split(":", 1)[1].split(";")[0].strip()
 
-    import magic
-    # TODO: Does magic eat RAM?
-    return magic.from_file(path.encode('utf-8'), mime=True)
+    file_obj = magic.open(magic.MIME_TYPE)
+    file_obj.load()
+    mimetype = file_obj.file(path.encode('utf-8'))
+    file_obj.close()
+    return mimetype
 
 def run_strip(path):
     p = os.popen("/usr/bin/strip --strip-unneeded %s" % path)
