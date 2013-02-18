@@ -172,7 +172,7 @@ class DependencyResolver(object):
                     self.inline_options[package.id] = inline_options
                     if package.id in self.package_options:
                         for inline_option in inline_options:
-                            self.package_options[package.id] = add(inline_option)
+                            self.package_options[package.id].add(inline_option)
                     else:
                         self.package_options[package.id] = set(inline_options)
 
