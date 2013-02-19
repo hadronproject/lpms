@@ -533,16 +533,20 @@ class DependencyResolver(object):
                         else:
                             self.conflicts[package.id] = set([dependency.pk])
                         continue
-                    dependency = self.get_convenient_package(dependency)
-                    if dependency.id in already_added and \
-                            already_added[dependency.id] == options:
+                    proper_dependency = self.get_convenient_package(dependency)
+                    # TODO: This is a temporary workaround
+                    # We must implement more proper exception handling mech. and give more informative messages to users.
+                    if proper_dependency is None:
+                        raise UnavailablePackage(dependency)
+                    if proper_dependency.id in already_added and \
+                            already_added[proper_dependency.id] == options:
                                 continue
-                    already_added[dependency.id] = options
-                    self.keep_dependency_information(package.id, keyword, dependency)
+                    already_added[proper_dependency.id] = options
+                    self.keep_dependency_information(package.id, keyword, proper_dependency)
                     check_conflicts()
-                    dependencies.append(dependency)
+                    dependencies.append(proper_dependency)
                     if keyword.endswith("postmerge"):
-                        self.postmerge_dependencies.add((dependency.id, package.id))
+                        self.postmerge_dependencies.add((proper_dependency.id, package.id))
 
         # Secondly, Check optional dependencies
         for keyword in self.dependency_keywords:
