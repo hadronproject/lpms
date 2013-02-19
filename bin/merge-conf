@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 # Copyright 2009 - 2011 Burak Sezer <burak.sezer@linux.org.tr>
 # 
 # This file is part of lpms
@@ -19,7 +19,12 @@
 import os
 import sys
 import signal
+import shelve
 import cPickle as pickle
+
+
+# Append lpms' path to Python path
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
 import lpms
 
@@ -50,7 +55,8 @@ class Merge(object):
         self.i += 1
         out.write(out.color("("+str(self.i)+"/"+str(len(self.query))+")", "green"))
         out.write(" "+conf_file+"\n\n")
-        os.system("diff -Naur %s %s" % (conf_file, conf_file+".lpms-backup"))
+        diff_path = utils.executable_path("diff")
+        os.system("%s -Naur %s %s" % (diff_path, conf_file, conf_file+".lpms-backup"))
         out.write("\n")
         out.normal("[U]se new file, [R]emove new file, [P]ass, [Q]uit\n")
 
@@ -96,15 +102,18 @@ class Merge(object):
 def merge_conf():
     for cmd in sys.argv[0:]:
         if cmd == "--help" or cmd == "-h":
-            out.write("configuration file manager for lpms.\n\n")
-            out.write("simply, run 'merge-conf' command to see changed configuration files.\n")
-            out.write("if you run the command with -f/--file parameter, it processes the given files.\n")
-            out.write("like this: # merge-conf -f /etc/foo.conf /etc/bar.cfg\n")
+            out.normal("merge-conf -- Configuration file manager for lpms.")
+            out.notify("Simply, run 'merge-conf' command to see changed configuration files after re-installation.")
+            out.notify("For processing a particular file, use -f/--file parameter. Like that:")
+            out.notify("# merge-conf -f /etc/foo.conf /etc/bar.cfg")
             return
         elif cmd == "--version":
             out.write("merge-conf-%s\n" %  __version__)
             return
 
+    if not utils.check_root():
+        out.warn("you must be root for doing this.")
+        return
 
     # run the program
     obj = Merge()
@@ -131,3 +140,4 @@ signal.signal(signal.SIGPIPE, signal.SIG_DFL)
 
 if __name__ == '__main__':
     merge_conf()
+
