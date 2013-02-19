@@ -162,7 +162,7 @@ class Build(object):
             if not self.config.sandbox and lpms.getopt("--enable-sandbox"):
                 self.internals.env.__setattr__("sandbox", True)
             elif self.config.sandbox and not lpms.getopt("--ignore-sandbox"):
-                self.internals.env.__setattr__("sandbox", True)
+                self.internals.env.__setattr__("sandbox", False)
 
         self.internals.env.build_dir = os.path.join(self.config.build_dir, 
             self.internals.env.category, self.internals.env.fullname, "source", self.internals.env.srcdir)
