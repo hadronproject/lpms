@@ -66,7 +66,6 @@ build_help_output = (
         ('--use-new-opts', '-N', 'Applies new global options for installed packages.'),
         ('--resume', "Resumes previous installation operation. Use '--skip-first' to skip the first package."),
         ('--add-repo', 'Adds new repository(not yet).'),
-        ('--ignore-reinstall', 'Ignores installed packages.'),
         ('--ignore-depends', 'Ignores dependencies.'),
         ('--ignore-conflicts', 'Ignore file conflicts if conflict protect is enabled.'),
         ('--disable-sandbox', 'Disables sandbox facility if it is possible.'),
@@ -150,7 +149,6 @@ exceptional_commands = (
         '--only-installed', 
         '--force-file-collision',
         '--clean-tmp', 
-        '--ignore-reinstall',
         '--clean-system'
 )
 
