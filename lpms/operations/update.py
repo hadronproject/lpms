@@ -78,7 +78,7 @@ class Update(internals.InternalFuncs):
                 out.error("an error occured while processing the spec: %s" \
                         % out.color(script_path, "red"))
                 out.error("please report the above error messages to the package maintainer.")
-                lpms.terminate()
+                continue
 
             metadata = utils.metadata_parser(self.env.metadata)
             metadata.update({"name": self.env.name, "version": self.env.version})
