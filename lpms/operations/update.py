@@ -16,6 +16,7 @@
 # along with lpms.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+import re
 import glob
 import traceback
 
@@ -68,10 +69,25 @@ class Update(internals.InternalFuncs):
             script_path = os.path.join(repo_path, category, my_pkg, pkg)
 
             self.env.name, self.env.version = utils.parse_pkgname(pkg.split(cst.spec_suffix)[0])
-            
+
             dataset.name = self.env.name
             dataset.version = self.env.version
-            
+
+            # FIXME: We must develop a upper-class or environment to 
+            # use that cases to prevent code duplication
+
+            # Begins code duplication
+            interphase = re.search(r'-r[0-9][0-9]', self.env.version)
+            if not interphase:
+                interphase = re.search(r'-r[0-9]', self.env.version)
+            self.env.raw_version = self.env.version
+            self.env.revision = ""
+            # Now, set real values of these variables if package revisioned. 
+            if interphase is not None and interphase.group():
+                self.env.raw_version = self.env.version.replace(interphase.group(), "")
+                self.env.revision = interphase.group()
+            # End of code duplication
+
             self.env.__dict__["fullname"] = self.env.name+"-"+self.env.version
 
             if not self.import_script(script_path):
