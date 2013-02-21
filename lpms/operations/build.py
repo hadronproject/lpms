@@ -158,15 +158,16 @@ class Build(object):
         setattr(self.internals.env, "extract_plan", self.extract_plan)
 
     def prepare_environment(self):
-        if self.internals.env.sandbox is None:
-            if not self.config.sandbox and lpms.getopt("--enable-sandbox"):
-                self.internals.env.__setattr__("sandbox", True)
-            elif self.config.sandbox and not lpms.getopt("--ignore-sandbox"):
-                self.internals.env.__setattr__("sandbox", False)
+        if not self.config.sandbox and lpms.getopt("--enable-sandbox"):
+            self.internals.env.sandbox = True
+        elif self.config.sandbox and lpms.getopt("--disable-sandbox"):
+            self.internals.env.sandbox = False
+        else:
+            self.internals.env.sandbox = self.config.sandbox
 
-        self.internals.env.build_dir = os.path.join(self.config.build_dir, 
+        self.internals.env.build_dir = os.path.join(self.config.build_dir,
             self.internals.env.category, self.internals.env.fullname, "source", self.internals.env.srcdir)
-        self.internals.env.install_dir = os.path.join(self.config.build_dir, 
+        self.internals.env.install_dir = os.path.join(self.config.build_dir,
             self.internals.env.category, self.internals.env.fullname, "install")
 
         try:
@@ -351,8 +352,6 @@ class Build(object):
                 setattr(self.internals.env, "srcdir", \
                         self.internals.env.name+"-"+self.internals.env.version.replace(self.internals.env.revision, ""))
 
-            # FIXME: None?
-            self.internals.env.sandbox = None
             self.prepare_environment()
 
             # start logging
