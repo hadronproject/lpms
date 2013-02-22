@@ -42,24 +42,30 @@ class RepositoryDB:
     def find_package(self, **kwargs):
         results = PackageItem()
         added_packages = []
-        object_items = (
-                'id', 
-                'repo', 
-                'category', 
-                'name', 
-                'version', 
-                'slot', 
-                'arch', 
-                'options',
-                'optional_depends_build', 
-                'optional_depends_runtime', 
-                'optional_depends_postmerge',
-                'optional_depends_conflict', 
-                'static_depends_build', 
-                'static_depends_runtime',
-                'static_depends_postmerge',
-                'static_depends_conflict'
-        )
+        object_items = {
+                'metadata_keys':
+                {
+                    0: 'id',
+                    1: 'repo',
+                    2: 'category',
+                    3: 'name',
+                    4: 'version',
+                    5: 'slot',
+                    6: 'arch',
+                },
+                'dependency_keys':
+                {
+                    7: 'options',
+                    8: 'optional_depends_build',
+                    9: 'optional_depends_runtime',
+                    10: 'optional_depends_postmerge',
+                    11: 'optional_depends_conflict',
+                    12: 'static_depends_build',
+                    13: 'static_depends_runtime',
+                    14: 'static_depends_postmerge',
+                    15: 'static_depends_conflict'
+                }
+        }
 
         # Set the keywords
         name = kwargs.get("package_name", None)
@@ -74,13 +80,13 @@ class RepositoryDB:
 
         # Get the package query
         package_query = self.database.find_package(
-                package_id=p_id, 
+                package_id=p_id,
                 package_repo=repo,
-                package_category=category, 
-                package_name=name, 
+                package_category=category,
+                package_name=name,
                 package_version=version,
                 package_slot=slot,
-                package_available_arches=available_arches
+                package_available_arches=available_arches,
         )
 
         # Create a LCollect object
@@ -91,13 +97,14 @@ class RepositoryDB:
             # [0] => repo, [1] => category [2] => name, [3] => version, [6] => arch
             if not (package[1], package[2], package[3], package[4], package[6]) in added_packages:
                 added_packages.append((package[1], package[2], package[3], package[4], package[6]))
-            else: continue
-            for item in object_items:
-                index = object_items.index(item)
-                if index >= 7:
-                    setattr(pkg_obj, item, pickle.loads(str(package[index])))
-                    continue
+            else:
+                continue
+            for index, item in object_items['metadata_keys'].iteritems():
                 setattr(pkg_obj, item, package[index])
+
+            for index, item in object_items['dependency_keys'].iteritems():
+                setattr(pkg_obj, item, pickle.loads(str(package[index])))
+
             pkg_obj.pk = pkg_obj.category+"/"+pkg_obj.name+"/"+pkg_obj.slot
             results.add(pkg_obj)
 
@@ -267,26 +274,32 @@ class InstallDB:
     def find_package(self, **kwargs):
         results = PackageItem()
         added_packages = []
-        object_items = (
-                'id',
-                'repo',
-                'category',
-                'name',
-                'version',
-                'slot',
-                'arch',
-                'parent',
-                'applied_options',
-                'options',
-                'optional_depends_build',
-                'optional_depends_runtime',
-                'optional_depends_postmerge',
-                'optional_depends_conflict',
-                'static_depends_build',
-                'static_depends_runtime',
-                'static_depends_postmerge',
-                'static_depends_conflict'
-        )
+        object_items = {
+                'metadata_keys':
+                {
+                    0: 'id',
+                    1: 'repo',
+                    2: 'category',
+                    3: 'name',
+                    4: 'version',
+                    5: 'slot',
+                    6: 'arch',
+                    7: 'parent',
+                },
+                'dependency_keys':
+                {
+                    8: 'applied_options',
+                    9: 'options',
+                    10: 'optional_depends_build',
+                    11: 'optional_depends_runtime',
+                    12: 'optional_depends_postmerge',
+                    13: 'optional_depends_conflict',
+                    14: 'static_depends_build',
+                    15: 'static_depends_runtime',
+                    16: 'static_depends_postmerge',
+                    17: 'static_depends_conflict'
+                }
+        }
 
         # Set the keywords
         name = kwargs.get("package_name", None)
@@ -300,14 +313,14 @@ class InstallDB:
 
         # Get the package query
         package_query = self.database.find_package(
-                package_id=p_id, 
+                package_id=p_id,
                 package_repo=repo,
-                package_category=category, 
-                package_name=name, 
+                package_category=category,
+                package_name=name,
                 package_version=version,
                 package_slot=slot
         )
-        
+
         # Create a LCollect object
         pkg_obj = LCollect()
 
@@ -316,13 +329,15 @@ class InstallDB:
             # [0] => repo, [1] => category [2] => name, [3] => version, [6] => arch
             if not (package[1], package[2], package[3], package[4], package[6]) in added_packages:
                 added_packages.append((package[1], package[2], package[3], package[4], package[6]))
-            else: continue
-            for item in object_items:
-                index = object_items.index(item)
-                if index >= 8:
-                    setattr(pkg_obj, item, pickle.loads(str(package[index])))
-                    continue
+            else:
+                continue
+
+            for index, item in object_items['metadata_keys'].iteritems():
                 setattr(pkg_obj, item, package[index])
+
+            for index, item in object_items['dependency_keys'].iteritems():
+                setattr(pkg_obj, item, pickle.loads(str(package[index])))
+
             pkg_obj.pk = pkg_obj.category+"/"+pkg_obj.name+"/"+pkg_obj.slot
             results.add(pkg_obj)
 
