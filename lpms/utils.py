@@ -793,7 +793,7 @@ def indent(elem, level = 0):
             elem.tail = i
 
 def reload_previous_repodb():
-    dirname = os.path.dirname(cst.repositorydb_path)
+    dirname = os.path.dirname(cst.repos)
     for _file in os.listdir(dirname):
         if _file.startswith("repositorydb") and _file.count(".") == 2:
             shelltools.copy(os.path.join(dirname, _file), cst.repositorydb_path)
