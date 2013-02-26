@@ -15,12 +15,17 @@
 # You should have received a copy of the GNU General Public License
 # along with lpms.  If not, see <http://www.gnu.org/licenses/>.
 
+# Get standard libraries
 import sys
+
+# Get lpms toolkit
+from lpms import api
 from lpms import out
 from lpms.sorter import topsort
 
-# Object oriented command line parser
+# Object oriented command line interpreter
 
+# Here, define some variables
 APP_NAME = "lpms"
 VERSION = "1.1_beta1"
 
@@ -85,14 +90,20 @@ class CommandLineParser(Actions):
                         description='Configures sandbox logging verbosity.'),
                 AvailableArgument(arg='--ignore-reserve-files', env_key='ignore_reserve_files', \
                         description='Uses fresh files instead of local configuration files'),
-                AvailableArgument(arg='--change-root', action='change_root', description='Changes installation target'),
-                AvailableArgument(arg='--resume-build', env_key='resume_build', description='Resumes the most recent build operation.'),
-                AvailableArgument(arg='--force-file-collision', env_key='force_file_collision', description='Disables collision protect.'),
-                AvailableArgument(arg='--not-strip', env_key='not_strip', description='No strip libraries and executable files.'),
-                AvailableArgument(arg='--not-merge', env_key='not_merge', description='Not merge the package after building.'),
+                AvailableArgument(arg='--change-root', action='change_root', \
+                        description='Changes installation target'),
+                AvailableArgument(arg='--resume-build', env_key='resume_build', \
+                        description='Resumes the most recent build operation.'),
+                AvailableArgument(arg='--force-file-collision', env_key='force_file_collision', \
+                        description='Disables collision protect.'),
+                AvailableArgument(arg='--not-strip', env_key='not_strip', \
+                        description='No strip libraries and executable files.'),
+                AvailableArgument(arg='--not-merge', env_key='not_merge', \
+                        description='Not merge the package after building.'),
                 AvailableArgument(arg='--unset-env-vars', env_key='unset_env_variables', \
                         description='Unsets environment variables that were defined in configuration files'),
-                AvailableArgument(arg='--opts', action='parse_options', description='Gets options of the package from command line.'),
+                AvailableArgument(arg='--opts', action='parse_options', \
+                        description='Gets options of the package from command line.'),
 
         ]
         self.other_arguments = [
@@ -230,14 +241,22 @@ class CommandLineParser(Actions):
                 if self.action_rules[item]:
                     if action in self.action_rules[item]:
                         action_plan.append((action, item))
+
+        # Run instruction modifiers to drive lpms properly
         if instruction_modifier:
             for action in instruction_modifier:
                 getattr(self, action)()
+        # Sort actions
         result = topsort(action_plan)
         result.reverse()
+
+        # If an action hasn't added to result list 
+        # while it's a real action, add it.
         for action in self.router:
             if not action in result and not action in instruction_modifier:
                 result.append(action)
+
+        # Run actions, respectively
         if result:
             for action in result:
                 # TODO: We should use signals to determine behavior of lpms 
@@ -245,6 +264,8 @@ class CommandLineParser(Actions):
                 getattr(self, action)()
 
         if self.packages:
-            pass
+            # Now, we can start building packages.
+            api.package_build(self.packages, self.instruction)
         else:
             out.error("nothing given.")
+            sys.exit(0)
