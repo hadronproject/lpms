@@ -325,6 +325,10 @@ def makesym(source, target, ignore_fix_target=False):
         target = fix_target_path(target)
     if len(target.split("/")) > 1:
         shelltools.makedirs(os.path.dirname(target))
+    # Remove the target if it is already a symlink
+    # TODO: Should we remove the file if it is a regular file or directory?
+    if os.path.islink(target):
+        shelltools.remove_file(target)
     shelltools.make_symlink(source, target)
 
 def rename(source, target, ignore_fix_target=False):
