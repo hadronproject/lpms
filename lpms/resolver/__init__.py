@@ -25,12 +25,12 @@ import lpms
 from lpms import out
 from lpms import conf
 from lpms import utils
+from lpms import sorter
 from lpms import constants as cst
 
 from lpms.db import api
 from lpms.types import LCollect
 from lpms.types import PackageItem
-from lpms.resolver import topological_sorting
 
 # Get lpms' exceptions
 from lpms.exceptions import ConflictError
