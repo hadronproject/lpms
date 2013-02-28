@@ -67,7 +67,7 @@ class DependencyResolver(object):
         self.package_query = []
         self.locked_packages = []
         self.global_options = set()
-        self.forbidden_option = set()
+        self.forbidden_options = set()
         self.dependency_keywords = (
                 'static_depends_build', 
                 'static_depends_runtime', 
