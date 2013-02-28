@@ -68,7 +68,7 @@ class ListFiles:
             content = self.filesdb.get_paths_by_package(package.name, \
                     category=package.category, version=package.version)
             for item in content:
-                item = item[0]
+                item = item[0].encode('UTF-8')
                 if os.path.islink(item):
                     out.write("%s -> %s\n" % (out.color(item, "green"), os.readlink(item)))
                     if os.path.isdir(os.path.realpath(item)):

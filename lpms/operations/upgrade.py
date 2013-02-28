@@ -86,7 +86,7 @@ class UpgradeSystem(object):
                 # add the item to not-founds list
                 self.notfound_pkg.append((self.category, self.name))
                 continue
-            
+
             # collect available package version by slot value
             available_versions = {}
             for item in repository_items:
@@ -99,9 +99,10 @@ class UpgradeSystem(object):
             for item in repository_items:
                 if item.slot == self.slot:
                     best_version = utils.best_version(available_versions[item.slot])
-                    result = utils.vercmp(best_version, self.version) 
+                    result = utils.vercmp(best_version, self.version)
                     if result != 0:
                         self.packages.append(os.path.join(self.category, self.name)+":"+self.slot)
+                        break
 
         if self.notfound_pkg:
             out.write("%s: the following packages were installed but they could not be found in the database:\n\n" 
@@ -109,3 +110,4 @@ class UpgradeSystem(object):
             for no_category, no_name, in self.notfound_pkg:
                 out.notify("%s/%s" % (no_category, no_name))
             out.write("\n")
+
