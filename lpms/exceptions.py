@@ -81,3 +81,6 @@ class ConflictError(Exception):
 
 class ConditionConflict(Exception):
     pass
+
+class IntegrityError(Exception):
+    pass
