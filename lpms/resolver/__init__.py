@@ -221,7 +221,10 @@ class DependencyResolver(object):
                 self.repository_cache[(category, name)] = results
             slot = self.get_convenient_slot(results, slot)
             if not results:
-                if instdb: return
+                if instdb:
+                    return
+                current_package = current_package.repo+"/"+current_package.category+\
+                        "/"+current_package.name+"-"+current_package.version+":"+current_package.slot
                 out.error("unmet dependency: %s depends on %s" % (out.color(current_package, \
                         "red"), out.color(package, "red")))
                 raise DependencyError
