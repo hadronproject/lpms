@@ -721,12 +721,14 @@ class DependencyResolver(object):
 
         # TODO: I think I must use most professional way for ignore-depends feature.
         if lpms.getopt("--ignore-depends"):
-            return self.packages, \
-                    self.package_dependencies, \
-                    self.package_options, \
-                    self.inline_option_targets, \
-                    self.conditional_versions, \
-                    self.conflicts
+            result = LCollect()
+            result.packages = self.packages
+            result.dependencies = self.package_dependencies
+            result.options = self.package_options
+            result.inline_option_targets = self.inline_option_targets
+            result.conditional_versions = self.conditional_versions
+            result.conflicts = self.conflicts
+            return result
 
         # Workaround for postmerge dependencies
         for (id_dependency, id_package) in self.postmerge_dependencies:
@@ -851,9 +853,12 @@ class DependencyResolver(object):
             # FIXME: This is not a Pythonic way
             final_plan = single_packages+final_plan
 
-        return final_plan, \
-                self.package_dependencies, \
-                self.package_options, \
-                self.inline_option_targets, \
-                self.conditional_versions, \
-                self.conflicts
+        # Create LCollect object to manage package dependency data
+        operation_plan = LCollect()
+        operation_plan.packages = final_plan
+        operation_plan.dependencies = self.package_dependencies
+        operation_plan.options = self.package_options
+        operation_plan.inline_option_targets = self.inline_option_targets
+        operation_plan.conditional_versions = self.conditional_versions
+        operation_plan.conflicts = self.conflicts
+        return operation_plan
