@@ -31,6 +31,7 @@ from lpms import internals
 from lpms import constants as cst
 
 from lpms.db import api
+from lpms.exceptions import IntegrityError
 
 class Update(internals.InternalFuncs):
     def __init__(self):
@@ -55,15 +56,29 @@ class Update(internals.InternalFuncs):
             if lpms.getopt("--verbose"):
                 out.notify("%s" % out.color(category, "brightwhite"))
             for my_pkg in packages:
-                self.update_package(repo_path, category, my_pkg)
+                try:
+                    self.update_package(repo_path, category, my_pkg)
+                except IntegrityError:
+                    continue
+
+    def check_metadata_integrity(self, metadata):
+        required_fields = ('summary', 'license', 'arch')
+        for field in required_fields:
+            if not field in metadata:
+                item = self.env.repo+"/"+self.env.category+"/"+self.env.name+"-"+self.env.version
+                out.error("An integrity error has been found in %s: %s field must be defined in metadata." \
+                        % (item, out.color(field, "red")))
+                raise IntegrityError
 
     def update_package(self, repo_path, category, my_pkg, my_version = None, update = False):
         dataset = LCollect()
-        repo_name = os.path.basename(repo_path)
-        
-        dataset.repo = repo_name
+        # Register some variables to use after
+        self.env.repo = os.path.basename(repo_path)
+        self.env.category = category
+
+        dataset.repo = self.env.repo
         dataset.category = category
-        
+
         os.chdir(os.path.join(repo_path, category, my_pkg))
         for pkg in glob.glob("*"+cst.spec_suffix):
             script_path = os.path.join(repo_path, category, my_pkg, pkg)
@@ -98,12 +113,14 @@ class Update(internals.InternalFuncs):
 
             metadata = utils.metadata_parser(self.env.metadata)
             metadata.update({"name": self.env.name, "version": self.env.version})
+            # This method checks metadata integrity. 
+            # It warn the user and pass the spec if a spec is broken
+            self.check_metadata_integrity(metadata)
+            # These values are optional
             if not "options" in metadata:
                 metadata.update({"options": None})
             if not "slot" in metadata:
                 metadata.update({"slot": "0"})
-            if not "arch" in metadata:
-                metadata.update({"arch": None})
             if not "src_url" in metadata:
                 metadata.update({"src_url": None})
 
@@ -261,7 +278,10 @@ def main(params):
 
             operation.repodb.database.begin_transaction()
             for pkg in os.listdir(os.path.join(repo_path, category)):
-                operation.update_package(repo_path, category, pkg, update=True)
+                try:
+                    operation.update_package(repo_path, category, pkg, update=True)
+                except IntegrityError:
+                    continue
             operation.repodb.database.commit()
 
         elif len(repo_name.split("/")) == 3:
