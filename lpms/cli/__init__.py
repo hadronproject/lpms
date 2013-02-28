@@ -30,7 +30,13 @@ APP_NAME = "lpms"
 VERSION = "1.1_beta1"
 
 class Instruction(object):
-    pass
+    def __getattr__(self, key):
+        if key in self.__dict__:
+            return self.__dict__[key]
+        return False
+
+    def get_raw_dict(self):
+        return self.__dict__
 
 class AvailableArgument(object):
     def __init__(self, **kwargs):

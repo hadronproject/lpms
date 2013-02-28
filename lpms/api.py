@@ -304,16 +304,14 @@ def resolve_dependencies(packages, instructions):
     '''
     out.normal("resolving dependencies")
     command_line_options = instructions.command_line_options \
-            if hasattr(instructions, "command_line_options") else []
+            if instructions.command_line_options else []
     custom_options = instructions.custom_options \
-            if hasattr(instructions, "custom_options") else {}
-    use_new_options = instructions.use_new_options \
-            if hasattr(instructions, "command_line_options") else False
+            if instructions.custom_options else {}
     dependency_resolver = resolver.DependencyResolver(
             packages,
             command_line_options,
             custom_options,
-            use_new_options
+            instructions.use_new_options
     )
     # To trigger resolver, call create_operation_plan
     return dependency_resolver.create_operation_plan()
@@ -338,7 +336,7 @@ def package_build(packages, instructions):
         plan = resolve_dependencies([GetPackage(package).select() \
                 for package in packages], instructions)
         # Run Build class to perform building task
-        build.Build().main(plan, instructions)
+        build.Build().run(plan, instructions)
     except PackageNotFound as package:
         out.error("%s count not found in the repository." % out.color(str(package), "red"))
     except ConflictError, DependencyError:

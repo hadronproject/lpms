@@ -42,7 +42,6 @@ class Build(object):
     Finally, it runs interpreter for building.
     '''
     def __init__(self):
-        super(Build, self).__init__()
         self.repodb = api.RepositoryDB()
         self.instdb = api.InstallDB()
         self.download_plan = []
@@ -59,8 +58,10 @@ class Build(object):
         self.revision = None
 
     def set_local_environment_variables(self):
-        '''Sets environment variables such as CFLAGS, CXXFLAGS and LDFLAGS if the user
-        defines a local file which is included them'''
+        '''
+        Sets environment variables such as CFLAGS, CXXFLAGS and LDFLAGS if the user
+        defines a local file which is included them
+        '''
         switches = ["ADD", "REMOVE", "GLOBAL"]
         for item in cst.local_env_variable_files:
             if not os.access(item, os.R_OK):
@@ -136,28 +137,28 @@ class Build(object):
                             else:
                                 out.warn("%s not defined in your environment" % variable_type)
 
-    def is_downloaded(self, url):
-        return os.path.isfile(
-                os.path.join(self.config.src_cache,
-                os.path.basename(url)))
-
-    def prepare_download_plan(self, applied):
+    def prepare_download_plan(self, applied_options):
+        '''Prepares download plan. It gets applied options to select optional urls.'''
         for url in self.urls:
+            local_file = os.path.join(self.config.src_cache, \
+                    os.path.basename(url))
             if not isinstance(url, tuple):
                 self.extract_plan.append(url)
-                if self.is_downloaded(url):
+                if os.path.isfile(local_file):
                     continue
                 self.download_plan.append(url)
             else:
                 option, url = url
-                if option in applied:
+                if option in applied_options:
                     self.extract_plan.append(url)
-                    if self.is_downloaded(url):
+                    if os.path.isfile(local_file):
                         continue
                     self.download_plan.append(url)
+        # Set extract plan to lpms' internal build environment
         setattr(self.internals.env, "extract_plan", self.extract_plan)
 
     def prepare_environment(self):
+        '''Build required directories and set some variables.'''
         if not self.config.sandbox and lpms.getopt("--enable-sandbox"):
             self.internals.env.sandbox = True
         elif self.config.sandbox and lpms.getopt("--disable-sandbox"):
@@ -165,23 +166,28 @@ class Build(object):
         else:
             self.internals.env.sandbox = self.config.sandbox
 
-        self.internals.env.build_dir = os.path.join(self.config.build_dir,
-            self.internals.env.category, self.internals.env.fullname, "source", self.internals.env.srcdir)
-        self.internals.env.install_dir = os.path.join(self.config.build_dir,
-            self.internals.env.category, self.internals.env.fullname, "install")
-
-        try:
-            if not lpms.getopt("--resume-build") and len(os.listdir(self.internals.env.install_dir)) != 0:
-                shelltools.remove_dir(self.internals.env.install_dir)
-        except OSError:
-            pass
-
+        # Set build_dir and install_dir variables to lpms' internal build environment.
+        self.internals.env.build_dir = os.path.join(
+                self.config.build_dir,
+                self.internals.env.category,
+                self.internals.env.fullname,
+                "source",
+                self.internals.env.srcdir)
+        self.internals.env.install_dir = os.path.join(
+                self.config.build_dir,
+                self.internals.env.category,
+                self.internals.env.fullname,
+                "install")
+        # Create build_dir and install_dir
         for target in ('build_dir', 'install_dir'):
             if not os.path.isdir(getattr(self.internals.env, target)):
                 os.makedirs(getattr(self.internals.env, target))
+        if not lpms.getopt("--resume-build") and len(os.listdir(self.internals.env.install_dir)) != 0:
+            shelltools.remove_dir(self.internals.env.install_dir)
 
-    def parse_url_tag(self):
-        def set_shortening(data, opt=False):
+    def parse_src_url_tag(self):
+        '''Parses src_url tag and create a url list for downloading'''
+        def parse(data, option=False):
             for short in ('$url_prefix', '$src_url', '$slot', '$my_slot', '$name', '$version', \
                     '$fullname', '$my_fullname', '$my_name', '$my_version'):
                 try:
@@ -207,39 +213,39 @@ class Build(object):
                             setattr(self.internals.env, "raw_"+short[1:], result)
                         data = data.replace(short, result)
                 except KeyError:
-                    pass
-            if opt:
-                self.urls.append((opt, data))
+                    continue
+            if option:
+                self.urls.append((option, data))
             else:
                 self.urls.append(data)
 
         for url in self.internals.env.src_url.split(" "):
             result = url.split("(")
             if len(result) == 1:
-                set_shortening(url)
+                parse(url)
             elif len(result) == 2:
-                option, url = result
+                myoption, url = result
                 url = url.replace(")", "")
-                set_shortening(url, opt=option)
+                parse(url, opt=myoption)
 
     def compile_script(self):
+        '''Compiles the spec file and imports its content to lpms' build environment.'''
         if not os.path.isfile(self.spec_file):
-            out.error("%s not found!" % self.spec_file)
+            out.error("%s could not be found!" % self.spec_file)
+            raise BuildError
+        elif not os.access(self.spec_file, os.R_OK):
+            out.error("%s is not readable!" % self.spec_file)
             raise BuildError
         if not self.internals.import_script(self.spec_file):
             out.error("an error occured while processing the spec: %s" \
                     % out.color(self.spec_file, "red"))
+            # TODO: Here, show package maintainer and bugs_to 
             out.error("please report the above error messages to the package maintainer.")
             raise BuildError
 
-    def main(self, data, instruct):
-        packages, \
-                dependencies, \
-                options, \
-                inline_option_targets, \
-                conditional_versions, \
-                conflicts = data
-        if instruct["pretend"]:
+    def run(self, data_bundle, instructions):
+        '''God of the building'''
+        if instructions.pretend:
             out.write("\n")
             out.normal("these packages will be merged, respectively:\n")
             self.pretty_print(packages, conflicts, options)
@@ -247,20 +253,19 @@ class Build(object):
                     % out.color(str(len(packages)), "green"))
             lpms.terminate()
 
-        if instruct["ask"]:
+        if instructions.ask:
             out.write("\n")
             out.normal("these packages will be merged, respectively:\n")
-            self.pretty_print(packages, conflicts, options)
+            self.pretty_print(data_bundle.packages, data_bundle.conflicts, data_bundle.options)
             utils.xterm_title("lpms: confirmation request")
             out.write("\ntotal %s package(s) will be merged.\n\n" \
-                    % out.color(str(len(packages)), "green"))
+                    % out.color(str(len(data_bundle.packages)), "green"))
 
             if not utils.check_root(msg=False):
                 utils.xterm_title_reset()
                 lpms.terminate("you must be root to build and merge a package.")
 
             if not utils.confirm("do you want to continue?"):
-                out.write("quitting...\n")
                 utils.xterm_title_reset()
                 lpms.terminate()
 
@@ -268,28 +273,30 @@ class Build(object):
         if lpms.getopt("--clean-tmp"):
             clean_tmp_exceptions = ("resume")
             for item in shelltools.listdir(cst.extract_dir):
-                if item in clean_tmp_exceptions: continue
+                if item in clean_tmp_exceptions:
+                    continue
                 path = os.path.join(cst.extract_dir, item)
-                if path in clean_tmp_exceptions: continue
+                if path in clean_tmp_exceptions:
+                    continue
                 if os.path.isdir(path):
                     shelltools.remove_dir(path)
                 else:
                     shelltools.remove_file(path)
 
-        for index, package in enumerate(packages, 1):
-            if package.id in inline_option_targets:
-                self.internals.env.inline_option_targets = inline_option_targets[package.id]
-            if package.id in conditional_versions:
-                self.internals.env.conditional_versions = conditional_versions[package.id]
+        for index, package in enumerate(data_bundle.packages, 1):
+            if package.id in data_bundle.inline_option_targets:
+                self.internals.env.inline_option_targets = data_bundle.inline_option_targets[package.id]
+            if package.id in data_bundle.conditional_versions:
+                self.internals.env.conditional_versions = data_bundle.conditional_versions[package.id]
             self.internals.env.package = package
-            self.internals.env.dependencies = dependencies.get(package.id, None)
+            self.internals.env.dependencies = data_bundle.dependencies.get(package.id, None)
             installed_package = self.instdb.find_package(package_name=package.name, \
                     package_category=package.category, package_slot=package.slot)
             self.internals.env.previous_version = installed_package.get(0).version \
                     if installed_package else None
-            if package.id in conflicts:
-                conflict_instruct = instruct
-                conflict_instruct["count"] = len(conflicts[package.id])
+            if package.id in data_bundle.conflicts:
+                conflict_instruct = instructions
+                conflict_instruct.count = len(conflicts[package.id])
                 for index, conflict in enumerate(conflicts[package.id], 1):
                     conflict_instruct['index'] = index
                     conflict_category, conflict_name, conflict_slot = conflict.split("/")
@@ -302,7 +309,7 @@ class Build(object):
                                 (conflict_package.repo, conflict_package.category, \
                                 conflict_package.name, conflict_package.version))
             # FIXME: This is no good
-            self.internals.env.__dict__.update(instruct)
+            self.internals.env.__dict__.update(instructions.get_raw_dict())
             if not os.path.ismount("/proc"):
                 out.warn("/proc is not mounted. You have been warned.")
             if not os.path.ismount("/dev"):
@@ -314,7 +321,7 @@ class Build(object):
                     'version', 'slot', 'options'):
                 setattr(self.internals.env, keyword, getattr(package, keyword))
             self.internals.env.fullname = self.internals.env.name+"-"+self.internals.env.version
-            setattr(self.internals.env, "applied_options", options.get(package.id, None))
+            setattr(self.internals.env, "applied_options", data_bundle.options.get(package.id, None))
             # set local environment variables
             if not lpms.getopt("--unset-env-variables"):
                self.set_local_environment_variables()
@@ -342,7 +349,7 @@ class Build(object):
                     self.internals.env.src_url = None
 
             setattr(self.internals.env, "index", index)
-            setattr(self.internals.env, "count", len(packages))
+            setattr(self.internals.env, "count", len(data_bundle.packages))
             setattr(self.internals.env, "filesdir", os.path.join(cst.repos, self.internals.env.repo, \
                 self.internals.env.category, self.internals.env.name, cst.files_dir))
             setattr(self.internals.env, "src_cache", cst.src_cache)
@@ -356,10 +363,11 @@ class Build(object):
 
             # start logging
             # we want to save starting time of the build operation
-            lpms.logger.info("starting build (%s/%s) %s/%s/%s-%s" % (index, len(packages), self.internals.env.repo, 
-                self.internals.env.category, self.internals.env.name, self.internals.env.version))
+            lpms.logger.info("starting build (%s/%s) %s/%s/%s-%s" % (index, len(data_bundle.packages), \
+                    self.internals.env.repo, self.internals.env.category, \
+                    self.internals.env.name, self.internals.env.version))
 
-            out.normal("(%s/%s) building %s/%s from %s" % (index, len(packages),
+            out.normal("(%s/%s) building %s/%s from %s" % (index, len(data_bundle.packages),
                 out.color(self.internals.env.category, "green"),
                 out.color(self.internals.env.name+"-"+self.internals.env.version, "green"), self.internals.env.repo));
 
@@ -375,7 +383,7 @@ class Build(object):
             # fetch packages which are in download_plan list
             if self.internals.env.src_url is not None:
                 # preprocess url tags such as $name, $version and etc
-                self.parse_url_tag()
+                self.parse_src_url_tag()
                 # if the package is revisioned, override build_dir and install_dir. remove revision number from these variables.
                 if self.revisioned:
                     for variable in ("build_dir", "install_dir"):
