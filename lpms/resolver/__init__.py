@@ -838,8 +838,8 @@ class DependencyResolver(object):
                     if self.package_heap[item_id].pk == single_package.pk:
                         single_packages.remove(single_package)
                         break
-            # FIXME: This is not a Pythonic way
-            final_plan = single_packages+final_plan
+            for single_package in single_packages:
+                final_plan.insert_into(0, single_package)
 
         return final_plan, \
                 self.package_dependencies, \
