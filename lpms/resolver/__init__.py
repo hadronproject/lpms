@@ -421,8 +421,12 @@ class DependencyResolver(object):
                     previous_child = raw_option.replace("\t", "")
                     if previous_child in options:
                         added.append(raw_option)
-                        for package in packages:
-                            result.append(self.get_convenient_package(package, instdb))
+                        if "||" in packages:
+                            for package in packages[:packages.index("||")]:
+                                result.append(self.get_convenient_package(package, instdb))
+                        else:
+                            for package in packages:
+                                result.append(self.get_convenient_package(package, instdb))
                     else:
                         if "||" in packages:
                             for package in packages[packages.index("||")+1:]:
