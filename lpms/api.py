@@ -336,7 +336,7 @@ def package_build(packages, instructions):
         plan = resolve_dependencies([GetPackage(package).select() \
                 for package in packages], instructions)
         # Run Build class to perform building task
-        build.Build().run(plan, instructions)
+        build.Build(plan, instructions).perform_operation()
     except PackageNotFound as package:
         out.error("%s count not found in the repository." % out.color(str(package), "red"))
     except ConflictError, DependencyError:
