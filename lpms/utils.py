@@ -746,7 +746,7 @@ def metadata_parser(data, keys=None):
         else:
             last_item = list(metadata)[-1]
             metadata[last_item] = metadata[last_item]+" "+"@".join(line).strip()
-    
+
     if not keys and not "options" in metadata:
         metadata["options"] = None
 
@@ -760,11 +760,13 @@ def depends_parser(depends):
             opt = atom.split('@')[0].strip()
             deps[opt] = []; data = atom.split('@')[1]
             if data != '\n' and data != '\t' and data != '':
-                deps[opt].extend([item.strip() for item in data.strip().split(' ')])
+                deps[opt].extend([item.strip() for item in \
+                        data.strip().split(' ') if item.strip()])
         else:
             data = atom.split('@')[0]
             if data != '\n' and data != '\t' and data != '':
-                deps[opt].extend([item.strip() for item in data.strip().split(' ')])
+                deps[opt].extend([item.strip() for item in \
+                        data.strip().split(' ') if item.strip()])
     return deps
 
 def import_script(script_path):
