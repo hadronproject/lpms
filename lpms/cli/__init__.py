@@ -33,7 +33,6 @@ class Instruction(object):
     def __getattr__(self, key):
         if key in self.__dict__:
             return self.__dict__[key]
-        return False
 
     def get_raw_dict(self):
         return self.__dict__

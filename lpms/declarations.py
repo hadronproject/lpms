@@ -99,6 +99,7 @@ class ConstantValues:
         self.val.sandbox_paths = (self.val.repos, self.val.extract_dir, self.val.src_cache)
         self.val.sandbox_exception_stages = ['post_install', 'post_remove', 'pre_remove', 'pre_merge']
         self.val.slot_indicator = ":"
+        self.val.ccache_path = '/usr/lib/ccache/bin'
 
         # lpms.conf is unhealty in this case.
         with open(self.val.config_dir+"/"+self.val.lpms_conf_file) as data:

@@ -41,12 +41,12 @@ from lpms.operations import remove
 from lpms import constants as cst
 
 class Interpreter(internals.InternalFuncs):
-    def __init__(self, script, env):
+    def __init__(self, script, environment):
         super(Interpreter, self).__init__()
-        self.env = env
-        self.env.__setattr__("get", self.get)
-        if self.env.real_root is None:
-            self.env.real_root = cst.root
+        self.environment = environment
+        self.environment.get = self.get
+        if self.environment.real_root is None:
+            self.environment.real_root = cst.root
         self.script = script
         self.config = conf.LPMSConfig()
         self.get_build_libraries()
@@ -54,25 +54,25 @@ class Interpreter(internals.InternalFuncs):
 
     def function_collisions(self):
         '''Checks the build environment to deal with function collisions if primary_library is not defined'''
-        if self.env.primary_library: return
+        if self.environment.primary_library: return
         preserved_names = [
-                'extract', 
-                'prepare', 
-                'configure', 
-                'build', 
+                'extract',
+                'prepare',
+                'configure',
+                'build',
                 'install',
-                'collision_check', 
-                'pre_merge', 
+                'collision_check',
+                'pre_merge',
                 'post_install'
                 'remove'
         ]
 
         race_list = {}
-        for library in self.env.libraries:
+        for library in self.environment.libraries:
             for preserved_name in preserved_names:
-                if preserved_name in self.env.__dict__:
+                if preserved_name in self.environment.__dict__:
                     continue
-                if library+"_"+preserved_name in self.env.__dict__:
+                if library+"_"+preserved_name in self.environment.__dict__:
                     if preserved_name in race_list:
                         if not library in race_list[preserved_name]:
                             race_list[preserved_name].append(library)
@@ -90,26 +90,26 @@ class Interpreter(internals.InternalFuncs):
     def get_build_libraries(self):
         result = set()
         lib_index = None
-        current_length = first_length = len(self.env.libraries)
+        current_length = first_length = len(self.environment.libraries)
 
-        for lib in self.env.libraries:
+        for lib in self.environment.libraries:
             if len(lib.split("/")) == 2:
                 lib_source, lib_name = lib.split("/")
                 libfile = os.path.join(cst.repos, lib_source, "libraries", lib_name+".py")
                 result.add(lib_name)
             else: 
-                if len(self.env.libraries) > first_length:
-                    parent = self.env.libraries[lib_index]
+                if len(self.environment.libraries) > first_length:
+                    parent = self.environment.libraries[lib_index]
                     if len(parent.split("/")) == 2:
                         parents_repo = parent.split("/")[0]
                         result.add(lib)
                         libfile = os.path.join(cst.repos, parents_repo, "libraries", lib+".py")
                     else:
                         result.add(lib)
-                        libfile = os.path.join(cst.repos, self.env.repo, "libraries", lib+".py")
+                        libfile = os.path.join(cst.repos, self.environment.repo, "libraries", lib+".py")
                 else:
                     result.add(lib)
-                    libfile = os.path.join(cst.repos, self.env.repo, "libraries", lib+".py")
+                    libfile = os.path.join(cst.repos, self.environment.repo, "libraries", lib+".py")
 
             if not os.path.isfile(libfile):
                 out.error("build library not found: %s" % out.color(libfile, "red"))
@@ -122,40 +122,40 @@ class Interpreter(internals.InternalFuncs):
                 out.error("please report the above error messages to the library maintainer.")
                 lpms.terminate()
 
-            if len(self.env.libraries) > current_length:
-                lib_index = self.env.libraries.index(lib)
-                current_length = len(self.env.libraries)
+            if len(self.environment.libraries) > current_length:
+                lib_index = self.environment.libraries.index(lib)
+                current_length = len(self.environment.libraries)
 
-        self.env.libraries = list(result)
+        self.environment.libraries = list(result)
     def run_func(self, func_name):
-        getattr(self.env, func_name)()
+        getattr(self.environment, func_name)()
 
     def run_extract(self):
         # if the environment has no extract_plan variable, doesn't run extract function
-        if not hasattr(self.env, "extract_nevertheless") or not self.env.extract_nevertheless:
-            if not hasattr(self.env, "extract_plan"): return
-        target = os.path.dirname(self.env.build_dir)
+        if not hasattr(self.environment, "extract_nevertheless") or not self.env.extract_nevertheless:
+            if not hasattr(self.environment, "extract_plan"): return
+        target = os.path.dirname(self.environment.build_dir)
         extracted_file = os.path.join(os.path.dirname(target), ".extracted")
         if os.path.isfile(extracted_file):
             if lpms.getopt("--force-unpack"):
                 shelltools.remove_file(extracted_file)
             else:
-                out.warn("%s/%s-%s seems already unpacked." % (self.env.category, self.env.name, self.env.version))
+                out.warn("%s/%s-%s seems already unpacked." % (self.environment.category, self.environment.name, self.environment.version))
                 return True
 
-        utils.xterm_title("lpms: extracting %s/%s/%s-%s" % (self.env.repo, self.env.category, \
-                self.env.name, self.env.version))
-        out.notify("extracting archive(s) to %s" % os.path.dirname(self.env.build_dir))
+        utils.xterm_title("lpms: extracting %s/%s/%s-%s" % (self.environment.repo, self.environment.category, \
+                self.environment.name, self.environment.version))
+        out.notify("extracting archive(s) to %s" % os.path.dirname(self.environment.build_dir))
         # now, extract the archives
         self.run_stage("extract")
         out.notify("source extracted")
         shelltools.touch(extracted_file)
-        if self.env.stage == "extract":
+        if self.environment.stage == "extract":
             lpms.terminate()
 
     def run_prepare(self):
         out.normal("preparing source...")
-        prepared_file = os.path.join(self.env.build_dir.split("source")[0],
+        prepared_file = os.path.join(self.environment.build_dir.split("source")[0],
                 ".prepared")
         if os.path.isfile(prepared_file): 
             out.warn_notify("source already prepared.")
@@ -164,108 +164,108 @@ class Interpreter(internals.InternalFuncs):
         out.notify("source prepared.")
         if not os.path.isfile(prepared_file):
             touch(prepared_file)
-        if self.env.stage == "prepare":
+        if self.environment.stage == "prepare":
             lpms.terminate()
 
     def run_configure(self):
-        utils.xterm_title("(%s/%s) lpms: configuring %s/%s-%s from %s" % (self.env.index, self.env.count, 
-            self.env.category, self.env.name, self.env.version, self.env.repo))
+        utils.xterm_title("(%s/%s) lpms: configuring %s/%s-%s from %s" % (self.environment.index, self.environment.count, 
+            self.environment.category, self.environment.name, self.environment.version, self.environment.repo))
 
-        out.normal("configuring source in %s" % self.env.build_dir)
+        out.normal("configuring source in %s" % self.environment.build_dir)
         
         configured_file = os.path.join(os.path.dirname(os.path.dirname(
-            self.env.build_dir)), ".configured")
+            self.environment.build_dir)), ".configured")
         
         if os.path.isfile(configured_file) and lpms.getopt("--resume-build"):
             out.warn_notify("source already configured.")
             return True
 
-        lpms.logger.info("configuring in %s" % self.env.build_dir)
+        lpms.logger.info("configuring in %s" % self.environment.build_dir)
         
         self.run_stage("configure")
         out.notify("source configured")
 
         if not os.path.isfile(configured_file):
             touch(configured_file)
-        if self.env.stage == "configure":
+        if self.environment.stage == "configure":
             lpms.terminate()
 
     def run_build(self):
-        utils.xterm_title("(%s/%s) lpms: building %s/%s-%s from %s" % (self.env.index, self.env.count, 
-            self.env.category, self.env.name, self.env.version, self.env.repo))
-        out.normal("compiling source in %s" % self.env.build_dir)
+        utils.xterm_title("(%s/%s) lpms: building %s/%s-%s from %s" % (self.environment.index, self.environment.count, 
+            self.environment.category, self.environment.name, self.environment.version, self.environment.repo))
+        out.normal("compiling source in %s" % self.environment.build_dir)
         built_file = os.path.join(os.path.dirname(os.path.dirname(
-            self.env.build_dir)), ".built")
+            self.environment.build_dir)), ".built")
         if os.path.isfile(built_file) and lpms.getopt("--resume-build"):
             out.warn_notify("source already built.")
             return True
         
-        lpms.logger.info("building in %s" % self.env.build_dir)
+        lpms.logger.info("building in %s" % self.environment.build_dir)
 
         self.run_stage("build")
         out.notify("source compiled")
         if not os.path.isfile(built_file):
             touch(built_file)
-        if self.env.stage == "build":
+        if self.environment.stage == "build":
             lpms.terminate()
     
     def run_install(self):
-        utils.xterm_title("(%s/%s) lpms: installing %s/%s-%s from %s" % (self.env.index, self.env.count, 
-            self.env.category, self.env.name, self.env.version, self.env.repo))
-        out.normal("installing %s to %s" % (self.env.fullname, self.env.install_dir))
+        utils.xterm_title("(%s/%s) lpms: installing %s/%s-%s from %s" % (self.environment.index, self.environment.count, 
+            self.environment.category, self.environment.name, self.environment.version, self.environment.repo))
+        out.normal("installing %s to %s" % (self.environment.fullname, self.env.install_dir))
         installed_file = os.path.join(os.path.dirname(os.path.dirname(
-            self.env.build_dir)), ".installed")
+            self.environment.build_dir)), ".installed")
 
         if os.path.isfile(installed_file) and lpms.getopt("--resume-build"):
             out.warn_notify("source already installed.")
             return True
         
-        lpms.logger.info("installing to %s" % self.env.build_dir)
+        lpms.logger.info("installing to %s" % self.environment.build_dir)
 
         self.run_stage("install")
-        if hasattr(self.env, 'docs'):
-            for doc in self.env.docs:
+        if hasattr(self.environment, 'docs'):
+            for doc in self.environment.docs:
                 if isinstance(doc, list) or isinstance(doc, tuple):
                     source_file, target_file = doc
-                    namestr = self.env.fullname if self.env.slot != "0" else self.env.name
-                    target = self.env.fix_target_path("/usr/share/doc/%s/%s" % (namestr, target_file))
-                    source = os.path.join(self.env.build_dir, source_file)
-                #    self.env.index, insfile(source, target)
+                    namestr = self.environment.fullname if self.env.slot != "0" else self.environment.name
+                    target = self.environment.fix_target_path("/usr/share/doc/%s/%s" % (namestr, target_file))
+                    source = os.path.join(self.environment.build_dir, source_file)
+                #    self.environment.index, insfile(source, target)
                 #else:
-                #    self.env.index, insdoc(doc)
-        out.notify("%s/%s installed." % (self.env.category, self.env.fullname))
+                #    self.environment.index, insdoc(doc)
+        out.notify("%s/%s installed." % (self.environment.category, self.env.fullname))
         if not os.path.isfile(installed_file):
             touch(installed_file)
 
-        if self.env.stage == "install":
+        if self.environment.stage == "install":
             lpms.terminate()
 
     def run_merge(self):
-        utils.xterm_title("(%s/%s) lpms: merging %s/%s-%s from %s" % (self.env.index, self.env.count, 
-            self.env.category, self.env.name, self.env.version, self.env.repo))
+        utils.xterm_title("(%s/%s) lpms: merging %s/%s-%s from %s" % (self.environment.index, self.environment.count, 
+            self.environment.category, self.environment.name, self.environment.version, self.environment.repo))
         if lpms.getopt("--no-merge"):
             out.write("no merging...\n")
             lpms.terminate()
 
-        merge.main(self.env)
+        merge.main(self.environment)
 
     def run_remove(self):
-        utils.xterm_title("(%s/%s) lpms: removing %s/%s-%s from %s" % (self.env.index, self.env.count, 
-            self.env.category, self.env.name, self.env.version, self.env.repo))
+        utils.xterm_title("(%s/%s) lpms: removing %s/%s-%s from %s" % (self.environment.index, self.environment.count, 
+            self.environment.category, self.environment.name, self.environment.version, self.environment.repo))
 
-        remove.main((self.env.repo, self.env.category, self.env.name, 
-            self.env.version), self.env.real_root)
+        remove.main((self.environment.repo, self.environment.category, self.environment.name, 
+            self.environment.version), self.environment.real_root)
 
     def run_post_remove(self):
         # sandbox must be disabled
-        self.env.sandbox = False
+        self.environment.sandbox = False
         self.run_stage("post_remove")
 
     def run_collision_check(self):
         out.normal("checking file collisions...")
         lpms.logger.info("checking file collisions")
-        collision_object = file_collisions.CollisionProtect(self.env.category, self.env.name, \
-                self.env.slot, real_root=self.env.real_root, source_dir=self.env.install_dir)
+        collision_object = file_collisions.CollisionProtect(self.environment.category, self.environment.name, \
+                self.environment.slot, real_root=self.env.real_root, source_dir=self.env.install_dir)
         collision_object.handle_collisions()
         
         if collision_object.orphans:
@@ -292,14 +292,14 @@ class Interpreter(internals.InternalFuncs):
 
     def run_pre_merge(self):
         out.normal("preparing system for the package...")
-        pre_merge_file = os.path.join(os.path.dirname(os.path.dirname(self.env.build_dir)), ".pre_merge")
+        pre_merge_file = os.path.join(os.path.dirname(os.path.dirname(self.environment.build_dir)), ".pre_merge")
 
         if os.path.isfile(pre_merge_file): return True
         
         lpms.logger.info("running pre_merge function")
 
         # sandbox must be disabled
-        self.env.sandbox = False
+        self.environment.sandbox = False
         self.run_stage("pre_merge")
 
         if not os.path.isfile(pre_merge_file):
@@ -307,16 +307,16 @@ class Interpreter(internals.InternalFuncs):
 
     def run_pre_remove(self):
         # sandbox must be disabled
-        self.env.sandbox = False
+        self.environment.sandbox = False
         self.run_stage("pre_remove")
 
     def run_post_install(self):
-        if lpms.getopt("--no-configure") or self.env.real_root != cst.root:
+        if lpms.getopt("--no-configure") or self.environment.real_root != cst.root:
             out.warn_notify("post_install function skipping...")
-            pkg_data = (self.env.repo, self.env.category, \
-                    self.env.name, self.env.version)
+            pkg_data = (self.environment.repo, self.environment.category, \
+                    self.environment.name, self.environment.version)
 
-            pending_file = os.path.join(self.env.real_root, cst.configure_pending_file)
+            pending_file = os.path.join(self.environment.real_root, cst.configure_pending_file)
             shelltools.makedirs(os.path.dirname(pending_file))
             if not os.path.exists(pending_file):
                 with open(pending_file, "wb") as _data:
@@ -335,7 +335,7 @@ class Interpreter(internals.InternalFuncs):
             return
 
         # sandbox must be disabled
-        self.env.sandbox = False
+        self.environment.sandbox = False
 
         self.run_stage("post_install")
 
@@ -345,57 +345,57 @@ class Interpreter(internals.InternalFuncs):
             return 
         
         # sandbox must be disabled
-        self.env.sandbox = False
+        self.environment.sandbox = False
         
         self.run_stage("post_remove")
 
     def run_stage(self, stage):
-        self.env.current_stage = stage
+        self.environment.current_stage = stage
         standard_procedure_fixed = False
         exceptions = ('prepare', 'post_install', 'post_remove', 'pre_merge', 'pre_remove') 
         standard_procedure_exceptions = ('extract')
         
         if stage in standard_procedure_exceptions:
-            if not self.env.standard_procedure:
-                self.env.standard_procedure = True
+            if not self.environment.standard_procedure:
+                self.environment.standard_procedure = True
                 standard_procedure_fixed = True
         
-        if stage in self.env.__dict__:
+        if stage in self.environment.__dict__:
             # run the packages's stage function
             self.run_func(stage)
             if standard_procedure_fixed:
-                self.env.standard_procedure = False
+                self.environment.standard_procedure = False
         else:
-            if not self.env.libraries and self.env.standard_procedure \
+            if not self.environment.libraries and self.env.standard_procedure \
                     and not stage in exceptions:
                         # run the standard stage function 
                         self.run_func("standard_"+stage)
                         if standard_procedure_fixed:
-                            self.env.standard_procedure = False
+                            self.environment.standard_procedure = False
                         return True
             # if the stage is not defined in the spec, find it in the build helpers.
-            for lib in self.env.libraries:
-                if self.env.standard_procedure and lib+"_"+stage in self.env.__dict__:
-                    if self.env.primary_library:
-                        if self.env.primary_library == lib:
+            for lib in self.environment.libraries:
+                if self.environment.standard_procedure and lib+"_"+stage in self.env.__dict__:
+                    if self.environment.primary_library:
+                        if self.environment.primary_library == lib:
                             self.run_func(lib+"_"+stage)
                             if standard_procedure_fixed:
-                                self.env.standard_procedure = False
+                                self.environment.standard_procedure = False
                             return True
                     else:
                         self.run_func(lib+"_"+stage)
                         if standard_procedure_fixed:
-                            self.env.standard_procedure = False
+                            self.environment.standard_procedure = False
                         return True
             # if the build helpers don't include the stage, run the standard function if it is possible.
-            if self.env.standard_procedure and not stage in exceptions:
+            if self.environment.standard_procedure and not stage in exceptions:
                 self.run_func("standard_"+stage)
                 if standard_procedure_fixed:
-                    self.env.standard_procedure = False
+                    self.environment.standard_procedure = False
                     return True
 
-def run(script, env, operation_order=None, remove=False):
-    ipr = Interpreter(script, env)
+def run(script, environment, operation_order=None, remove=False):
+    ipr = Interpreter(script, environment)
     #firstly, prepare operation_order
     if not remove and not operation_order:
         operation_order = [
@@ -407,34 +407,34 @@ def run(script, env, operation_order=None, remove=False):
                 'merge', 
         ]
         
-        if 'prepare' in ipr.env.__dict__:
+        if 'prepare' in ipr.environment.__dict__:
             index = 0
             if len(operation_order) == 6: index = 1
             operation_order.insert(index, 'prepare')
         else:
             index = 0
             if len(operation_order) == 6: index = 1
-            for library in ipr.env.libraries:
-                if library+"_prepare" in ipr.env.__dict__:
+            for library in ipr.environment.libraries:
+                if library+"_prepare" in ipr.environment.__dict__:
                     operation_order.insert(index, 'prepare')
                     break
 
-        if 'pre_merge' in ipr.env.__dict__:
+        if 'pre_merge' in ipr.environment.__dict__:
             index = operation_order.index('merge')
             operation_order.insert(index, 'pre_merge')
         else:
             index = operation_order.index('merge')
-            for library in ipr.env.libraries:
-                if library+"_pre_merge" in ipr.env.__dict__:
+            for library in ipr.environment.libraries:
+                if library+"_pre_merge" in ipr.environment.__dict__:
                     operation_order.insert(index, 'pre_merge')
                     break
         
-        if 'post_install' in ipr.env.__dict__:
+        if 'post_install' in ipr.environment.__dict__:
             operation_order.insert(len(operation_order), 'post_install')
         else:
             index = operation_order.index('merge')
-            for library in ipr.env.libraries:
-                if library+"_post_install" in ipr.env.__dict__:
+            for library in ipr.environment.libraries:
+                if library+"_post_install" in ipr.environment.__dict__:
                     operation_order.insert(len(operation_order), 'post_install')
                     break
 
@@ -446,11 +446,11 @@ def run(script, env, operation_order=None, remove=False):
 
     def parse_traceback(exception_type=None):
         '''Parse exceptions and show nice and more readable error messages'''
-        out.write(out.color(">>", "brightred")+" %s/%s/%s-%s\n" % (ipr.env.repo, ipr.env.category, 
-            ipr.env.name, ipr.env.version))
+        out.write(out.color(">>", "brightred")+" %s/%s/%s-%s\n" % (ipr.environment.repo, ipr.environment.category, 
+            ipr.environment.name, ipr.environment.version))
         exc_type, exc_value, exc_traceback = sys.exc_info()
         formatted_lines = traceback.format_exception(exc_type, exc_value, exc_traceback)
-        if not ipr.env.debug:
+        if not ipr.environment.debug:
             for item in formatted_lines:
                 item = item.strip()
                 if item.startswith("File"):
@@ -484,8 +484,8 @@ def run(script, env, operation_order=None, remove=False):
         method = getattr(ipr, "run_"+opr)
         try:
             # firstly, lpms must be sure in the build directory
-            if hasattr(ipr.env, "build_dir") and os.getcwd() != ipr.env.build_dir:
-                os.chdir(ipr.env.build_dir)
+            if hasattr(ipr.environment, "build_dir") and os.getcwd() != ipr.environment.build_dir:
+                os.chdir(ipr.environment.build_dir)
             method()
         except SystemExit:
             return False

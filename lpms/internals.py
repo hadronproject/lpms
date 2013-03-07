@@ -20,11 +20,17 @@ import sys
 import traceback
 
 from lpms import exceptions
-from lpms import constants as cst 
+from lpms import constants as cst
 
 class Environment(object):
-    '''Main object container for lpms operations'''
-    pass
+    '''Main object container for package related operations'''
+    def __getattr__(self, key):
+        if key in self.__dict__:
+            return self.__dict__[key]
+        return False
+
+    def get_raw_dict(self):
+        return self.__dict__
 
 class InternalFuncs(object):
     '''The starting point of an lpms operation'''
