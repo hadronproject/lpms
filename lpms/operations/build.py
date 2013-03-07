@@ -59,7 +59,7 @@ class Build(object):
         )
         self.spec_file = None
         self.config = conf.LPMSConfig()
-        if not lpms.getopt("--unset-env-variables"):
+        if not self.instructions.unset_env_variables:
             utils.set_environment_variables()
         self.revisioned = False
         self.revision = None
@@ -164,33 +164,37 @@ class Build(object):
         # Set extract plan to lpms' internal build environment
         setattr(self.internals.env, "extract_plan", self.extract_plan)
 
-    def parse_src_url_tag(self):
-        '''Parses src_url tag and create a url list for downloading'''
+    def parse_src_url_field(self):
+        '''Parses src_url field and create a url list for downloading'''
         def parse(data, option=False):
-            for short in ('$url_prefix', '$src_url', '$slot', '$my_slot', '$name', '$version', \
-                    '$fullname', '$my_fullname', '$my_name', '$my_version'):
+            shortcuts = (
+                    '$url_prefix', '$src_url', '$slot', '$my_slot', \
+                    '$name', '$version', '$fullname', '$my_fullname', \
+                    '$my_name', '$my_version'
+            )
+            for shortcut in shortcuts:
                 try:
-                    interphase = re.search(r'-r[0-9][0-9]', self.internals.env.__dict__[short[1:]])
+                    interphase = re.search(r'-r[0-9][0-9]', self.internals.env.__dict__[shortcut[1:]])
                     if not interphase:
-                        interphase = re.search(r'-r[0-9]', self.internals.env.__dict__[short[1:]])
+                        interphase = re.search(r'-r[0-9]', self.internals.env.__dict__[shortcut[1:]])
                         if not interphase:
-                            data = data.replace(short, self.internals.env.__dict__[short[1:]])
+                            data = data.replace(shortcut, self.internals.env.__dict__[shortcut[1:]])
                         else:
-                            if short == "$version":
+                            if shortcut == "$version":
                                 self.revisioned = True
                                 self.revision = interphase.group()
-                            result = "".join(self.internals.env.__dict__[short[1:]].split(interphase.group()))
-                            if not short in ("$name", "$my_slot", "$slot"):
-                                setattr(self.internals.env, "raw_"+short[1:], result)
-                            data = data.replace(short, result)
+                            result = "".join(self.internals.env.__dict__[shortcut[1:]].split(interphase.group()))
+                            if not shortcut in ("$name", "$my_slot", "$slot"):
+                                setattr(self.internals.env, "raw_"+shortcut[1:], result)
+                            data = data.replace(shortcut, result)
                     else:
-                        if short == "$version":
+                        if shortcut == "$version":
                             self.revisioned = True
                             self.revision = interphase.group()
-                        result = "".join(self.internals.env.__dict__[short[1:]].split(interphase.group()))
-                        if not short in ("$name", "$my_slot", "$slot"):
-                            setattr(self.internals.env, "raw_"+short[1:], result)
-                        data = data.replace(short, result)
+                        result = "".join(self.internals.env.__dict__[shortcut[1:]].split(interphase.group()))
+                        if not shortcut in ("$name", "$my_slot", "$slot"):
+                            setattr(self.internals.env, "raw_"+shortcut[1:], result)
+                        data = data.replace(shortcut, result)
                 except KeyError:
                     continue
             if option:
@@ -436,8 +440,8 @@ class Build(object):
 
             # fetch packages which are in download_plan list
             if self.internals.env.src_url is not None:
-                # preprocess url tags such as $name, $version and etc
-                self.parse_src_url_tag()
+                # preprocess url shortcuts such as $name, $version and etc
+                self.parse_src_url_field()
                 # if the package is revisioned, override build_dir and install_dir. 
                 # remove revision number from these variables.
                 if self.revisioned:
