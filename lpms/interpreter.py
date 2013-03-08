@@ -155,9 +155,8 @@ class Interpreter(internals.InternalFuncs):
 
     def run_prepare(self):
         out.normal("preparing source...")
-        prepared_file = os.path.join(self.env.build_dir.split("source")[0],
-                ".prepared")
-        if os.path.isfile(prepared_file): 
+        prepared_file = os.path.join(os.path.dirname(os.path.dirname(self.env.build_dir)), ".prepared")
+        if os.path.isfile(prepared_file):
             out.warn_notify("source already prepared.")
             return True
         self.run_stage("prepare")
