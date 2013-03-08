@@ -421,8 +421,12 @@ class DependencyResolver(object):
                     previous_child = raw_option.replace("\t", "")
                     if previous_child in options:
                         added.append(raw_option)
-                        for package in packages:
-                            result.append(self.get_convenient_package(package, instdb))
+                        if "||" in packages:
+                            for package in packages[:packages.index("||")]:
+                                result.append(self.get_convenient_package(package, instdb))
+                        else:
+                            for package in packages:
+                                result.append(self.get_convenient_package(package, instdb))
                     else:
                         if "||" in packages:
                             for package in packages[packages.index("||")+1:]:
@@ -838,8 +842,8 @@ class DependencyResolver(object):
                     if self.package_heap[item_id].pk == single_package.pk:
                         single_packages.remove(single_package)
                         break
-            # FIXME: This is not a Pythonic way
-            final_plan = single_packages+final_plan
+            for single_package in single_packages:
+                final_plan.insert_into(0, single_package)
 
         return final_plan, \
                 self.package_dependencies, \

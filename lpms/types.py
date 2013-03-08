@@ -61,7 +61,7 @@ class PackageItem(list):
         for element in self:
             if element.pk == item.pk:
                 return self.index(element)
-        self.append(item)
+        self.add(item)
 
     def length(self):
         return len(self)
@@ -69,4 +69,9 @@ class PackageItem(list):
     def get_raw_dict(self):
         return [i.__dict__ for i in self]
 
+    def insert_into(self, index, item):
+        for element in self:
+            if element.pk == item.pk:
+                return
+        self.insert(index, item)
 
