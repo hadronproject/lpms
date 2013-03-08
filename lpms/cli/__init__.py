@@ -298,8 +298,10 @@ def main():
                 from lpms.cli import search
                 results = [command for command in commands if not \
                             command.startswith("-")]
-                search.Search(results).search()
+                search.Search(results, instruct).search()
                 return
+                    search.Search(results, instruct).search()
+                    return
             elif cli_element == "clean-system":
                 from lpms.cli import clean_system
                 clean_system.CleanSystem().run(instruct)
