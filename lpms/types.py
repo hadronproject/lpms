@@ -41,6 +41,7 @@ class LCollect(object):
             raise ItemNotFound("%s not found in LCollect object." % item)
         del self.__dict__[item]
 
+    @property
     def get_raw_dict(self):
         return self.__dict__
 
@@ -63,9 +64,11 @@ class PackageItem(list):
                 return self.index(element)
         self.add(item)
 
+    @property
     def length(self):
         return len(self)
 
+    @property
     def get_raw_dict(self):
         return [i.__dict__ for i in self]
 
