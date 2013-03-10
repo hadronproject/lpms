@@ -304,13 +304,11 @@ def install_executable(sources, target):
 def install_readable(sources, target):
     #FIXME: Does the function create target directory?
     # what if target value is a file(insfile)??
-
     for source in sources:
         srcs = glob.glob(source)
-        if len(srcs) == 0:
-            out.error("[install_readable] file not found: %s" % source)
-            return False
-
+        if not srcs:
+            out.error("[install_readable] file not found, passing: %s" % source)
+            continue
         for src in srcs:
             if not system('install -m0644 "%s" %s' % (src, target)):
                 out.error("[install_readable] %s could not installed to %s." % (src, target))
