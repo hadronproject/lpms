@@ -300,8 +300,6 @@ def main():
                             command.startswith("-")]
                 search.Search(results, instruct).search()
                 return
-                    search.Search(results, instruct).search()
-                    return
             elif cli_element == "clean-system":
                 from lpms.cli import clean_system
                 clean_system.CleanSystem().run(instruct)

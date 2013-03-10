@@ -182,9 +182,11 @@ def insdoc(*sources):
         target = fix_target_path("/usr/share/doc/%s" % fullname)
     else:
         target = fix_target_path("/usr/share/doc/%s" % name)
-
     shelltools.makedirs(target)
-    return shelltools.install_readable(sources, target)
+    srcs = []
+    for source in sources:
+        srcs.extend(glob.glob(joinpath(build_dir, source)))
+    return shelltools.install_readable(srcs, target)
 
 def insinfo(*sources):
     target = fix_target_path("/usr/share/info")
