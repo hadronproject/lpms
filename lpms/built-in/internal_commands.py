@@ -32,8 +32,12 @@ from lpms import constants as cst
 
 def safety_valve(fn):
     def wrapper(path, **kwargs):
-        allowed_paths = kwargs.get("allowed_paths", (install_dir, build_dir))
-        allowed_stages = kwargs.get("allowed_stages", (install_dir, build_dir))
+        allowed_paths = [install_dir, build_dir]
+        if kwargs.get("allowed_paths") is not None:
+            allowed_paths.extend(kwargs.get("allowed_paths"))
+        allowed_stages = ['post_install', 'post_remove']
+        if kwargs.get("allowed_stages") is not None:
+            allowed_stages.extend(kwargs.get("allowed_stages"))
         # TODO: pre_remove, pre_install stages?
         if current_stage in allowed_stages:
             return path
@@ -56,13 +60,11 @@ def safety_valve(fn):
     return wrapper
 
 @safety_valve
-def fix_target_path(target, allowed_paths=None, \
-        allowed_stages=('post_remove', 'post_install')):
+def fix_target_path(target, allowed_paths=None, allowed_stages=None):
     return target, allowed_paths, allowed_stages
 
 @safety_valve
-def fix_source_path(target, allowed_paths=None, \
-        allowed_stages=('post_remove', 'post_install')):
+def fix_source_path(target, allowed_paths=None, allowed_stages=None):
     return target, allowed_paths, allowed_stages
 
 def unset_env_variables():
@@ -299,8 +301,7 @@ def isexists(target):
     return shelltools.is_exists(fix_target_path(target))
 
 def cd(target=None):
-    target = fix_target_path(target, allowed_paths=(install_dir, \
-            build_dir, src_cache, filesdir))
+    target = fix_target_path(target, allowed_paths=[src_cache, filesdir])
     shelltools.cd(target)
 
 def copytree(source, target, sym=True):
@@ -323,8 +324,9 @@ def insinto(source, target, target_file='', sym=True):
 
 def insfile(source, target):
     target = fix_target_path(target)
+    source = fix_source_path(source, allowed_paths=[filesdir])
     shelltools.makedirs(os.path.dirname(target))
-    return shelltools.install_readable([fix_source_path(source)], target)
+    return shelltools.install_readable([source], target)
 
 def insexe(source, target='/usr/bin'):
     target = fix_target_path(target)
