@@ -305,9 +305,11 @@ def cd(target=None):
     shelltools.cd(target)
 
 def copytree(source, target, sym=True):
+    source = fix_source_path(source, allowed_paths=[filesdir, src_cache])
     shelltools.copytree(source, fix_target_path(target), sym)
 
 def copy(source, target, sym=True):
+    source = fix_source_path(source, allowed_paths=[filesdir, src_cache])
     shelltools.copy(source, fix_target_path(target), sym)
 
 def move(source, target):
@@ -319,18 +321,19 @@ def move(source, target):
 def insinto(source, target, target_file='', sym=True):
     target = fix_target_path(target)
     shelltools.makedirs(os.path.dirname(target))
-    shelltools.insinto(fix_source_path(source), \
+    shelltools.insinto(fix_source_path(source, allowed_paths=[filesdir, src_cache]), \
             target, install_dir, target_file, sym)
 
 def insfile(source, target):
     target = fix_target_path(target)
-    source = fix_source_path(source, allowed_paths=[filesdir])
+    source = fix_source_path(source, allowed_paths=[filesdir, src_cache])
     shelltools.makedirs(os.path.dirname(target))
     return shelltools.install_readable([source], target)
 
 def insexe(source, target='/usr/bin'):
     target = fix_target_path(target)
     shelltools.makedirs(os.path.dirname(target))
+    source = fix_source_path(source, allowed_paths=[filesdir, src_cache])
     return shelltools.install_executable([source], target)
 
 def makesym(source, target, ignore_fix_target=False):
