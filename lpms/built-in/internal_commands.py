@@ -32,7 +32,8 @@ from lpms import constants as cst
 
 def safety_valve(fn):
     def wrapper(path, **kwargs):
-        allowed_paths = [install_dir, build_dir]
+        allowed_paths = [install_dir, build_dir, \
+                os.path.dirname(install_dir), os.path.dirname(build_dir)]
         if kwargs.get("allowed_paths") is not None:
             allowed_paths.extend(kwargs.get("allowed_paths"))
         allowed_stages = ['post_install', 'post_remove']
@@ -48,9 +49,10 @@ def safety_valve(fn):
                 break
         if not safe:
             if current_stage == "install":
-                path = os.path.join(install_dir, path[1:]) \
+                basedir = install_dir if fn.__name__ == "fix_target_path" else build_dir
+                path = os.path.join(basedir, path[1:]) \
                         if path.startswith("/") \
-                        else os.path.join(install_dir, path)
+                        else os.path.join(basedir, path)
             else:
                 current_dir = pwd()
                 path = os.path.join(current_dir, path[1:]) \
@@ -271,34 +273,34 @@ def echo(content, target):
     shelltools.echo(content, fix_target_path(target))
 
 def isfile(target):
-    return shelltools.is_file(fix_target_path(target))
+    return shelltools.is_file(target)
 
 def isdir(target):
-    return shelltools.is_dir(fix_target_path(target))
+    return shelltools.is_dir(target)
 
 def realpath(target):
-    return shelltools.real_path(target = fix_target_path(target))
+    return shelltools.real_path(target)
 
 def basename(target):
-    return shelltools.basename(fix_target_path(target))
+    return shelltools.basename(target)
 
 def dirname(target):
-    return shelltools.dirname(fix_target_path(target))
+    return shelltools.dirname(target)
 
 def isempty(target):
-    return shelltools.is_empty(fix_target_path(target))
+    return shelltools.is_empty(target)
 
 def ls(target):
-    return shelltools.listdir(fix_target_path(target))
+    return shelltools.listdir(target)
 
 def islink(target):
-    return shelltools.is_link(fix_target_path(target))
+    return shelltools.is_link(target)
 
 def isfile(target):
-    return shelltools.is_file(fix_target_path(target))
+    return shelltools.is_file(target)
 
 def isexists(target):
-    return shelltools.is_exists(fix_target_path(target))
+    return shelltools.is_exists(target)
 
 def cd(target=None):
     target = fix_target_path(target, allowed_paths=[src_cache, filesdir])
