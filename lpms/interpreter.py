@@ -222,7 +222,7 @@ class Interpreter(internals.InternalFuncs):
         lpms.logger.info("installing to %s" % self.environment.build_dir)
 
         self.run_stage("install")
-        if hasattr(self.environment, 'docs'):
+        if self.environment.docs is not None:
             for doc in self.environment.docs:
                 if isinstance(doc, list) or isinstance(doc, tuple):
                     source_file, target_file = doc
@@ -232,7 +232,7 @@ class Interpreter(internals.InternalFuncs):
                 #    self.environment.index, insfile(source, target)
                 #else:
                 #    self.environment.index, insdoc(doc)
-        out.notify("%s/%s installed." % (self.environment.category, self.env.fullname))
+        out.notify("package installed.")
         if not os.path.isfile(installed_file):
             touch(installed_file)
 
@@ -246,7 +246,7 @@ class Interpreter(internals.InternalFuncs):
             out.write("no merging...\n")
             lpms.terminate()
 
-        merge.main(self.environment)
+        merge.Merge(self.environment).perform_operation()
 
     def run_remove(self):
         utils.xterm_title("(%s/%s) lpms: removing %s/%s-%s from %s" % (self.environment.index, self.environment.count, 
@@ -263,10 +263,14 @@ class Interpreter(internals.InternalFuncs):
     def run_collision_check(self):
         out.normal("checking file collisions...")
         lpms.logger.info("checking file collisions")
-        collision_object = file_collisions.CollisionProtect(self.environment.category, self.environment.name, \
-                self.environment.slot, real_root=self.env.real_root, source_dir=self.env.install_dir)
+        collision_object = file_collisions.CollisionProtect(
+                self.environment.category,
+                self.environment.name,
+                self.environment.slot,
+                real_root=self.environment.real_root,
+                source_dir=self.environment.install_dir
+        )
         collision_object.handle_collisions()
-        
         if collision_object.orphans:
             out.write(out.color(" > ", "brightyellow")+"these files are orphan. the package will adopt the files:\n")
             index = 0
@@ -427,7 +431,7 @@ def run(script, environment, operation_order=None, remove=False):
                 if library+"_pre_merge" in ipr.environment.__dict__:
                     operation_order.insert(index, 'pre_merge')
                     break
-        
+
         if 'post_install' in ipr.environment.__dict__:
             operation_order.insert(len(operation_order), 'post_install')
         else:

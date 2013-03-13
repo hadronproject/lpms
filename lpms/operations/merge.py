@@ -19,7 +19,7 @@ import os
 import time
 import gzip
 import shutil
-import cPickle as pickle
+import shelve
 
 import lpms
 
@@ -33,357 +33,305 @@ from lpms import constants as cst
 
 from lpms.db import api
 
-class Merge(internals.InternalFuncs):
-    '''Main class for package installation'''
+class Merge(object):
+    '''
+    This class performs merge operation and creates database entries for the package
+    '''
     def __init__(self, environment):
-        # Do I need this?
-        super(Merge, self).__init__()
-        self.total = 0
-        self.myfile = None
-        self.filesdb_path = None
-        self.versions = []
         self.symlinks = []
         self.backup = []
-        self.env = environment
+        self.environment = environment
         self.instdb = api.InstallDB()
         self.repodb = api.RepositoryDB()
         self.conf = conf.LPMSConfig()
         self.info_files = []
         self.previous_files = []
-        self.merge_conf_data = []
         self.filesdb = api.FilesDB()
         self.file_relationsdb = api.FileRelationsDB()
         self.reverse_dependsdb = api.ReverseDependsDB()
-        self.merge_conf_file = os.path.join(self.env.real_root, \
+        self.binary_filetypes = ('application/x-executable', 'application/x-archive', \
+                'application/x-sharedlib')
+        self.merge_conf_file = os.path.join(self.environment.real_root, \
                 cst.merge_conf_file)
-        self.previous_files = self.filesdb.get_paths_by_package(self.env.name, \
-                repo=self.env.repo, category=self.env.category, \
-                version=self.env.previous_version)
+        self.previous_files = self.filesdb.get_paths_by_package(self.environment.name, \
+                repo=self.environment.repo, category=self.environment.category, \
+                version=self.environment.previous_version)
+        # Unfortunately, this seems very ugly :(
+        self.strip_debug_symbols = True if self.environment.no_strip is not None and \
+                ((self.environment.applied_options is not None and \
+                "debug" in self.env.applied_options) or \
+                utils.check_cflags("-g") or utils.check_cflags("-ggdb") \
+                or utils.check_cflags("-g3")) else False
 
-    def load_merge_conf_file(self):
-        if os.path.isfile(self.merge_conf_file):
-            with open(self.merge_conf_file, "rb") as raw_data:
-                try:
-                    self.merge_conf_data = pickle.load(raw_data)
-                except EOFError:
-                    shelltools.remove_file(self.merge_conf_file)
+    def append_merge_conf(self, item):
+        '''Handles merge-conf file'''
+        try:
+            if not os.access(self.merge_conf_file, os.F_OK) \
+                    or os.access(self.merge_conf_file, os.R_OK):
+                        self.merge_conf_data = shelve.open(self.merge_conf_file)
+            else:
+                # TODO: We should develop a message system for warning the user 
+                out.error("%s seems not readable." % self.merge_conf_file)
+                out.error("Merge process is going to proceed but you must handle configuration files manually.")
+                out.error("Please check this file for merging: %s" % item)
+                return
 
-    def save_merge_conf_file(self):
-        if self.merge_conf_data and os.path.isfile(self.merge_conf_file):
-            shelltools.remove_file(self.merge_conf_file)
-
-        if self.merge_conf_data:
-            with open(self.merge_conf_file, "wb") as raw_data:
-                pickle.dump(self.merge_conf_data, raw_data)
+            package = str(os.path.join(self.environment.category, self.environment.name, \
+                    self.environment.version)+":"+self.environment.slot)
+            if package in self.merge_conf_data:
+                self.merge_conf_data[package].add(item)
+            else:
+                self.merge_conf_data[package] = set([item])
+        finally:
+            self.merge_conf_data.close()
 
     def is_parent_symlink(self, target):
         for symlink in self.symlinks:
             if target.startswith(symlink):
                 return True
 
-    def merge_pkg(self):
-        '''Merge the package to the system'''
-        isstrip = True
-        if (hasattr(self.env, "no_strip") and self.env.no_strip) or lpms.getopt("--no-strip") \
-                or (self.env.applied_options is not None and "debug" in self.env.applied_options)\
-                or utils.check_cflags("-g") \
-                or utils.check_cflags("-ggdb") or utils.check_cflags("-g3"):
-                    isstrip = False
+    def append_filesdb(self, _type, target, perms, **kwargs):
+        '''Executes a filesdb query for adding items to files database'''
+        sha1sum = kwargs.get("sha1sum", None)
+        size = kwargs.get("size", None)
+        realpath = kwargs.get("realpath", None)
+        if _type in ("dir", "file"):
+            gid, mod, uid  = perms['gid'], perms['mod'], perms['uid']
+        elif _type == "link":
+            gid, mod, uid = None, None, None
+        self.filesdb.append_query(
+                (self.environment.repo,
+                    self.environment.category,
+                    self.environment.name,
+                    self.environment.version,
+                    target,
+                    _type,
+                    size,
+                    gid,
+                    mod,
+                    uid,
+                    sha1sum,
+                    realpath,
+                    self.environment.slot
+                )
+        )
 
+    def merge_package(self):
+        '''Moves files to the target destination in the most safest way.'''
         def get_perms(path):
             '''Get permissions of given path, it may be file or directory'''
             return {"uid": utils.get_uid(path),
                     "gid": utils.get_gid(path),
                     "mod": utils.get_mod(path)
             }
+        out.normal("%s/%s/%s-%s:%s is merging to %s" % (self.environment.repo, self.environment.category, \
+                self.environment.name, self.environment.version, self.environment.slot, \
+                self.environment.real_root))
+        # Remove files db entries for this package:slot if it exists
+        self.filesdb.delete_item_by_pkgdata(self.environment.category, self.environment.name, \
+            self.environment.previous_version, commit=True)
 
+        # Remove file_relations db entries for this package:slot if it exists
+        self.file_relationsdb.delete_item_by_pkgdata(self.environment.category, \
+                self.environment.name, self.environment.previous_version, commit=True)
 
-        self.filesdb.delete_item_by_pkgdata(self.env.category, self.env.name, \
-            self.env.previous_version, commit=True)
+        # Merge the package, now
+        walk_iter = os.walk(self.environment.install_dir, followlinks=True)
+        while True:
+            try:
+                parent, directories, files = next(walk_iter)
+                # TODO: Check the target path's permissions for writing or reading
+                # Remove install_dir from parent to get real parent path
+                pruned_parent = parent.replace(self.environment.install_dir, "")
+                # create directories
+                for directory in directories:
+                    source = os.path.join(parent, directory)
+                    target = os.path.join(self.environment.real_root, pruned_parent, directory)
+                    real_target = "/".join([pruned_parent, directory])
+                    if self.is_parent_symlink(target):
+                        break
+                    if os.path.islink(source):
+                        self.symlinks.append(target+"/")
+                        realpath = os.path.realpath(source)
+                        if os.path.islink(target):
+                            shelltools.remove_file(target)
+                        # create real directory
+                        if len(realpath.split(self.environment.install_dir)) > 1:
+                            realpath = realpath.split(self.environment.install_dir)[1][1:]
 
-        out.notify("merging the package to %s and creating database entries..." % self.env.real_root)
-        
-        self.file_relationsdb.delete_item_by_pkgdata(self.env.category, \
-                self.env.name, self.env.previous_version, commit=True)
-        # find content of the package
-        for root_path, dirs, files in os.walk(self.env.install_dir, followlinks=True):
-            root_path = root_path.split(self.env.install_dir)[1]
+                        shelltools.makedirs(os.path.join(self.environment.real_root, realpath))
+                        # make symlink
+                        if os.path.isdir(target):
+                            shelltools.remove_dir(target)
+                        elif os.path.isfile(target):
+                            shelltools.remove_file(target)
+                        shelltools.make_symlink(os.readlink(source), target)
+                    else:
+                        if os.path.isfile(target):
+                            # TODO: Rename this file and warn the user
+                            shelltools.remove_file(target)
+                        shelltools.makedirs(target)
+                    # Get permissions
+                    perms = get_perms(source)
+                    # if path is a symlink, pass permission mumbo-jumbos
+                    if not os.path.islink(source):
+                        # Set permissions
+                        shelltools.set_id(target, perms["uid"], perms["gid"])
+                        shelltools.set_mod(target, perms["mod"])
+                        # TODO: Common items?
+                        # Add the item to filesdb
+                        self.append_filesdb("dir", real_target, perms)
+                    else:
+                        # Add the item to filesdb
+                        self.append_filesdb("link", real_target, perms, \
+                                realpath=os.path.realpath(source))
 
-            # create directories
-            for d in dirs:
-                source = os.path.join(self.env.install_dir, root_path[1:], d)
-                target = os.path.join(self.env.real_root, root_path[1:], d)
-                
-                real_target = "/".join([root_path, d])
-                if self.is_parent_symlink(target): break
+                # Merge regular files to the target
+                # Firstly, handle reserved files
+                reserve_files = []
+                if self.environment.reserve_files:
+                    if isinstance(self.environment.reserve_files, basestring):
+                        reserve_files.extend([f_item for f_item in self.environment.reserve_files.split(" ") \
+                                if f_item != ""])
+                    elif isinstance(self.environment.reserve_files, list) or isinstance(self.environment.reserve_files, tuple):
+                        reserve_files.extend(self.environment.reserve_files)
 
-                if os.path.islink(source):
-                    self.symlinks.append(target+"/")
-                    realpath = os.path.realpath(source)
-                    if os.path.islink(target):
-                        shelltools.remove_file(target)
-                    # create real directory
-                    if len(realpath.split(self.env.install_dir)) > 1:
-                        realpath = realpath.split(self.env.install_dir)[1][1:]
+                if os.path.isfile(os.path.join(cst.user_dir, cst.protect_file)):
+                    with open(os.path.join(cst.user_dir, cst.protect_file)) as data:
+                        for rf in data.readlines():
+                            if not rf.startswith("#"):
+                                reserve_files.append(rf.strip())
 
-                    shelltools.makedirs(os.path.join(self.env.real_root, realpath))
-                    # make symlink
-                    if os.path.isdir(target):
-                        shelltools.remove_dir(target)
-                    elif os.path.isfile(target):
-                        shelltools.remove_file(target)
-                    shelltools.make_symlink(os.readlink(source), target)
-                else:
-                    if os.path.isfile(target):
-                        shelltools.remove_file(target)
-                    shelltools.makedirs(target)
-
-                perms = get_perms(source)
-
-                # if path is a symlink, pass permission mumbo-jumbos
-                if not os.path.islink(source):
-                    shelltools.set_id(target, perms["uid"], perms["gid"])
-                    shelltools.set_mod(target, perms["mod"])
-
-                    self.filesdb.append_query(
-                            (self.env.repo, 
-                                self.env.category, 
-                                self.env.name,
-                                self.env.version, 
-                                real_target, 
-                                "dir", 
-                                None, 
-                                perms['gid'],
-                                perms['mod'], 
-                                perms['uid'], 
-                                None, 
-                                None,
-                                self.env.slot
+                # Here we are starting to merge
+                for _file in files:
+                    source = os.path.join(parent, _file)
+                    target = os.path.join(self.environment.real_root, pruned_parent, _file)
+                    real_target = "/".join([pruned_parent, _file])
+                    if self.is_parent_symlink(target):
+                        break
+                    # Keep file relations for using after to handle reverse dependencies
+                    if os.path.exists(source) and os.access(source, os.X_OK):
+                        if utils.get_mimetype(source) in self.binary_filetypes:
+                            self.file_relationsdb.append_query((
+                                self.environment.repo,
+                                self.environment.category,
+                                self.environment.name,
+                                self.environment.version,
+                                target,
+                                file_relations.get_depends(source))
                             )
-                    )
-                else:
-                    self.filesdb.append_query(
-                            (self.env.repo, 
-                                self.env.category, 
-                                self.env.name,
-                                self.env.version, 
-                                real_target, 
-                                "link", 
-                                None, 
-                                None,
-                                None, 
-                                None, 
-                                None, 
-                                os.path.realpath(source),
-                                self.env.slot
-                            )
-                    )
+                    # Strip binary files and keep them smaller
+                    if self.strip_debug_symbols and utils.get_mimetype(source) in self.binary_filetypes:
+                        utils.run_strip(source)
+                    if self.environment.ignore_reserve_files:
+                        reserve_files = []
+                        self.environment.reserve_files = True
 
-
-            # write regular files
-            reserve_files = []
-            if self.env.reserve_files:
-                if isinstance(self.env.reserve_files, basestring):
-                    reserve_files.extend([f for f in self.env.reserve_files.split(" ") \
-                            if f != ""])
-                elif isinstance(self.env.reserve_files, list) or isinstance(self.env.reserve_files, tuple):
-                    reserve_files.extend(self.env.reserve_files)
-
-            if os.path.isfile(os.path.join(cst.user_dir, cst.protect_file)):
-                with open(os.path.join(cst.user_dir, cst.protect_file)) as data:
-                    for rf in data.readlines():
-                        if not rf.startswith("#"):
-                            reserve_files.append(rf.strip())
-
-            for f in files:
-                source = os.path.join(self.env.install_dir, root_path[1:], f)
-                target = os.path.join(self.env.real_root, root_path[1:], f)
-                real_target = "/".join([root_path, f])
-                
-                if self.is_parent_symlink(target): break
-                
-                if os.path.exists(source) and os.access(source, os.X_OK):
-                    if utils.get_mimetype(source) in ('application/x-executable', 'application/x-archive', \
-                            'application/x-sharedlib'):
-                        self.file_relationsdb.append_query((self.env.repo, self.env.category, self.env.name, \
-                                        self.env.version, target, file_relations.get_depends(source)))
-            
-                # strip binary files
-                if isstrip and utils.get_mimetype(source) in ('application/x-executable', 'application/x-archive', \
-                        'application/x-sharedlib'):
-                    utils.run_strip(source)
-
-                if lpms.getopt("--ignore-reserve-files"):
-                    reserve_files = []
-                    self.env.reserve_files = True
-
-                if self.env.reserve_files is not False:
-                    conf_file = os.path.join(root_path, f)
-                    isconf = (f.endswith(".conf") or f.endswith(".cfg"))
-                    def is_reserve():
-                        if lpms.getopt("--ignore-reserve-files"):
-                            return False
-                        elif not conf_file in reserve_files:
-                            return False
-                        return True
-
-                    if os.path.exists(target) and not is_reserve():
-                        if root_path[0:4] == "/etc" or isconf:
-                            if os.path.isfile(conf_file) and utils.sha1sum(source) != utils.sha1sum(conf_file):
-                                if not conf_file in self.merge_conf_data:
-                                    self.merge_conf_data.append(conf_file)
-
-                                target = target+".lpms-backup" 
-                                self.backup.append(target)
-                                
-                    if os.path.exists(target) and is_reserve():
-                        #FIXME: Code duplication!!!
-                        # the file is reserved.
+                    def add_file_item():
+                        # Prevent code duplication
                         if not os.path.islink(target):
                             shelltools.set_id(target, perms["uid"], perms["gid"])
                             shelltools.set_mod(target, perms["mod"])
-                            
-                            sha1sum = utils.sha1sum(target)
-                            self.filesdb.append_query(
-                                    (self.env.repo, 
-                                        self.env.category, 
-                                        self.env.name,
-                                        self.env.version, 
-                                        real_target,
-                                        "file", 
-                                        utils.get_size(source, dec=True), 
-                                        perms['gid'],
-                                        perms['mod'], 
-                                        perms['uid'], 
-                                        sha1sum, 
-                                        None,
-                                        self.env.slot
-                                    )
+                            self.append_filesdb("file", real_target, perms, \
+                                    sha1sum=utils.sha1sum(target),
+                                    size = utils.get_size(source, dec=True)
                             )
                         else:
-                            self.filesdb.append_query(
-                                    (self.env.repo, 
-                                        self.env.category, 
-                                        self.env.name,
-                                        self.env.version, 
-                                        real_target, 
-                                        "link", 
-                                        None, 
-                                        None,
-                                        None, 
-                                        None, 
-                                        None, 
-                                        os.path.realpath(path),
-                                        self.env.slot
-                                    )
-                            )
-                        # We don't need the following operations
-                        continue
+                            self.append_filesdb("link", real_target, perms,\
+                                    realpath=os.path.realpath(source))
 
-                if os.path.islink(source):
-                    sha1sum = False
-                    realpath = os.readlink(source)
-                    if self.env.install_dir in realpath:
-                        realpath = realpath.split(self.env.install_dir)[1]
+                    if self.environment.reserve_files is not False:
+                        conf_file = os.path.join(pruned_parent, _file)
+                        isconf = (_file.endswith(".conf") or _file.endswith(".cfg"))
+                        def is_reserve():
+                            if self.environment.ignore_reserve_files:
+                                return False
+                            elif not conf_file in reserve_files:
+                                return False
+                            return True
 
-                    if os.path.isdir(target):
-                        shelltools.remove_dir(target)
-                    elif os.path.isfile(target) or os.path.islink(target):
-                        shelltools.remove_file(target)
-                    shelltools.make_symlink(realpath, target)
-                else:
-                    sha1sum = utils.sha1sum(source)
-                    perms = get_perms(source)
-                    shelltools.move(source, target)
+                        if os.path.exists(target) and not is_reserve():
+                            if pruned_parent[0:4] == "/etc" or isconf:
+                                if os.path.isfile(conf_file) and utils.sha1sum(source) != utils.sha1sum(conf_file):
+                                    self.append_merge_conf(conf_file)
+                                    target = target+".lpms-backup" 
+                                    self.backup.append(target)
 
-                #FIXME: Code duplication!!!
+                        if os.path.exists(target) and is_reserve():
+                            # The file is reserved.
+                            # Adds to filesdb
+                            add_file_item()
+                            # We don't need the following operations
+                            continue
 
-                if not os.path.islink(source):
-                    shelltools.set_id(target, perms["uid"], perms["gid"])
-                    shelltools.set_mod(target, perms["mod"])
+                    if os.path.islink(source):
+                        sha1 = False
+                        realpath = os.readlink(source)
+                        if self.environment.install_dir in realpath:
+                            realpath = realpath.split(self.environment.install_dir)[1]
 
-                    self.filesdb.append_query(
-                            (self.env.repo, 
-                                self.env.category, 
-                                self.env.name,
-                                self.env.version, 
-                                real_target, 
-                                "file", 
-                                utils.get_size(source, dec=True), 
-                                perms['gid'],
-                                perms['mod'], 
-                                perms['uid'], 
-                                sha1sum, 
-                                None,
-                                self.env.slot
-                            )
-                    )
-                else:
-                    self.filesdb.append_query(
-                            (self.env.repo, 
-                                self.env.category, 
-                                self.env.name,
-                                self.env.version, 
-                                real_target, 
-                                "link", 
-                                None, 
-                                None,
-                                None, 
-                                None, 
-                                None, 
-                                os.path.realpath(source),
-                                self.env.slot
-                            )
-                    )
+                        if os.path.isdir(target):
+                            shelltools.remove_dir(target)
+                        elif os.path.isfile(target) or os.path.islink(target):
+                            shelltools.remove_file(target)
+                        shelltools.make_symlink(realpath, target)
+                    else:
+                        sha1 = utils.sha1sum(source)
+                        perms = get_perms(source)
+                        shelltools.move(source, target)
+                    # Adds to filesdb
+                    add_file_item()
+            except StopIteration as err:
+                break
 
         self.file_relationsdb.insert_query(commit=True)
         self.filesdb.insert_query(commit=True)
 
-        lpms.logger.info("%s/%s merged to %s" % (self.env.category, self.env.fullname, \
-                self.env.real_root))
+        lpms.logger.info("%s/%s has been merged to %s." % (self.environment.category, self.environment.fullname, \
+                self.environment.real_root))
         
     def write_db(self):
         '''Updates package data in the database or create a new entry'''
-        if self.env.dependencies is not None:
-            for keyword in self.env.dependencies:
-                setattr(self.env.package, keyword, self.env.dependencies[keyword])
+        if self.environment.dependencies is not None:
+            for keyword in self.environment.dependencies:
+                setattr(self.environment.package, keyword, self.environment.dependencies[keyword])
 
-        package_metadata = self.repodb.get_package_metadata(package_id=self.env.package.id)
-        self.env.package.applied_options = self.env.applied_options
+        package_metadata = self.repodb.get_package_metadata(package_id=self.environment.package.id)
+        self.environment.package.applied_options = self.environment.applied_options
         for item in ('homepage', 'summary', 'license', 'src_uri'):
-            setattr(self.env.package, item, getattr(package_metadata, item))
+            setattr(self.environment.package, item, getattr(package_metadata, item))
         
         installed_package = self.instdb.find_package(
-                package_name=self.env.name,
-                package_category=self.env.category,
-                package_slot=self.env.slot
+                package_name=self.environment.name,
+                package_category=self.environment.category,
+                package_slot=self.environment.slot
         )
         
         if installed_package:
-            package_id = self.env.package.package_id = installed_package.get(0).id
-            self.instdb.update_package(self.env.package, commit=True)
+            package_id = self.environment.package.package_id = installed_package.get(0).id
+            self.instdb.update_package(self.environment.package, commit=True)
         else:
-            self.instdb.insert_package(self.env.package, commit=True)
+            self.instdb.insert_package(self.environment.package, commit=True)
             package_id = self.instdb.find_package(
-                    package_repo=self.env.package.repo,
-                    package_category=self.env.package.category,
-                    package_name=self.env.package.name,
-                    package_version=self.env.package.version
+                    package_repo=self.environment.package.repo,
+                    package_category=self.environment.package.category,
+                    package_name=self.environment.package.name,
+                    package_version=self.environment.package.version
             ).get(0).id
 
         # Create or update inline_options table entries.
-        if hasattr(self.env, "inline_option_targets"):
-            for target in self.env.inline_option_targets:
+        if self.environment.inline_option_targets is not None:
+            for target in self.environment.inline_option_targets:
                 if self.instdb.find_inline_options(package_id=package_id, target=target):
                     self.instdb.update_inline_options(package_id, target, \
-                            self.env.inline_option_targets[target])
+                            self.environment.inline_option_targets[target])
                 else:
                     self.instdb.insert_inline_options(package_id, target, \
-                            self.env.inline_option_targets[target])
+                            self.environment.inline_option_targets[target])
 
         # Create or update conditional_versions table entries.
-        if hasattr(self.env, "conditional_versions"):
-            for decision_point in self.env.conditional_versions:
+        if self.environment.conditional_versions is not None:
+            for decision_point in self.environment.conditional_versions:
                 target = decision_point["target"]
                 del decision_point["target"]
                 if not self.instdb.find_conditional_versions(package_id=package_id, target=target):
@@ -409,7 +357,7 @@ class Merge(internals.InternalFuncs):
         cxx = os.environ["CXX"] if "CXX" in os.environ else ""
         self.instdb.database.insert_build_info(
                 package_id, 
-                self.env.start_time,
+                self.environment.start_time,
                 end_time,
                 requestor,
                 requestor_id,
@@ -424,16 +372,16 @@ class Merge(internals.InternalFuncs):
 
     def clean_obsolete_content(self):
         '''Cleans obsolete content which belogs to previous installs'''
-        if self.instdb.find_package(package_name=self.env.name, \
-                package_category=self.env.category,
-                package_slot=self.env.slot):
+        if self.instdb.find_package(package_name=self.environment.name, \
+                package_category=self.environment.category,
+                package_slot=self.environment.slot):
             obsolete = self.compare_different_versions()
             if not obsolete:
                 return
             out.normal("cleaning obsolete content")
             directories = []
             for item in obsolete:
-                target = os.path.join(self.env.real_root, item[0][1:])
+                target = os.path.join(self.environment.real_root, item[0][1:])
                 if not os.path.exists(target):
                     continue
                 if os.path.islink(target):
@@ -451,8 +399,8 @@ class Merge(internals.InternalFuncs):
 
     def compare_different_versions(self):
         '''Compares file lists of different installations of the same package and finds obsolete content'''
-        current_files = self.filesdb.get_paths_by_package(self.env.name, \
-                        repo=self.env.repo, category=self.env.category, version=self.env.version)
+        current_files = self.filesdb.get_paths_by_package(self.environment.name, \
+                        repo=self.environment.repo, category=self.environment.category, version=self.environment.version)
         obsolete = []
         for item in self.previous_files:
             if not item in current_files:
@@ -460,14 +408,14 @@ class Merge(internals.InternalFuncs):
         return obsolete
 
     def create_info_archive(self):
-        info_path = os.path.join(self.env.install_dir, cst.info)
+        info_path = os.path.join(self.environment.install_dir, cst.info)
         if not os.path.isdir(info_path): return
-        for item in os.listdir(os.path.join(self.env.install_dir, cst.info)):
+        for item in os.listdir(os.path.join(self.environment.install_dir, cst.info)):
             info_file = os.path.join(info_path, item)
             with open(info_file, 'rb') as content:
                 with gzip.open(info_file+".gz", 'wb') as output:
                     output.writelines(content)
-                    self.info_files.append(os.path.join(self.env.real_root, cst.info, item)+".gz")
+                    self.info_files.append(os.path.join(self.environment.real_root, cst.info, item)+".gz")
             shelltools.remove_file(info_file)
 
     def update_info_index(self):
@@ -475,32 +423,21 @@ class Merge(internals.InternalFuncs):
             if os.path.exists(info_file):
                 utils.update_info_index(info_file)
 
-def main(environment):
-    opr = Merge(environment)
+    def perform_operation(self):
+        # create $info_file_name.gz archive and remove info file
+        self.create_info_archive()
+        # merge the package
+        self.merge_package()
+        # clean the previous version if it is exists
+        self.clean_obsolete_content()
+        # write to database
+        self.write_db()
+        # create or update /usr/share/info/dir 
+        self.update_info_index()
 
-    opr.load_merge_conf_file()
+        if self.backup:
+            out.warn_notify("%s configuration file changed. Use %s to fix these files." % 
+                    (len(self.backup), out.color("merge-conf", "red")))
 
-    # create $info_file_name.gz archive and remove info file
-    opr.create_info_archive()
-
-    # merge the package
-    opr.merge_pkg()
-
-    opr.save_merge_conf_file()
-
-    # clean the previous version if it is exists
-    opr.clean_obsolete_content()
-
-    # write to database
-    opr.write_db()
-
-
-    # create or update /usr/share/info/dir 
-    opr.update_info_index()
-
-    if opr.backup:
-        out.warn_notify("%s configuration file changed. Use %s to fix these files." % 
-                (len(opr.backup), out.color("merge-conf", "red")))
-
-    if shelltools.is_exists(cst.lock_file):
-        shelltools.remove_file(cst.lock_file)
+        if shelltools.is_exists(cst.lock_file):
+            shelltools.remove_file(cst.lock_file)
