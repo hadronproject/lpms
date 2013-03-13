@@ -274,7 +274,7 @@ class Build(object):
                             conflict_package.name, conflict_package.version))
 
         # FIXME: This is no good, perhaps, we should only import some variables to internal environment
-        self.internals.env.__dict__.update(self.instructions.get_raw_dict())
+        self.internals.env.__dict__.update(self.instructions.get_raw_dict)
 
         # Absolute path of the spec file.
         self.spec_file = os.path.join(
@@ -379,7 +379,7 @@ class Build(object):
         if self.instructions.ask:
             out.write("\n")
             out.normal("these packages will be merged, respectively:\n")
-            self.pretty_print(self.data_bundle.packages, data_bundle.conflicts, data_bundle.options)
+            self.pretty_print(self.data_bundle.packages, self.data_bundle.conflicts, self.data_bundle.options)
             utils.xterm_title("lpms: confirmation request")
             out.write("\ntotal %s package(s) will be merged.\n\n" \
                     % out.color(str(len(self.data_bundle.packages)), "green"))
@@ -505,13 +505,13 @@ class Build(object):
                 self.internals.env.name)
             )
 
-            out.normal("cleaning build directory...\n")
+            out.normal("cleaning build directory.")
             shelltools.remove_dir(os.path.dirname(self.internals.env.install_dir))
             catdir = os.path.dirname(os.path.dirname(self.internals.env.install_dir))
             if not os.listdir(catdir):
                 shelltools.remove_dir(catdir)
 
-            if index < len(packages):
+            if index < len(self.data_bundle.packages):
                 # Delete the old internal data container object
                 del self.internals
                 # And create it again for the new package

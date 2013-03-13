@@ -63,7 +63,7 @@ class ConstantValues:
         self.val.user_sets_dir = self.val.user_dir+"/"+self.val.sets_dir
         self.val.repo_conf = "/etc/lpms/repo.conf"
         self.val.configure_pending_file = "var/tmp/configure_pending.lpms"
-        self.val.merge_conf_file = "var/tmp/merge_conf_file.lpms"
+        self.val.merge_conf_file = "var/tmp/merge_conf_file.db"
         self.val.repo_file = "info/repo.conf"
         self.val.repo_info = "info"
         self.val.categories = "categories.xml"

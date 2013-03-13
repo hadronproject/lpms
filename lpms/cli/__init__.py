@@ -34,6 +34,7 @@ class Instruction(object):
         if key in self.__dict__:
             return self.__dict__[key]
 
+    @property
     def get_raw_dict(self):
         return self.__dict__
 
@@ -42,9 +43,9 @@ class AvailableArgument(object):
         for kwarg in kwargs:
             setattr(self, kwarg, kwargs[kwarg])
 
+    @property
     def get_items(self):
         return self.__dict__
-
 
 class Actions(object):
     def about(self):
@@ -94,9 +95,9 @@ class CommandLineParser(Actions):
                 AvailableArgument(arg='--sandbox-log-level', action="sandbox_log_level", \
                         description='Configures sandbox logging verbosity.'),
                 AvailableArgument(arg='--ignore-reserve-files', env_key='ignore_reserve_files', \
-                        description='Uses fresh files instead of local configuration files'),
+                        description='Uses fresh files instead of local configuration files.'),
                 AvailableArgument(arg='--change-root', action='change_root', \
-                        description='Changes installation target'),
+                        description='Changes installation target.'),
                 AvailableArgument(arg='--resume-build', env_key='resume_build', \
                         description='Resumes the most recent build operation.'),
                 AvailableArgument(arg='--force-file-collision', env_key='force_file_collision', \
@@ -106,7 +107,7 @@ class CommandLineParser(Actions):
                 AvailableArgument(arg='--not-merge', env_key='not_merge', \
                         description='Not merge the package after building.'),
                 AvailableArgument(arg='--unset-env-vars', env_key='unset_env_variables', \
-                        description='Unsets environment variables that were defined in configuration files'),
+                        description='Unsets environment variables that were defined in configuration files.'),
                 AvailableArgument(arg='--opts', action='parse_options', \
                         description='Gets options of the package from command line.'),
 

@@ -27,8 +27,9 @@ class Environment(object):
     def __getattr__(self, key):
         if key in self.__dict__:
             return self.__dict__[key]
-        return False
+        return None
 
+    @property
     def get_raw_dict(self):
         return self.__dict__
 
