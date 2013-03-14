@@ -20,8 +20,6 @@ import os
 import sys
 import signal
 import shelve
-import cPickle as pickle
-
 
 # Append lpms' path to Python path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
@@ -33,101 +31,79 @@ from lpms import utils
 from lpms import shelltools
 from lpms import constants as cst
 
-__version__ = "0.2"
+APP_NAME = "merge-conf"
+APP_VERSION = "0.3"
 
-class Merge(object):
+class MergeConf(object):
     def __init__(self):
-        self.i = 0
-        self.query = []
+        self.index = 0
         self.success = []
         self.merge_conf_file = os.path.join(cst.root, cst.merge_conf_file)
+        if os.access(self.merge_conf_file, os.R_OK):
+            if not os.access(self.merge_conf_file, os.W_OK):
+                out.error("%s not writable, please check that file." % self.merge_conf_file)
+                lpms.terminate()
+            self.query = shelve.open(self.merge_conf_file)
+        else:
+            out.error("%s not readable, please check that file." % self.merge_conf_file)
+            lpms.terminate()
 
-    def load_merge_conf_file(self):
-        if os.path.isfile(self.merge_conf_file):
-            with open(self.merge_conf_file, "rb") as data:
-                try:
-                    self.query = pickle.load(data)
-                except EOFError:
-                    shelltools.remove_file(self.merge_conf_file)
-                    lpms.terminate()
+    def delete_from_db(self, package, item):
+        tmp = self.query[package]
+        tmp.remove(item)
+        self.query[package] = tmp
+        if not self.query[package]:
+            del self.query[package]
 
-    def show(self, conf_file):
-        self.i += 1
-        out.write(out.color("("+str(self.i)+"/"+str(len(self.query))+")", "green"))
-        out.write(" "+conf_file+"\n\n")
+    def show(self, item):
         diff_path = utils.executable_path("diff")
-        os.system("%s -Naur %s %s" % (diff_path, conf_file, conf_file+".lpms-backup"))
+        os.system("%s -Naur %s %s" % (diff_path, item, item+".lpms-backup"))
         out.write("\n")
         out.normal("[U]se new file, [R]emove new file, [P]ass, [Q]uit\n")
 
     def start(self):
-        for conf_file in self.query:
-            if not os.path.isfile(conf_file+".lpms-backup"):
-                #FIXME: what if a conf file in self.query but it has not 
-                #.lpms-backup version?
-                self.success.append(conf_file)
-                continue
+        for package in self.query:
+            for item in self.query[package]:
+                if not os.path.isfile(item+".lpms-backup"):
+                    self.delete_from_db(package, item)
+                    continue
+                # show diff output
+                out.normal("%s provides a new version of %s or that file was manipulated by you.\n" % (package, item))
+                self.show(item)
+                answer = sys.stdin.readline().strip()
+                if answer == "U" or answer == "u":
+                    shelltools.move(item+".lpms-backup", item)
+                    self.delete_from_db(package, item)
+                elif answer == "R" or answer == "r":
+                    shelltools.remove_file(conf_file+".lpms-backup")
+                    self.delete_from_db(package, item)
+                elif answer == "P" or answer == "p":
+                    continue
+                elif answer == "Q" or answer == "q":
+                    return
+                else:
+                    out.warn("invalid character: %s" % answer)
+                    show(item)
 
-            # show diff output
-            self.show(conf_file)
-
-            answer = sys.stdin.readline().strip()
-            if answer == "U" or answer == "u":
-                shelltools.move(conf_file+".lpms-backup", conf_file)
-                self.success.append(conf_file)
-            elif answer == "R" or answer == "r":
-                shelltools.remove_file(conf_file+".lpms-backup")
-                self.success.append(conf_file)
-            elif answer == "P" or answer == "p":
-                continue
-            elif answer == "Q" or answer == "q":
-                return
-            else:
-                out.warn("invalid character: %s" % answer)
-                #show(i)
-
-    def save_merge_conf_file(self):
-        new_files = []
-        for q in self.query:
-            if not q in self.success:
-                new_files.append(q)
-
-        if os.path.isfile(self.merge_conf_file):
-            shelltools.remove_file(self.merge_conf_file)
-
-        if new_files:
-            with open(self.merge_conf_file, "wb") as data:
-                pickle.dump(new_files, data)
-
-def merge_conf():
+def main():
     for cmd in sys.argv[0:]:
         if cmd == "--help" or cmd == "-h":
-            out.normal("merge-conf -- Configuration file manager for lpms.")
-            out.notify("Simply, run 'merge-conf' command to see changed configuration files after re-installation.")
-            out.notify("For processing a particular file, use -f/--file parameter. Like that:")
-            out.notify("# merge-conf -f /etc/foo.conf /etc/bar.cfg")
-            return
+            out.normal("%s -- Configuration file manager for lpms." % APP_NAME)
+            out.write("Simply, run 'merge-conf' command to see changed configuration files.\n")
+            sys.exit(0)
         elif cmd == "--version":
-            out.write("merge-conf-%s\n" %  __version__)
-            return
+            out.write("%s %s\n" %  (APP_NAME, APP_VERSION))
+            sys.exit(0)
 
     if not utils.check_root():
         out.warn("you must be root for doing this.")
-        return
-
+        sys.exit(0)
+    
     # run the program
-    obj = Merge()
-    if len(sys.argv) >= 2 and (sys.argv[1] == "-f" or sys.argv[1] == "--file"):
-        obj.query = sys.argv[2:]
-        obj.start()
-        obj.load_merge_conf_file()
-        obj.save_merge_conf_file()
-        return
-
-    obj.load_merge_conf_file()
-    obj.start()
-    obj.save_merge_conf_file()
-
+    operator = MergeConf()
+    operator.start()
+    operator.query.close()
+    sys.exit(0)
 
 def exit_handler(signum, frame):
     signal.signal(signal.SIGINT, signal.SIG_IGN)
@@ -139,5 +115,5 @@ signal.signal(signal.SIGTERM, exit_handler)
 signal.signal(signal.SIGPIPE, signal.SIG_DFL)
 
 if __name__ == '__main__':
-    merge_conf()
+    main()
 

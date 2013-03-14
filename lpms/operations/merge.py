@@ -436,8 +436,9 @@ class Merge(object):
         self.update_info_index()
 
         if self.backup:
-            out.warn_notify("%s configuration file changed. Use %s to fix these files." % 
-                    (len(self.backup), out.color("merge-conf", "red")))
+            out.write("%s%s configuration file changed. Use %s to fix these files.\n" % 
+                    (out.color(" > ", "green"), len(self.backup), \
+                            out.color("merge-conf", "red")))
 
         if shelltools.is_exists(cst.lock_file):
             shelltools.remove_file(cst.lock_file)
