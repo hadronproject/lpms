@@ -230,17 +230,27 @@ class Build(object):
 
     def clean_temporary_directory(self):
         '''Cleans temporary directory which contains source code and building environment.'''
-        clean_tmp_exceptions = ("resume")
-        for item in shelltools.listdir(cst.extract_dir):
-            if item in clean_tmp_exceptions:
-                continue
-            path = os.path.join(cst.extract_dir, item)
-            if path in clean_tmp_exceptions:
-                continue
-            if os.path.isdir(path):
-                shelltools.remove_dir(path)
-            else:
-                shelltools.remove_file(path)
+        def clean(target):
+            for item in shelltools.listdir(target):
+                path = os.path.join(target, item)
+                if os.path.isdir(path):
+                    shelltools.remove_dir(path)
+                else:
+                    shelltools.remove_file(path)
+        # dont remove these directories which are located in work_dir
+        exceptions = ('install', 'source')
+        if shelltools.listdir(self.internals.env.build_dir):
+            clean(self.internals.env.build_dir)
+        if shelltools.listdir(self.internals.env.install_dir):
+            clean(self.internals.env.install_dir)
+        # Now, clean workdir
+        for item in shelltools.listdir(self.internals.env.work_dir):
+            if not item in exceptions:
+                path = os.path.join(self.internals.env.work_dir, item)
+                if os.path.isdir(path):
+                    shelltools.remove_dir(path)
+                else:
+                    shelltools.remove_file(path)
 
     def set_environment_variables(self, package):
         '''Sets environment variables that used interpreter and other parts of lpms'''
@@ -347,7 +357,12 @@ class Build(object):
         else:
             self.internals.env.sandbox = self.config.sandbox
 
-        # Set build_dir and install_dir variables to lpms' internal build environment.
+        # Set work_dir, build_dir and install_dir variables to lpms' internal build environment.
+        self.internals.env.work_dir = os.path.join(
+                self.config.build_dir,
+                self.internals.env.category,
+                self.internals.env.fullname
+        )
         self.internals.env.build_dir = os.path.join(
                 self.config.build_dir,
                 self.internals.env.category,
@@ -405,11 +420,13 @@ class Build(object):
                 if not os.path.ismount(item):
                     out.warn("%s is not mounted. You have been warned." % item)
 
-            # TODO: We must check this mechanism.
             # clean source code extraction directory if it is wanted
-            # TODO: Can we use self.instructions object instead of lpms.getopt?
-            if lpms.getopt("--clean-tmp"):
-                self.clean_temporary_directory()
+            # TODO: check the following condition when resume functionality is back
+            if self.instructions.clean_tmp:
+                if self.instructions.resume_build is not None:
+                    out.warn("clean-tmp is disabled because of resume-build is enabled.")
+                else:
+                    self.clean_temporary_directory()
 
             # we want to save starting time of the build operation to calculate building time
             # The starting point of logging
