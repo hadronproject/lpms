@@ -321,10 +321,11 @@ class Build(object):
             if not hasattr(self.internals.env, "src_url"):
                 self.internals.env.src_url = None
 
-        # Cut revision number from srcdir prevent unpacking fails 
-        srcdir = self.internals.env.name+"-"\
-                +self.internals.env.version.replace(self.internals.env.revision, "")
-        setattr(self.internals.env, "srcdir", srcdir)
+        if self.internals.env.srcdir is None:
+            # Cut revision number from srcdir prevent unpacking fails
+            srcdir = self.internals.env.name+"-"\
+                    +self.internals.env.version.replace(self.internals.env.revision, "")
+            self.internals.env.srcdir = srcdir
 
         filesdir = os.path.join(
                 cst.repos,
