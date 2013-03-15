@@ -84,3 +84,9 @@ class ConditionConflict(Exception):
 
 class IntegrityError(Exception):
     pass
+
+class InvalidRepository(Exception):
+    pass
+
+class AlreadyRunning(Exception):
+    pass

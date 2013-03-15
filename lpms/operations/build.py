@@ -387,15 +387,17 @@ class Build(object):
         if self.instructions.pretend:
             out.write("\n")
             out.normal("these packages will be merged, respectively:\n")
-            self.pretty_print(packages, conflicts, options)
+            self.pretty_print(self.data_bundle.packages, self.data_bundle.conflicts, \
+                    self.data_bundle.options)
             out.write("\ntotal %s package(s) listed.\n\n" \
-                    % out.color(str(len(packages)), "green"))
+                    % out.color(str(len(self.data_bundle.packages)), "green"))
             lpms.terminate()
 
         if self.instructions.ask:
             out.write("\n")
             out.normal("these packages will be merged, respectively:\n")
-            self.pretty_print(self.data_bundle.packages, self.data_bundle.conflicts, self.data_bundle.options)
+            self.pretty_print(self.data_bundle.packages, self.data_bundle.conflicts, \
+                    self.data_bundle.options)
             utils.xterm_title("lpms: confirmation request")
             out.write("\ntotal %s package(s) will be merged.\n\n" \
                     % out.color(str(len(self.data_bundle.packages)), "green"))

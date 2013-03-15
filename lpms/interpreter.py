@@ -132,7 +132,7 @@ class Interpreter(internals.InternalFuncs):
 
     def run_extract(self):
         # if the environment has no extract_plan variable, doesn't run extract function
-        if not hasattr(self.environment, "extract_nevertheless") or not self.env.extract_nevertheless:
+        if not hasattr(self.environment, "extract_nevertheless") or not self.environment.extract_nevertheless:
             if not hasattr(self.environment, "extract_plan"): return
         target = os.path.dirname(self.environment.build_dir)
         extracted_file = os.path.join(os.path.dirname(target), ".extracted")
@@ -211,7 +211,7 @@ class Interpreter(internals.InternalFuncs):
     def run_install(self):
         utils.xterm_title("(%s/%s) lpms: installing %s/%s-%s from %s" % (self.environment.index, self.environment.count, 
             self.environment.category, self.environment.name, self.environment.version, self.environment.repo))
-        out.normal("installing %s to %s" % (self.environment.fullname, self.env.install_dir))
+        out.normal("installing %s to %s" % (self.environment.fullname, self.environment.install_dir))
         installed_file = os.path.join(os.path.dirname(os.path.dirname(
             self.environment.build_dir)), ".installed")
 
@@ -226,7 +226,7 @@ class Interpreter(internals.InternalFuncs):
             for doc in self.environment.docs:
                 if isinstance(doc, list) or isinstance(doc, tuple):
                     source_file, target_file = doc
-                    namestr = self.environment.fullname if self.env.slot != "0" else self.environment.name
+                    namestr = self.environment.fullname if self.environment.slot != "0" else self.environment.name
                     target = self.environment.fix_target_path("/usr/share/doc/%s/%s" % (namestr, target_file))
                     source = os.path.join(self.environment.build_dir, source_file)
                 #    self.environment.index, insfile(source, target)
@@ -441,10 +441,10 @@ def run(script, environment, operation_order=None, remove=False):
                     operation_order.insert(len(operation_order), 'post_install')
                     break
 
-    if remove and 'pre_remove' in env.__dict__ and not 'pre_remove' in operation_order:
+    if remove and 'pre_remove' in ipr.environment.__dict__ and not 'pre_remove' in operation_order:
         operation_order.insert(0, 'pre_remove')
 
-    if remove and 'post_remove' in env.__dict__ and not 'post_remove' in operation_order:
+    if remove and 'post_remove' in ipr.environment.__dict__ and not 'post_remove' in operation_order:
         operation_order.insert(len(operation_order), 'post_remove')
 
     def parse_traceback(exception_type=None):
@@ -487,7 +487,7 @@ def run(script, environment, operation_order=None, remove=False):
         method = getattr(ipr, "run_"+opr)
         try:
             # firstly, lpms must be sure in the build directory
-            if hasattr(ipr.environment, "build_dir") and os.getcwd() != ipr.environment.build_dir:
+            if ipr.environment.build_dir is not None and os.getcwd() != ipr.environment.build_dir:
                 os.chdir(ipr.environment.build_dir)
             method()
         except SystemExit:

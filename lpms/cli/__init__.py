@@ -44,7 +44,7 @@ class AvailableArgument(object):
             setattr(self, kwarg, kwargs[kwarg])
 
     @property
-    def get_items(self):
+    def get_raw_dict(self):
         return self.__dict__
 
 class Actions(object):
@@ -56,8 +56,7 @@ class Actions(object):
 
     def change_root(self):
         '''Parses change-root argument'''
-        self.instruction.new_root = [option for option in \
-                self.argument_values["change_root"].split(" ") if option.strip()]
+        self.instruction.new_root = self.argument_values["change_root"].strip()
 
     def parse_options(self):
         '''Parses opts argument'''
@@ -66,11 +65,11 @@ class Actions(object):
 
 class CommandLineParser(Actions):
     '''Handles user actions and drives lpms' api'''
-    def __init__(self, arguments):
+    def __init__(self):
         self.router = []
         self.invalid = []
         self.instruction = Instruction()
-        self.arguments = arguments
+        self.arguments = sys.argv[1:]
         self.build_arguments = [
                 AvailableArgument(arg='--pretend', short='-p', \
                         env_key='pretend', description='Shows steps, instead of actually performing the operation.'),
@@ -103,7 +102,7 @@ class CommandLineParser(Actions):
                 AvailableArgument(arg='--force-file-collision', env_key='force_file_collision', \
                         description='Disables collision protect.'),
                 AvailableArgument(arg='--not-strip', env_key='not_strip', \
-                        description='No strip libraries and executable files.'),
+                        description='Not strip libraries and executable files.'),
                 AvailableArgument(arg='--not-merge', env_key='not_merge', \
                         description='Not merge the package after building.'),
                 AvailableArgument(arg='--unset-env-vars', env_key='unset_env_variables', \
@@ -152,7 +151,7 @@ class CommandLineParser(Actions):
         self.available_arguments = []
         self.available_arguments.extend(self.other_arguments)
         self.available_arguments.extend(self.build_arguments)
-        self.packages = []
+        self.names = []
         self.argument_values = {}
         self.invalid_arguments = []
 
@@ -202,15 +201,16 @@ class CommandLineParser(Actions):
         self.invalid = []
         for argument in self.arguments:
             if not argument.startswith("-"):
-                self.packages.append(argument)
+                self.names.append(argument)
                 continue
             elif argument.startswith("--"):
-                valid = False
+                valid, value = False, None
+                if "=" in argument:
+                    argument, value = argument.split("=")
                 for available_argument in self.available_arguments:
-                    if "=" in argument:
-                        argument, value = argument.split("=")
-                        self.argument_values[available_argument.action] = value
                     if argument == available_argument.arg:
+                        if value is not None:
+                            self.argument_values[available_argument.action] = value
                         append_argument()
                         valid = True
                         break
@@ -229,7 +229,7 @@ class CommandLineParser(Actions):
         if self.invalid:
             out.warn("these commands seem invalid: %s" % ", ".join(self.invalid))
 
-    def initialize(self):
+    def start(self):
         '''Runs methods to perform user requests considering the rules'''
         self.handle_arguments()
         action_plan = []
@@ -262,16 +262,8 @@ class CommandLineParser(Actions):
             if not action in result and not action in instruction_modifier:
                 result.append(action)
 
-        # Run actions, respectively
-        if result:
-            for action in result:
-                # TODO: We should use signals to determine behavior of lpms 
-                # when the process has finished.
+        self.operations = result
+        for action in result:
+            if hasattr(self, action):
                 getattr(self, action)()
-
-        if self.packages:
-            # Now, we can start building packages.
-            api.package_build(self.packages, self.instruction)
-        else:
-            out.error("nothing given.")
-            sys.exit(0)
+                self.operations.remove(action)
