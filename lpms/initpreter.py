@@ -34,7 +34,7 @@ class InitializeInterpreter(internals.InternalFuncs):
         super(InitializeInterpreter, self).__init__()
         self.package = package
         self.remove = remove
-        self.env.__dict__.update(instruct)
+        self.env.__dict__.update(instruct.__dict__)
         self.operations = operations
         self.env.__dict__["get"] = self.get
 
