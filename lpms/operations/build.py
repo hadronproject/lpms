@@ -480,11 +480,15 @@ class Build(object):
                     super(FormattedOptions, self).extend(data)
 
                 def append(self, item, color=None):
-                    self.remove(item)
-                    if color is not None:
-                        super(FormattedOptions, self).insert(0, out.color("*"+item, color))
+                    if item in self:
+                        self.remove(item)
+                        if color is not None:
+                            super(FormattedOptions, self).insert(0, out.color("*"+item, color))
+                        else:
+                            super(FormattedOptions, self).insert(0, item)
                     else:
-                        super(FormattedOptions, self).insert(0, item)
+                        super(FormattedOptions, self).insert(0, out.color("%"+item, color))
+
 
             formatted_options = []
             if package.options is not None:
