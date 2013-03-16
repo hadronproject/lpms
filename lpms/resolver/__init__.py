@@ -505,7 +505,7 @@ class DependencyResolver(object):
                         continue
                     self.package_options[package.id].add(option)
 
-        def check_conflicts():
+        def check_conflicts(dependency):
             for item in self.conflicts:
                 if dependency.pk in self.conflicts[item]:
                     out.error("%s/%s/%s-%s has a conflict with %s" % (
@@ -550,7 +550,7 @@ class DependencyResolver(object):
                                 continue
                     already_added[proper_dependency.id] = options
                     self.keep_dependency_information(package.id, keyword, proper_dependency)
-                    check_conflicts()
+                    check_conflicts(proper_dependency)
                     dependencies.append(proper_dependency)
                     if keyword.endswith("postmerge"):
                         self.postmerge_dependencies.add((proper_dependency.id, package.id))
@@ -583,7 +583,7 @@ class DependencyResolver(object):
                             else:
                                 self.package_options[package.id] = current_options
                         self.keep_dependency_information(package.id, keyword, dependency)
-                        check_conflicts()
+                        check_conflicts(dependency)
                         dependencies.append(dependency)
                         if keyword.endswith("postmerge"):
                             self.postmerge_dependencies.add((dependency.id, package.id))
