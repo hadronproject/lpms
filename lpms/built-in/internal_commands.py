@@ -197,10 +197,10 @@ def insinfo(*sources):
     shelltools.makedirs(os.path.dirname(target))
     return shelltools.install_readable(sources, target)
 
-def inslib(source, target='/usr/lib'):
+def inslib(source, target='/usr/lib', permission=0755):
     target = fix_target_path(target)
     shelltools.makedirs(os.path.dirname(target))
-    return shelltools.install_library(source, target, 0755)
+    return shelltools.install_library(source, target, permission)
 
 def opt(option):
     if isinstance(applied_options, set):
@@ -303,7 +303,7 @@ def isexists(target):
     return shelltools.is_exists(target)
 
 def cd(target=None):
-    target = fix_target_path(target, allowed_paths=[src_cache, filesdir])
+    target = fix_source_path(target, allowed_paths=[src_cache, filesdir])
     shelltools.cd(target)
 
 def copytree(source, target, sym=True):
