@@ -322,7 +322,7 @@ def install_library(source, target, permission = 0644):
         os.symlink(os.path.realpath(source), os.path.join(target, source))
     else:
         if not system('install -m0%o %s %s' % (permission, source, target)):
-            out.error("[install_library] %s could not installed to %s." % (src, target))
+            out.error("[install_library] %s could not installed to %s." % (source, target))
             return False
 
 def set_id(path, uid, gid):
