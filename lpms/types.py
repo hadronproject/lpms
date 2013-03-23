@@ -42,7 +42,7 @@ class LCollect(object):
         del self.__dict__[item]
 
     @property
-    def get_raw_dict(self):
+    def raw(self):
         return self.__dict__
 
 class PackageItem(list):
@@ -69,7 +69,7 @@ class PackageItem(list):
         return len(self)
 
     @property
-    def get_raw_dict(self):
+    def raw(self):
         return [i.__dict__ for i in self]
 
     def insert_into(self, index, item):

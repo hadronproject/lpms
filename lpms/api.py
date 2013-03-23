@@ -270,29 +270,40 @@ class GetPackage:
             raise UnavailablePackage(self.package)
         return the_package
 
-def resolve_dependencies(packages, instructions):
+def resolve_dependencies(names, instruction):
     '''
     Resolve dependencies using fixit object. This function
     prepares a full operation plan for the next stages
     '''
-    out.normal("resolving dependencies")
+    packages = [GetPackage(name).select() for name in names]
     command_line_options = instructions.command_line_options \
-            if instructions.command_line_options else []
-    custom_options = instructions.custom_options \
-            if instructions.custom_options else {}
+            if instruction.command_line_options else []
+    custom_options = instruction.custom_options \
+            if instruction.custom_options else {}
     dependency_resolver = resolver.DependencyResolver(
             packages,
             command_line_options,
             custom_options,
-            instructions.use_new_options
+            instruction.use_new_options
     )
     # To trigger resolver, call create_operation_plan
     return dependency_resolver.create_operation_plan()
 
-def package_build(packages, instructions):
+def prepare_environment(package, instruction, **kwargs):
+    '''Prepares the system for building the package'''
+    prepare = build.Build(package, instruction,
+            dependencies=kwargs.get("dependencies", None),
+            options=kwargs.get("options", None),
+            conditional_versions=kwargs.get("conditional_versions", None),
+            conflicts=kwargs.get("conflicts", None),
+            inline_option_targets=kwargs.get("inline_option_targets", None)
+    )
+    return prepare.perform_operation()
+
+"""def package_build(package, instructions):
     '''Starting point of the build operation'''
     # Get package name or names if the user uses joker character
-    """if instruct['like']:
+    if instruct['like']:
         mydb = dbapi.RepositoryDB()
         for item in instruct['like']:
             query = mydb.database.cursor.execute("SELECT name FROM package where \
@@ -302,14 +313,14 @@ def package_build(packages, instructions):
                 for result in results:
                     pkgnames.append(result[0])
         del mydb
-    """
+    
     # Resolve dependencies and trigger package builder
     try:
         # Prepare a plan using dependency resolver
         plan = resolve_dependencies([GetPackage(package).select() \
                 for package in packages], instructions)
         # Run Build class to perform building task
-        build.Build(plan, instructions).perform_operation()
+        return build.Build(plan, instructions).perform_operation()
     except PackageNotFound as package:
         out.error("%s count not found in the repository." % out.color(str(package), "red"))
     except ConflictError, DependencyError:
@@ -318,3 +329,4 @@ def package_build(packages, instructions):
     except UnavailablePackage as package:
         out.error("%s is unavailable for you." % out.color(str(package), "red"))
         out.error("this issue may be related with inconvenient arch or slotting.")
+"""

@@ -32,8 +32,13 @@ from lpms import constants as cst
 
 def safety_valve(fn):
     def wrapper(path, **kwargs):
-        allowed_paths = kwargs.get("allowed_paths", (install_dir, build_dir))
-        allowed_stages = kwargs.get("allowed_stages", (install_dir, build_dir))
+        allowed_paths = [install_dir, build_dir, \
+                os.path.dirname(install_dir), os.path.dirname(build_dir)]
+        if kwargs.get("allowed_paths") is not None:
+            allowed_paths.extend(kwargs.get("allowed_paths"))
+        allowed_stages = ['post_install', 'post_remove']
+        if kwargs.get("allowed_stages") is not None:
+            allowed_stages.extend(kwargs.get("allowed_stages"))
         # TODO: pre_remove, pre_install stages?
         if current_stage in allowed_stages:
             return path
@@ -44,9 +49,10 @@ def safety_valve(fn):
                 break
         if not safe:
             if current_stage == "install":
-                path = os.path.join(install_dir, path[1:]) \
+                basedir = install_dir if fn.__name__ == "fix_target_path" else build_dir
+                path = os.path.join(basedir, path[1:]) \
                         if path.startswith("/") \
-                        else os.path.join(install_dir, path)
+                        else os.path.join(basedir, path)
             else:
                 current_dir = pwd()
                 path = os.path.join(current_dir, path[1:]) \
@@ -56,13 +62,11 @@ def safety_valve(fn):
     return wrapper
 
 @safety_valve
-def fix_target_path(target, allowed_paths=None, \
-        allowed_stages=('post_remove', 'post_install')):
+def fix_target_path(target, allowed_paths=None, allowed_stages=None):
     return target, allowed_paths, allowed_stages
 
 @safety_valve
-def fix_source_path(target, allowed_paths=None, \
-        allowed_stages=('post_remove', 'post_install')):
+def fix_source_path(target, allowed_paths=None, allowed_stages=None):
     return target, allowed_paths, allowed_stages
 
 def unset_env_variables():
@@ -182,19 +186,21 @@ def insdoc(*sources):
         target = fix_target_path("/usr/share/doc/%s" % fullname)
     else:
         target = fix_target_path("/usr/share/doc/%s" % name)
-
     shelltools.makedirs(target)
-    return shelltools.install_readable(sources, target)
+    srcs = []
+    for source in sources:
+        srcs.extend(glob.glob(joinpath(build_dir, source)))
+    return shelltools.install_readable(srcs, target)
 
 def insinfo(*sources):
     target = fix_target_path("/usr/share/info")
     shelltools.makedirs(os.path.dirname(target))
     return shelltools.install_readable(sources, target)
 
-def inslib(source, target='/usr/lib'):
+def inslib(source, target='/usr/lib', permission=0755):
     target = fix_target_path(target)
     shelltools.makedirs(os.path.dirname(target))
-    return shelltools.install_library(source, target, 0755)
+    return shelltools.install_library(source, target, permission)
 
 def opt(option):
     if isinstance(applied_options, set):
@@ -267,44 +273,45 @@ def echo(content, target):
     shelltools.echo(content, fix_target_path(target))
 
 def isfile(target):
-    return shelltools.is_file(fix_target_path(target))
+    return shelltools.is_file(target)
 
 def isdir(target):
-    return shelltools.is_dir(fix_target_path(target))
+    return shelltools.is_dir(target)
 
 def realpath(target):
-    return shelltools.real_path(target = fix_target_path(target))
+    return shelltools.real_path(target)
 
 def basename(target):
-    return shelltools.basename(fix_target_path(target))
+    return shelltools.basename(target)
 
 def dirname(target):
-    return shelltools.dirname(fix_target_path(target))
+    return shelltools.dirname(target)
 
 def isempty(target):
-    return shelltools.is_empty(fix_target_path(target))
+    return shelltools.is_empty(target)
 
 def ls(target):
-    return shelltools.listdir(fix_target_path(target))
+    return shelltools.listdir(target)
 
 def islink(target):
-    return shelltools.is_link(fix_target_path(target))
+    return shelltools.is_link(target)
 
 def isfile(target):
-    return shelltools.is_file(fix_target_path(target))
+    return shelltools.is_file(target)
 
 def isexists(target):
-    return shelltools.is_exists(fix_target_path(target))
+    return shelltools.is_exists(target)
 
 def cd(target=None):
-    target = fix_target_path(target, allowed_paths=(install_dir, \
-            build_dir, src_cache, filesdir))
+    target = fix_source_path(target, allowed_paths=[src_cache, filesdir])
     shelltools.cd(target)
 
 def copytree(source, target, sym=True):
+    source = fix_source_path(source, allowed_paths=[filesdir, src_cache])
     shelltools.copytree(source, fix_target_path(target), sym)
 
 def copy(source, target, sym=True):
+    source = fix_source_path(source, allowed_paths=[filesdir, src_cache])
     shelltools.copy(source, fix_target_path(target), sym)
 
 def move(source, target):
@@ -316,17 +323,19 @@ def move(source, target):
 def insinto(source, target, target_file='', sym=True):
     target = fix_target_path(target)
     shelltools.makedirs(os.path.dirname(target))
-    shelltools.insinto(fix_source_path(source), \
+    shelltools.insinto(fix_source_path(source, allowed_paths=[filesdir, src_cache]), \
             target, install_dir, target_file, sym)
 
 def insfile(source, target):
     target = fix_target_path(target)
+    source = fix_source_path(source, allowed_paths=[filesdir, src_cache])
     shelltools.makedirs(os.path.dirname(target))
-    return shelltools.install_readable([fix_source_path(source)], target)
+    return shelltools.install_readable([source], target)
 
 def insexe(source, target='/usr/bin'):
     target = fix_target_path(target)
     shelltools.makedirs(os.path.dirname(target))
+    source = fix_source_path(source, allowed_paths=[filesdir, src_cache])
     return shelltools.install_executable([source], target)
 
 def makesym(source, target, ignore_fix_target=False):

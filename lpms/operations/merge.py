@@ -424,6 +424,8 @@ class Merge(object):
                 utils.update_info_index(info_file)
 
     def perform_operation(self):
+        utils.xterm_title("(%s/%s) lpms: merging %s/%s-%s from %s" % (self.environment.index, self.environment.count, 
+            self.environment.category, self.environment.name, self.environment.version, self.environment.repo))
         # create $info_file_name.gz archive and remove info file
         self.create_info_archive()
         # merge the package
@@ -442,3 +444,5 @@ class Merge(object):
 
         if shelltools.is_exists(cst.lock_file):
             shelltools.remove_file(cst.lock_file)
+
+        return True, self.environment

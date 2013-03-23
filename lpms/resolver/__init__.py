@@ -724,7 +724,7 @@ class DependencyResolver(object):
                     self.conditional_versions[value["owner_id"]].append(my_item)
 
         # TODO: I think I must use most professional way for ignore-depends feature.
-        if lpms.getopt("--ignore-depends"):
+        if lpms.getopt("--ignore-deps"):
             result = LCollect()
             result.packages = self.packages
             result.dependencies = self.package_dependencies
