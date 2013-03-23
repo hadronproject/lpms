@@ -139,7 +139,7 @@ class Operations(object):
                     package,
                     self.request.instruction,
                     dependencies=targets.dependencies[package.id] if package.id in \
-                            targets.dependencies[package.id] else None,
+                            targets.dependencies else None,
                     options=targets.options[package.id] if package.id in \
                             targets.options else None,
                     conditional_versions=targets.conditional_versions[package.id] \
