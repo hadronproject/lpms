@@ -30,11 +30,11 @@ class Environment(object):
         return None
 
     @property
-    def get_raw_dict(self):
+    def raw(self):
         return self.__dict__
 
-class InternalFuncs(object):
-    '''The starting point of an lpms operation'''
+class InternalFunctions(object):
+    '''The starting point of an operation'''
     def __init__(self):
         self.env = Environment()
         self.env.libraries = []
@@ -54,13 +54,16 @@ class InternalFuncs(object):
 
         for builtin_file in cst.builtin_files:
             if not self.import_script(os.path.join(cst.lpms_path, builtin_file)):
-                print("there are some problems in lpms' builtin libraries.")
-                print("this may be a serious bug. you should report it.")
+                sys.stdout.write(">> EEthere are some problems in lpms' builtin libraries.\n")
+                sys.stdout.write("this is probably a vital bug. so you should report that error.\n")
                 raise SystemExit(0)
 
     def import_script(self, script_path):
         try:
-            exec compile(open(script_path).read(), "error", "exec") in self.env.__dict__
+            if hasattr(self, "env"):
+                exec compile(open(script_path).read(), "error", "exec") in self.env.raw
+            else:
+                exec compile(open(script_path).read(), "error", "exec") in self.environment.raw
         except:
             traceback.print_exc()
             return False

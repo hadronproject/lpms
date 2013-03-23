@@ -35,7 +35,7 @@ class Instruction(object):
             return self.__dict__[key]
 
     @property
-    def get_raw_dict(self):
+    def raw(self):
         return self.__dict__
 
 class AvailableArgument(object):
@@ -44,7 +44,7 @@ class AvailableArgument(object):
             setattr(self, kwarg, kwargs[kwarg])
 
     @property
-    def get_raw_dict(self):
+    def raw(self):
         return self.__dict__
 
 class Actions(object):
@@ -107,9 +107,10 @@ class CommandLineParser(Actions):
                         description='Not merge the package after building.'),
                 AvailableArgument(arg='--unset-env-vars', env_key='unset_env_variables', \
                         description='Unsets environment variables that were defined in configuration files.'),
+                AvailableArgument(arg='--force-extract', env_key='force_extract', \
+                        description='Forces the system for extracting the archive.'),
                 AvailableArgument(arg='--opts', action='parse_options', \
                         description='Gets options of the package from command line.'),
-
         ]
         self.other_arguments = [
                     AvailableArgument(arg="--help", short="-h", \

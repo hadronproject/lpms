@@ -90,3 +90,6 @@ class InvalidRepository(Exception):
 
 class AlreadyRunning(Exception):
     pass
+
+class LpmsTerminate(Exception):
+    pass
