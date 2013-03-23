@@ -33,7 +33,7 @@ from lpms import constants as cst
 from lpms.db import api
 from lpms.exceptions import IntegrityError
 
-class Update(internals.InternalFuncs):
+class Update(internals.InternalFunctions):
     def __init__(self):
         super(Update, self).__init__()
         self.repodb = api.RepositoryDB()

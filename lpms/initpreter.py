@@ -27,7 +27,7 @@ from lpms import constants as cst
 # this module provies an interface to run lpms's package specification 
 # interpreter for any purpose except that build operation.
 
-class InitializeInterpreter(internals.InternalFuncs):
+class InitializeInterpreter(internals.InternalFunctions):
     '''Base class for initialize the lpms spec interpreter
     It can be used for any purpose'''
     def __init__(self, package, instruct, operations, remove=False):
