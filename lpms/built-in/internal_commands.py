@@ -203,8 +203,11 @@ def inslib(source, target='/usr/lib', permission=0755):
     return shelltools.install_library(source, target, permission)
 
 def opt(option):
-    if isinstance(applied_options, set):
-        return option in applied_options
+    try:
+        if isinstance(applied_options, set):
+            return option in applied_options
+    except NameError:
+        return False
     return False
 
 def config_decide(option, secondary=None, appends=['--enable-', '--disable-']):
