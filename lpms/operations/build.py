@@ -67,7 +67,7 @@ class Build(object):
                 }
         )
         self.config = conf.LPMSConfig()
-        if not self.instruction.unset_env_variables:
+        if self.instruction.unset_env_variables is not None:
             utils.set_environment_variables()
         self.revisioned = False
         self.revision = None

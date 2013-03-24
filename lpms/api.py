@@ -276,7 +276,7 @@ def resolve_dependencies(names, instruction):
     prepares a full operation plan for the next stages
     '''
     packages = [GetPackage(name).select() for name in names]
-    command_line_options = instructions.command_line_options \
+    command_line_options = instruction.command_line_options \
             if instruction.command_line_options else []
     custom_options = instruction.custom_options \
             if instruction.custom_options else {}
