@@ -155,15 +155,17 @@ class Build(object):
     def prepare_download_plan(self, applied_options):
         '''Prepares download plan. It gets applied options to select optional urls.'''
         for url in self.urls:
-            local_file = os.path.join(self.config.src_cache, \
-                    os.path.basename(url))
             if not isinstance(url, tuple):
+                local_file = os.path.join(self.config.src_cache, os.path.basename(url))
                 self.extract_plan.append(url)
                 if os.path.isfile(local_file):
                     continue
                 self.download_plan.append(url)
             else:
                 option, url = url
+                local_file = os.path.join(self.config.src_cache, os.path.basename(url))
+                if applied_options is None:
+                    continue
                 if option in applied_options:
                     self.extract_plan.append(url)
                     if os.path.isfile(local_file):
@@ -217,7 +219,7 @@ class Build(object):
             elif len(result) == 2:
                 myoption, url = result
                 url = url.replace(")", "")
-                parse(url, opt=myoption)
+                parse(url, option=myoption)
 
     def mangle_spec(self):
         # TODO: Use more convenient exceptions for error states.
