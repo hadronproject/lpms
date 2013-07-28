@@ -443,11 +443,15 @@ class ScriptEngine(internals.InternalFunctions):
             """
             method = getattr(self, "run_"+operation)
             try:
-                # firstly, lpms must be sure in the build directory
                 if self.environment.build_dir is not None and os.getcwd() != self.environment.build_dir:
                     os.chdir(self.environment.build_dir)
                 method()
+            except KeyboardInterrupt:
+                # Return None as retval because this is neither an error nor successfully completed operation. 
+                # This is an user interrupt.
+                return None, self.environment
             except SystemExit:
+                # FIXME: Which conditions have raised SystemExit exception?
                 return False, self.environment
             except exceptions.BuildError:
                 return parse_traceback("BuildError"), self.environment

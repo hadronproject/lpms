@@ -34,6 +34,10 @@ from lpms import file_collisions
 from lpms.cli import CommandLineParser
 from lpms.exceptions import PackageNotFound, LpmsTerminate
 
+# The core of lpms package manager.
+# Gets command line parameters and evaluates them,
+# Sets environment variables and starts operations to maintain packages.
+
 class Operations(object):
     '''Drives lpms'''
     def check_root(method):
@@ -155,11 +159,14 @@ class Operations(object):
                 raise LpmsTerminate("thanks to flying with lpms.")
             # Now, run package script(spec) for configuring, building and install
             retval, environment = self.interpreter.initialize(environment)
-            if not retval:
+            if retval is False:
                 out.error("There are some errors while building FOO from source.")
                 out.error("Error messages should be seen above.")
                 out.error("If you want to submit a bug report, please attatch BAR or send above messages in a proper way.")
                 raise LpmsTerminate("thanks to flying with lpms.")
+            elif retval is None:
+                raise LpmsTerminate
+
             if not collision_check():
                 out.error("File collisions detected. If you want to overwrite these files,")
                 out.error("You have to use --force-file-collisions parameter or disable collision_protect in configuration file.")
@@ -184,14 +191,15 @@ class Operations(object):
                 package.name)
             )
 
-            out.normal("Cleaning build directory...")
+            out.normal("Cleaning build directory")
             shelltools.remove_dir(os.path.dirname(environment.install_dir))
             catdir = os.path.dirname(os.path.dirname(environment.install_dir))
             if not os.listdir(catdir):
                 shelltools.remove_dir(catdir)
 
-            # There is no error
+            # There is no error, exitting...
             out.normal("Completed.")
+
 
 class LPMSCore(Operations):
     def __init__(self):
@@ -219,5 +227,12 @@ class LPMSCore(Operations):
             out.error("nothing given.")
             sys.exit(0)
 
+
 def initialize():
-    LPMSCore().initialize()
+    '''Initializes lpms package manager'''
+    try:
+        LPMSCore().initialize()
+    except LpmsTerminate as err:
+        # TODO: Parse these err variable when debug mode is enabled.  
+        out.write("Terminated.\n")
+
