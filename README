@@ -1,50 +1,15 @@
-L Package Management System -- lpms
-===================================
+LPMS -- Package Manager for GNU/Linux
+=====================================
 
+lpms is a package manager that's designed to be fast,
+user-friendly and powerful.
 
-About
--------
-
-Package manager of Hadron GNU/Linux is lpms. It is acronym of L Package Management System. 
-L is meaningless.
-
-It's written with Python. Designed to be fast, functional, ergonomic and user-friendly(KISS). 
-lpms builds source codes with help of special Python scripts from repositories.
-
-It can be used to install bleeding-edge packages. You can create a script to create a package 
-that uses directly upstream code. We call these "live packages".
-
-Developers/maintainers can create repositories managed by Git, Subversion or other version control systems. 
-lpms can synchronize directly from content management systems.
-
-Information about packages given via these scripts, but lpms has SQL backend to manage 
-the huge information about packages and dependencies.
-
-
-Dependencies
--------------
-
-* lpms is written in Python-2.7
-
-* Python-2.7.x must be compiled with sqlite3 support.
-
-* Uses sydbox as sandboxing application.
- 
- Note: If you don't want to use sydbox, you must set sandbox as False in 
- /etc/lpms/build.conf.
-
-* Uses 'magic' to check MIME types. The module is a part of file(sys-apps/file
- in Hadron GNU/Linux) package.
-
-Installation
--------------
-
-See main/sys-apps/lpms-x.y.z.py
+It's written in Python. So the packages are defined in that language.
 
 
 Contact
---------
+=======
 
 Web site: http://hadronproject.org
-E-mail: purak__at__hadronproject.org
+E-mail: bburaksezer__at__gmail__com
 IRC Channel: #hadron, #lpms, #hadron-devel on freenode
