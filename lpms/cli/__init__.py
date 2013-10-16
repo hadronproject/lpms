@@ -1,4 +1,4 @@
-# Copyright 2009 - 2011 Burak Sezer <purak@hadronproject.org>
+# Copyright 2009 - 2014 Burak Sezer <purak@hadronproject.org>
 # 
 # This file is part of lpms
 #  
@@ -19,17 +19,20 @@
 import sys
 
 # Get lpms toolkit
-from lpms import api
 from lpms import out
 from lpms.sorter import topsort
 
 # Object oriented command line interpreter
 
 # Here, define some variables
-APP_NAME = "lpms"
-VERSION = "1.1_beta1"
+__APP_NAME__ = "lpms"
+__VERSION__ = "1.1_beta1"
+
 
 class Instruction(object):
+    """
+    A class that stores internal instruction set
+    """
     def __getattr__(self, key):
         if key in self.__dict__:
             return self.__dict__[key]
@@ -38,7 +41,11 @@ class Instruction(object):
     def raw(self):
         return self.__dict__
 
+
 class AvailableArgument(object):
+    """
+    A class that stores internal available arguments set
+    """
     def __init__(self, **kwargs):
         for kwarg in kwargs:
             setattr(self, kwarg, kwargs[kwarg])
@@ -47,24 +54,39 @@ class AvailableArgument(object):
     def raw(self):
         return self.__dict__
 
+
 class Actions(object):
+    """
+    A collection of methods to handle user requests
+    """
     def about(self):
-        '''Shows application name and version and exits'''
-        out.write("%s %s\n" % (APP_NAME, VERSION))
+        """
+        Shows application name and version and exits
+        """
+        out.write("%s %s\n" % (__APP_NAME__, __VERSION__))
         # Do nothing after after showing version information
         sys.exit(0)
 
     def change_root(self):
-        '''Parses change-root argument'''
+        """
+        Parses change-root argument
+        """
         self.instruction.new_root = self.argument_values["change_root"].strip()
 
     def parse_options(self):
-        '''Parses opts argument'''
-        self.instruction.command_line_options = [option for option in \
-                self.argument_values["parse_options"].split(" ") if option.strip()]
+        """
+        Handles parse options
+        """
+        self.instruction.command_line_options = []
+        for option in self.argument_values["parse_options"].split(" "):
+            if option.strip():
+                self.instruction.command_line_options.append(option)
+
 
 class CommandLineParser(Actions):
-    '''Handles user actions and drives lpms' api'''
+    """
+    Handles user actions and drives lpms' api
+    """
     def __init__(self):
         self.router = []
         self.invalid = []
@@ -72,83 +94,173 @@ class CommandLineParser(Actions):
         self.arguments = sys.argv[1:]
         self.build_arguments = [
                 AvailableArgument(arg='--pretend', short='-p', \
-                        env_key='pretend', description='Shows steps, instead of actually performing the operation.'),
+                        env_key='pretend', \
+                        description='Shows steps, instead of actually performing the operation.'),
+                
                 AvailableArgument(arg="--ask", short='-a', \
-                        env_key='ask', description='Asks the user before starting the process.'),
+                        env_key='ask', \
+                        description='Asks the user before starting the process.'),
+                
                 AvailableArgument(arg='--category-install', short="-C", \
-                        env_key="category_install", description='Installs packages that\'s in given repo/category.'),
-                AvailableArgument(arg='--use-new-opts', short='-N', env_key="use_new_opts", \
+                        env_key="category_install", \
+                        description='Installs packages that\'s in given repo/category.'),
+                
+                AvailableArgument(arg='--use-new-opts', \
+                        short='-N', \
+                        env_key="use_new_opts", \
                         description='Applies new global options for installed packages.'),
-                AvailableArgument(arg='--resume', env_key="resume",
-                    description="Resumes previous installation operation."),
-                AvailableArgument(arg='--ignore-deps', env_key="ignore_deps", \
+                
+                AvailableArgument(arg='--resume', \
+                        env_key="resume", \
+                        description="Resumes previous installation operation."),
+                
+                AvailableArgument(arg='--ignore-deps', \
+                        env_key="ignore_deps", \
                         description='Ignores dependencies.'),
-                AvailableArgument(arg='--ignore-conflicts', env_key='ignore_conflicts', \
+                
+                AvailableArgument(arg='--ignore-conflicts', \
+                        env_key='ignore_conflicts', \
                         description='Ignore file conflicts if conflict protect is enabled.'),
-                AvailableArgument(arg='--no-configure', env_key='no_configure', \
+                
+                AvailableArgument(arg='--no-configure', \
+                        env_key='no_configure', \
                         description='Does not run configuration functions.'),
+                
                 AvailableArgument(arg='--enable-sandbox', \
-                        env_key='enable_sandbox', description='Enables sandbox mechanism.'),
+                        env_key='enable_sandbox', \
+                        description='Enables sandbox mechanism.'),
+                
                 AvailableArgument(arg='--disable-sandbox', \
-                        env_key='disable_sandbox', description='Disables sandbox mechanism.'),
-                AvailableArgument(arg='--sandbox-log-level', action="sandbox_log_level", \
+                        env_key='disable_sandbox', \
+                        description='Disables sandbox mechanism.'),
+                
+                AvailableArgument(arg='--sandbox-log-level', \
+                        action="sandbox_log_level", \
                         description='Configures sandbox logging verbosity.'),
-                AvailableArgument(arg='--ignore-reserve-files', env_key='ignore_reserve_files', \
+                
+                AvailableArgument(arg='--ignore-reserve-files', \
+                        env_key='ignore_reserve_files', \
                         description='Uses fresh files instead of local configuration files.'),
-                AvailableArgument(arg='--change-root', action='change_root', \
+                
+                AvailableArgument(arg='--change-root', \
+                        action='change_root', \
                         description='Changes installation target.'),
-                AvailableArgument(arg='--resume-build', env_key='resume_build', \
+                
+                AvailableArgument(arg='--resume-build', \
+                        env_key='resume_build', \
                         description='Resumes the most recent build operation.'),
-                AvailableArgument(arg='--force-file-collision', env_key='force_file_collision', \
+                
+                AvailableArgument(arg='--force-file-collision', \
+                        env_key='force_file_collision', \
                         description='Disables collision protect.'),
-                AvailableArgument(arg='--not-strip', env_key='not_strip', \
+                
+                AvailableArgument(arg='--not-strip', \
+                        env_key='not_strip', \
                         description='Not strip libraries and executable files.'),
-                AvailableArgument(arg='--not-merge', env_key='not_merge', \
+                
+                AvailableArgument(arg='--not-merge', \
+                        env_key='not_merge', \
                         description='Not merge the package after building.'),
-                AvailableArgument(arg='--unset-env-vars', env_key='unset_env_variables', \
+                
+                AvailableArgument(arg='--unset-env-vars', \
+                        env_key='unset_env_variables', \
                         description='Unsets environment variables that were defined in configuration files.'),
-                AvailableArgument(arg='--force-extract', env_key='force_extract', \
+                
+                AvailableArgument(arg='--force-extract', \
+                        env_key='force_extract', \
                         description='Forces the system for extracting the archive.'),
-                AvailableArgument(arg='--opts', action='parse_options', \
+                
+                AvailableArgument(arg='--opts', \
+                        action='parse_options', \
                         description='Gets options of the package from command line.'),
         ]
+
+
         self.other_arguments = [
-                    AvailableArgument(arg="--help", short="-h", \
-                            action="usage", description="Shows this message."),
-                    AvailableArgument(arg="--version", short="-v", \
-                            action="about", description="Shows version information."),
-                    AvailableArgument(arg="--sync", short='-S', \
-                            action='sync', description='Sync..s enabled remote repositories.'),
-                    AvailableArgument(arg="--update", short='-u', \
-                            action='update', description='Updates all of the repositories or particular one.'),
-                    AvailableArgument(arg="--upgrade", short='-U', \
-                            action='upgrade', description='Scans the system for upgradeable packages.'),
-                    AvailableArgument(arg='--search', short='-s', action='search', \
+                    AvailableArgument(arg="--help", \
+                            short="-h", \
+                            action="usage", \
+                            description="Shows this message."),
+                    
+                    AvailableArgument(arg="--version", \
+                            short="-v", \
+                            action="about", \
+                            description="Shows version information."),
+                    
+                    AvailableArgument(arg="--sync", \
+                            short='-S', \
+                            action='sync', \
+                            description='Synchronizes enabled remote repositories.'),
+                    
+                    AvailableArgument(arg="--update", \
+                            short='-u', \
+                            action='update', \
+                            description='Updates all of the repositories or particular one.'),
+                    
+                    AvailableArgument(arg="--upgrade", \
+                            short='-U', \
+                            action='upgrade', \
+                            description='Scans the system for upgradeable packages.'),
+                    
+                    AvailableArgument(arg='--search', \
+                            short='-s', \
+                            action='search', \
                             description='Searches given keyword in databases.'),
-                    AvailableArgument(arg='--remove', short='-r', action='remove', \
+                    
+                    AvailableArgument(arg='--remove', \
+                            short='-r', \
+                            action='remove', \
                             description='Removes given package from the system.'),
-                    AvailableArgument(arg='--belong', short='-b', action='belong', \
+                    
+                    AvailableArgument(arg='--belong', \
+                            short='-b', action='belong', \
                             description='Queries the package that owns given keyword.'),
-                    AvailableArgument(arg='--content', short='-c', action='content', \
+                    
+                    AvailableArgument(arg='--content', \
+                            short='-c', action='content', \
                             description='Lists files of the given package.'),
-                    AvailableArgument(arg='--list-repos', action='list_repositories', \
+                    
+                    AvailableArgument(arg='--list-repos', \
+                            action='list_repositories', \
                             description='Lists all of the repositories.'),
-                    AvailableArgument(arg='--clean-tmp', env_key='clean_tmp', \
+                    
+                    AvailableArgument(arg='--clean-tmp', \
+                            env_key='clean_tmp', \
                             description='Cleans lpms\' working directory.'),
-                    AvailableArgument(arg='--build-info', env_key='build_info', \
+                    
+                    AvailableArgument(arg='--build-info', \
+                            env_key='build_info', \
                             description='Shows package\'s build information.'),
-                    AvailableArgument(arg='--clean-system', action='clean_system', \
+                    
+                    AvailableArgument(arg='--clean-system', \
+                            action='clean_system', \
                             description='Removes unneeded packages from the system.'),
-                    AvailableArgument(arg='--force-upgrade', env_key='clean_system', \
+                    
+                    AvailableArgument(arg='--force-upgrade', \
+                            env_key='clean_system', \
                             description='Forces lpms for using latest versions of the packages.'),
-                    AvailableArgument(arg='--configure-pending', env_key='configure_pending', \
+                    
+                    AvailableArgument(arg='--configure-pending', \
+                            env_key='configure_pending', \
                             description='Configures pending packages if they were not configured at installation time.'),
-                    AvailableArgument(arg='--reload-repodb', env_key='reload_repodb', \
+                    
+                    AvailableArgument(arg='--reload-repodb', \
+                            env_key='reload_repodb', \
                             description='Reloads previous repository database from backup.'),
-                    AvailableArgument(arg='--verbose', env_key='verbose', description='Prints more output if it is possible.'),
-                    AvailableArgument(arg='--quiet', env_key='quiet', description='Hides output if it is possible.'),
-                    AvailableArgument(arg='--debug', env_key='debug', description='Enables debug mode.'),
+                    
+                    AvailableArgument(arg='--verbose', \
+                            env_key='verbose', \
+                            description='Prints more output if it is possible.'),
+                    
+                    AvailableArgument(arg='--quiet', \
+                            env_key='quiet', \
+                            description='Hides output if it is possible.'),
+                    
+                    AvailableArgument(arg='--debug', \
+                            env_key='debug', \
+                            description='Enables debug mode.'),
         ]
+
         self.available_arguments = []
         self.available_arguments.extend(self.other_arguments)
         self.available_arguments.extend(self.build_arguments)
@@ -165,40 +277,52 @@ class CommandLineParser(Actions):
         }
 
     def usage(self):
-        '''Prints available commands with their descriptions.'''
+        """
+        Prints available commands with their descriptions.
+        """
         out.normal("lpms -- %s Package Management System %s\n" % \
-                (out.color("L", "red"), out.color("v"+VERSION, "green")))
+                (out.color("L", "red"), out.color("v"+__VERSION__, "green")))
         out.write("In order to build a package:\n\n")
         out.write(" # lpms <package-name> <extra-command>\n\n")
         out.write("To see extra commands use --help parameter.\n\n")
         out.write("Build related arguments:\n")
         for build_argument in self.build_arguments:
             if hasattr(build_argument, "short"):
-                out.write(('%-29s %-10s : %s\n' % (out.color(build_argument.arg, 'green'), \
-                        out.color(build_argument.short, 'green'), build_argument.description)))
+                out.write(('%-29s %-10s : %s\n' % \
+                        (out.color(build_argument.arg, 'green'), \
+                        out.color(build_argument.short, 'green'), \
+                        build_argument.description)))
             else:
-                out.write(('%-32s : %s\n' % (out.color(build_argument.arg, 'green'), build_argument.description)))
+                out.write(('%-32s : %s\n' % \
+                        (out.color(build_argument.arg, 'green'), \
+                        build_argument.description)))
 
         out.write("\nOther arguments:\n")
         for other_argument in self.other_arguments:
             if hasattr(other_argument, "short"):
-                out.write(('%-29s %-10s : %s\n' % (out.color(other_argument.arg, 'green'), \
-                        out.color(other_argument.short, 'green'), other_argument.description)))
+                out.write(('%-29s %-10s : %s\n' % \
+                        (out.color(other_argument.arg, 'green'), \
+                        out.color(other_argument.short, 'green'), \
+                        other_argument.description)))
             else:
-                out.write(('%-32s : %s\n' % (out.color(other_argument.arg, 'green'), \
+                out.write(('%-32s : %s\n' % \
+                        (out.color(other_argument.arg, 'green'), \
                         other_argument.description)))
 
         # Do nothing after showing help message
         sys.exit(0)
 
     def handle_arguments(self):
-        '''Parses arguments and sets some variables'''
+        """
+        Parses arguments and sets some variables
+        """
         def append_argument():
             if hasattr(available_argument, "action"):
                 if not available_argument.action in self.router:
                     self.router.append(available_argument.action)
             else:
                 setattr(self.instruction, available_argument.env_key, True)
+
         self.invalid = []
         for argument in self.arguments:
             if not argument.startswith("-"):
@@ -221,17 +345,22 @@ class CommandLineParser(Actions):
                 for item in argument[1:]:
                     valid = False
                     for available_argument in self.available_arguments:
-                        if hasattr(available_argument, "short") and available_argument.short[1:] == item:
+                        cond = (hasattr(available_argument, "short") \
+                                and available_argument.short[1:] == item)
+                        if cond:                           
                             append_argument()
                             valid = True
                             break
                     if not valid:
                         self.invalid.append("-"+item)
         if self.invalid:
-            out.warn("these commands seem invalid: %s" % ", ".join(self.invalid))
+            out.warn("these commands seem invalid: %s" % \
+                    ", ".join(self.invalid))
 
     def start(self):
-        '''Runs methods to perform user requests considering the rules'''
+        """
+        Runs methods to perform user requests considering the rules
+        """
         self.handle_arguments()
         action_plan = []
         instruction_modifier = []
@@ -253,6 +382,7 @@ class CommandLineParser(Actions):
         if instruction_modifier:
             for action in instruction_modifier:
                 getattr(self, action)()
+
         # Sort actions
         result = topsort(action_plan)
         result.reverse()
@@ -266,5 +396,6 @@ class CommandLineParser(Actions):
         self.operations = result
         for action in result:
             if hasattr(self, action):
+                # Run the function
                 getattr(self, action)()
                 self.operations.remove(action)
