@@ -66,59 +66,71 @@ colors = {
         'default'            : "\033[0m"
 }
 
+
 def scrub(string):
     p = re.compile('\033\[[0-9;]+m')
     return p.sub('', string)
+
 
 def color(msg, cl):
     if lpms.getopt("--no-color") or lpms.getopt("-n") or not conf.LPMSConfig().colorize:
         return msg
     return colors[cl] + msg + colors['default']
 
+
 def write(msg, log=True):
     sys.stdout.write(msg)
 
+
 def normal(msg, log=False, ch=None):
-    #lpms.logger.info(msg)
     if ch is None:
         ch = '\n'
     write(color(">> ", "brightgreen")+msg+ch)
 
+
 def error(msg, log=False, ch=None):
-    #lpms.logger.error(msg)
     if ch is None:
         ch = '\n'
     write(color("!! ", "brightred")+msg+ch)
 
+
 def warn(msg, log=False, ch=None):
-    #lpms.logger.warning(msg)
     if ch is None:
         ch = '\n'
     write(color("** ", "brightyellow")+msg+ch)
 
+
 def green(msg):
     write(color(msg, "green"))
+
 
 def red(msg):
     write(color(msg, "red"))
 
+
 def brightred(msg):
     write(color(msg, "brightred"))
+
 
 def brightgreen(msg):
     write(color(msg, "brightgreen"))
 
+
 def yellow(msg):
     write(color(msg, "brightyellow"))
+
 
 def brightwhite(msg):
     write(color(msg, "brightwhite"))
 
+
 def error_notify(msg):
     write(color(" * ", "red")+msg+"\n")
 
+
 def warn_notify(msg):
     write(color(" * ", "brightyellow")+msg+"\n")
+
 
 def notify(msg):
     write(color(" * ", "green")+msg+"\n")
