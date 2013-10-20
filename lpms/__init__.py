@@ -20,6 +20,7 @@ import sys
 import logging
 import inspect
 
+
 # firstly, override this for backward compatibility
 ###################################################
 from lpms import declarations
@@ -28,16 +29,18 @@ constants = values.val
 del values
 ###################################################
 
-from lpms import out
 
 def terminate(msg=None):
     if msg is not None:
-        sys.stdout.write(out.color(msg, "brightred")+'\n')
+        sys.stdout.write(msg+'\n')
+    sys.stdout.write("quitting...\n")
     raise SystemExit(0)
+
 
 def set_sandbox_paths():
     '''Set writable sandbox paths for build operation'''
     os.environ['SANDBOX_PATHS'] = ";".join(constants.sandbox_paths)
+
 
 def getopt(opt, like=False):
     if like:
@@ -49,6 +52,7 @@ def getopt(opt, like=False):
     if opt in sys.argv:
         return True
 
+
 # FIXME-1: The following is an ungodly hack. Fuck it, remove it, re-write it!
 # FIXME-2: improve this for detalied debug output.
 def catch_error(err, stage=0):
@@ -58,10 +62,9 @@ def catch_error(err, stage=0):
             continue
         for item in backtree:
             if item[-1] is None and item[-2] is None:
-                out.brightred("\n>> internal error:\n")
+                sys.stdout.write("\n>> internal error:\n")
                 index = backtree.index(item)+1
-                out.write(" "+out.color(item[3]+" ("+"line "+str(backtree[index][2])+")", \
-                        "red")+": "+str(err)+'\n\n')
+                sys.stdout.write(" "+item[3]+" ("+"line "+str(backtree[index][2])+")"+": "+str(err)+'\n\n')
                 terminate()
     print(err)
     terminate()
@@ -73,7 +76,6 @@ def init_logging():
     if not os.access(constants.logfile, os.F_OK):
         f = open(constants.logfile, 'w')
         f.close()
-
     # initialize
     if os.access(constants.logfile, os.W_OK):
         logger = logging.getLogger(__name__)
@@ -82,15 +84,14 @@ def init_logging():
         hdlr.setFormatter(formatter)
         logger.addHandler(hdlr)
         logger.setLevel(logging.INFO)
-    
     return logger
+
 
 # lpms uses utf-8 encoding as default
 reload(sys)
 sys.setdefaultencoding('utf-8')
-
 # initialize logging feature
 logger = init_logging()
-
 # set writable sandbox paths for various operations
 set_sandbox_paths()
+

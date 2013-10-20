@@ -22,15 +22,19 @@ import os
 # lpms Libraries
 import lpms
 
+# lpms toolkit
 from lpms import out
 from lpms import conf
 from lpms import utils
+from lpms import sorter
 from lpms import constants as cst
 
+# Database api
 from lpms.db import api
+
+# Get internal datatypes
 from lpms.types import LCollect
 from lpms.types import PackageItem
-from lpms.resolver import topological_sorting
 
 # Get lpms' exceptions
 from lpms.exceptions import ConflictError
@@ -40,11 +44,17 @@ from lpms.exceptions import ConditionConflict
 from lpms.exceptions import UnavailablePackage
 
 class DependencyResolver(object):
-    '''Dependency resolving engine for lpms'''
-    def __init__(self, packages, cmd_options=[], \
-            custom_options={}, use_new_options=False):
+    '''
+    Dependency resolver for lpms.
+    This class collect information from databases an runs sorter
+    module to sort packages.
+    '''
+    def __init__(self, packages,
+            command_line_options=[],
+            custom_options={},
+            use_new_options=False):
         self.packages = packages
-        self.cmd_options = cmd_options
+        self.command_line_options = command_line_options
         self.custom_options = custom_options
         self.use_new_options = use_new_options
         self.conflicts = {}
@@ -69,9 +79,9 @@ class DependencyResolver(object):
         self.global_options = set()
         self.forbidden_options = set()
         self.dependency_keywords = (
-                'static_depends_build', 
-                'static_depends_runtime', 
-                'static_depends_conflict', 
+                'static_depends_build',
+                'static_depends_runtime',
+                'static_depends_conflict',
                 'static_depends_postmerge',
                 'optional_depends_build',
                 'optional_depends_runtime',
@@ -465,11 +475,11 @@ class DependencyResolver(object):
         if package.id in self.user_defined_options:
             for option in self.user_defined_options[package.id]:
                 process_option(option)
-        
+
         # Set the options that given via command line
-        for cmd_option in self.cmd_options:
-            if not cmd_option in options:
-                process_option(cmd_option)
+        for command_line_option in self.command_line_options:
+            if not command_line_option in options:
+                process_option(command_line_option)
 
         # Set the options that given via command line with package name and version
         for keyword in self.custom_options:
@@ -657,18 +667,18 @@ class DependencyResolver(object):
 
         try:
             # Sort packages for building operation
-            plan = topological_sorting.topsort(self.package_query)
-        except topological_sorting.CycleError as err:
+            plan = sorter.topsort(self.package_query)
+        except sorter.CycleError as err:
             answer, num_parents, children = err
             out.brightred("Circular dependency detected:\n")
-            for items in topological_sorting.find_cycles(parent_children=children):
+            for items in sorter.find_cycles(parent_children=children):
                 for item in items:
                     package = self.repodb.find_package(package_id=item).get(0)
                     out.write(package.repo+"/"+package.category+"/"+package.name+"-"\
                             +package.version+":"+package.slot+"  ")
             out.write("\n")
             raise DependencyError
-        
+
         # This part detects inline option conflicts
         removed = {}
         option_conflict = set()
@@ -714,13 +724,15 @@ class DependencyResolver(object):
                     self.conditional_versions[value["owner_id"]].append(my_item)
 
         # TODO: I think I must use most professional way for ignore-depends feature.
-        if lpms.getopt("--ignore-depends"):
-            return self.packages, \
-                    self.package_dependencies, \
-                    self.package_options, \
-                    self.inline_option_targets, \
-                    self.conditional_versions, \
-                    self.conflicts
+        if lpms.getopt("--ignore-deps"):
+            result = LCollect()
+            result.packages = self.packages
+            result.dependencies = self.package_dependencies
+            result.options = self.package_options
+            result.inline_option_targets = self.inline_option_targets
+            result.conditional_versions = self.conditional_versions
+            result.conflicts = self.conflicts
+            return result
 
         # Workaround for postmerge dependencies
         for (id_dependency, id_package) in self.postmerge_dependencies:
@@ -845,9 +857,12 @@ class DependencyResolver(object):
             for single_package in single_packages:
                 final_plan.insert_into(0, single_package)
 
-        return final_plan, \
-                self.package_dependencies, \
-                self.package_options, \
-                self.inline_option_targets, \
-                self.conditional_versions, \
-                self.conflicts
+        # Create LCollect object to manage package dependency data
+        operation_plan = LCollect()
+        operation_plan.packages = final_plan
+        operation_plan.dependencies = self.package_dependencies
+        operation_plan.options = self.package_options
+        operation_plan.inline_option_targets = self.inline_option_targets
+        operation_plan.conditional_versions = self.conditional_versions
+        operation_plan.conflicts = self.conflicts
+        return operation_plan
