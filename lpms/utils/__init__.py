@@ -1193,3 +1193,20 @@ def best_version(versions):
     for ver in listed_vers:
         if listed_vers[ver] == sorted(listed_vers.values())[-1]:
             return ver
+
+def drive_ccache(config=None):
+    '''Set ccache related environment variables'''
+    # ccache facility
+    if config is None:
+        config = conf.LPMSConfig()
+    ccache_path = config.ccache_path if hasattr(config, "ccache_path") else cst.ccache_path
+    if os.access(ccache_path, os.R_OK):
+        os.environ["PATH"] = "%s:%(PATH)s" % (ccache_path, os.environ)
+        if hasattr(config, "ccache_dir"):
+            os.environ["CCACHE_DIR"] = config.ccache_dir
+        else:
+            os.environ["CCACHE_DIR"] = cst.ccache_dir
+        # sandboxed processes can access to CCACHE_DIR.
+        os.environ["SANDBOX_PATHS"] = os.environ['CCACHE_DIR']+":%(SANDBOX_PATHS)s" % os.environ
+        return True
+    return False

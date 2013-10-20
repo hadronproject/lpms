@@ -62,8 +62,8 @@ class ConstantValues:
         self.val.sets_dir = "sets"
         self.val.user_sets_dir = self.val.user_dir+"/"+self.val.sets_dir
         self.val.repo_conf = "/etc/lpms/repo.conf"
-        self.val.configure_pending_file = "var/tmp/configure_pending.lpms"
-        self.val.merge_conf_file = "var/tmp/merge_conf_file.lpms"
+        self.val.configure_pending_file = "var/db/lpms/configure_pending.db"
+        self.val.merge_conf_file = "var/db/lpms/merge_conf.db"
         self.val.repo_file = "info/repo.conf"
         self.val.repo_info = "info"
         self.val.categories = "categories.xml"
@@ -99,6 +99,7 @@ class ConstantValues:
         self.val.sandbox_paths = (self.val.repos, self.val.extract_dir, self.val.src_cache)
         self.val.sandbox_exception_stages = ['post_install', 'post_remove', 'pre_remove', 'pre_merge']
         self.val.slot_indicator = ":"
+        self.val.ccache_path = '/usr/lib/ccache/bin'
 
         # lpms.conf is unhealty in this case.
         with open(self.val.config_dir+"/"+self.val.lpms_conf_file) as data:

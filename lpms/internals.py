@@ -1,4 +1,4 @@
-# Copyright 2009 - 2011 Burak Sezer <purak@hadronproject.org>
+# Copyright 2009 - 2014 Burak Sezer <purak@hadronproject.org>
 # 
 # This file is part of lpms
 #  
@@ -20,14 +20,27 @@ import sys
 import traceback
 
 from lpms import exceptions
-from lpms import constants as cst 
+from lpms import constants as cst
+
 
 class Environment(object):
-    '''Main object container for lpms operations'''
-    pass
+    """
+    Main object container for package related operations
+    """
+    def __getattr__(self, key):
+        if key in self.__dict__:
+            return self.__dict__[key]
+        return None
 
-class InternalFuncs(object):
-    '''The starting point of an lpms operation'''
+    @property
+    def raw(self):
+        return self.__dict__
+
+
+class InternalFunctions(object):
+    """
+    An object that stores internal environment
+    """
     def __init__(self):
         self.env = Environment()
         self.env.libraries = []
@@ -37,28 +50,44 @@ class InternalFuncs(object):
         self.env.sandbox_valid_dirs = []
         self.env.backup = []
 
-        setattr(self.env, "standard_procedure", True)
-        setattr(self.env, "primary_library", None)
+        primitives = {
+                "primary_library": None,
+                "standard_procedure": True,
+                "get": self.get, 
+                "BuiltinError": exceptions.BuiltinError
+        }
 
-        # FIXME: use a better method for environment functions.
-        builtin_funcs = {"get": self.get, "BuiltinError": exceptions.BuiltinError}
-        for key in builtin_funcs:
-            setattr(self.env, key, builtin_funcs[key])
+        for key in primitives:
+            setattr(self.env, key, primitives[key])
 
         for builtin_file in cst.builtin_files:
             if not self.import_script(os.path.join(cst.lpms_path, builtin_file)):
-                print("there are some problems in lpms' builtin libraries.")
-                print("this may be a serious bug. you should report it.")
+                sys.stdout.write(">> An error occured while importing built-in functions of lpms.\n")
+                sys.stdout.write("Please log in to http://bugs.hadronproject.org")
+                sys.stdout.write("and report that error to lpms team.")
+                sys.stdout.write("Bye ;)\n")
                 raise SystemExit(0)
 
     def import_script(self, script_path):
+        """
+        Compiles and imports given script
+        """
         try:
-            exec compile(open(script_path).read(), "error", "exec") in self.env.__dict__
+            if hasattr(self, "env"):
+                exec compile(open(script_path).read(), \
+                        "error", "exec") in self.env.raw
+            else:
+                exec compile(open(script_path).read(), \
+                        "error", "exec") in self.environment.raw
         except:
+            # TODO: We must handle exceptions more cleverly
             traceback.print_exc()
             return False
         return True
 
     def get(self, *libs):
+        """
+        Stores given library names to import in the next stages
+        """
         self.env.libraries.extend(libs)
 

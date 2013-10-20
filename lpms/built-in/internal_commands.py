@@ -1,4 +1,4 @@
-# Copyright 2009 - 2011 Burak Sezer <purak@hadronproject.org>
+# Copyright 2009 - 2014 Burak Sezer <purak@hadronproject.org>
 # 
 # This file is part of lpms
 #  
@@ -31,6 +31,9 @@ from lpms.fetcher import URLFetcher
 from lpms import constants as cst
 
 def safety_valve(fn):
+    """
+    Apply rules for given function
+    """
     def wrapper(path, **kwargs):
         allowed_paths = [install_dir, build_dir, \
                 os.path.dirname(install_dir), os.path.dirname(build_dir)]
@@ -61,21 +64,41 @@ def safety_valve(fn):
         return path
     return wrapper
 
+
 @safety_valve
 def fix_target_path(target, allowed_paths=None, allowed_stages=None):
+    """
+    Normalizes given target
+    """
     return target, allowed_paths, allowed_stages
+
 
 @safety_valve
 def fix_source_path(target, allowed_paths=None, allowed_stages=None):
+    """
+    Normalizes given target
+    """
     return target, allowed_paths, allowed_stages
 
+
 def unset_env_variables():
+    """
+    Unsets all of the environment variables
+    """
     return utils.unset_env_variables()
 
+
 def unset_env_variable(variable):
+    """
+    Unsets given environment variable
+    """
     return utils.unset_env_variable(variable)
 
+
 def addflag(fn):
+    """
+    Decorator function for flag modifing functions
+    """
     def wrapped(flag):
         name = fn.__name__.split("_")[1].upper()
         result = get_env(name)+" "+fn(flag)
@@ -83,19 +106,35 @@ def addflag(fn):
         return result
     return wrapped
 
+
 @addflag
 def append_cflags(flag):
+    """
+    Appends a new CFLAGS to environment
+    """
     return flag
+
 
 @addflag
 def append_cxxflags(flag):
+    """
+    Appends a new CXXFLAGS to environment
+    """
     return flag
+
 
 @addflag
 def append_ldflags(flag):
+    """
+    Appends a new LDFLAG item to environment
+    """
     return flag
 
+
 def hasflag(fn):
+    """
+    Wrapper function to check existing environment flags
+    """
     def wrapped(flag):
         name = fn.__name__.split("_")[1].upper()
         my_env_var = get_env(name)
@@ -103,20 +142,36 @@ def hasflag(fn):
                 in my_env_var.split(" ")]
     return wrapped
 
+
 @hasflag
 def has_cflags(flag):
+    """
+    Checks CFLAGS existence
+    """
     return flag
+
 
 @hasflag
 def has_cxxflags(flag):
+    """
+    Checks CXXFLAGS existence
+    """
     return flag
+
 
 @hasflag
 def has_ldflags(flag):
+    """
+    Checks LDFLAGS existence
+    """
     # FIXME: This may be problematic
     return flag
 
+
 def append_config(option, positive, negative=None):
+    """
+    Generates a new package control option
+    """
     if opt(option):
         config += positive+" "
     else:
@@ -131,7 +186,11 @@ def append_config(option, positive, negative=None):
             positive = positive.replace("--with", "--without")
             config += positive+" "
 
+
 def binutils_cmd(command):
+    """
+    Checks a binutils command's existence
+    """
     try:
         host = os.environ['HOST']
     except KeyError:
@@ -151,17 +210,33 @@ def binutils_cmd(command):
 
     return cmd
 
+
 def current_linux_kernel():
+    """
+    Returns Linux kernel version number
+    """
     return os.uname()[2]
 
+
 def current_python():
+    """
+    Returns version number of Python
+    """
     (major, minor) = sys.version_info[:2]
     return 'python%s.%s' % (major, minor)
 
+
 def get_arch():
+    """
+    Returns operating system architecture
+    """
     return os.uname()[-1]
 
+
 def delflag(fn):
+    """
+    Wrapper function to delete flags from the environment
+    """
     def wrapped(flag):
         name = fn.__name__.split("_")[1].upper()
         result = " ".join(get_env(name).split(flag))
@@ -169,17 +244,21 @@ def delflag(fn):
         return result
     return wrapped
 
+
 @delflag
 def del_cflags(flag):
     return flag
+
 
 @delflag
 def del_cxxflags(flag):
     return flag
 
+
 @delflag
 def del_ldflags(flag):
     return flag
+
 
 def insdoc(*sources):
     if slot != "0":
@@ -192,20 +271,27 @@ def insdoc(*sources):
         srcs.extend(glob.glob(joinpath(build_dir, source)))
     return shelltools.install_readable(srcs, target)
 
+
 def insinfo(*sources):
     target = fix_target_path("/usr/share/info")
     shelltools.makedirs(os.path.dirname(target))
     return shelltools.install_readable(sources, target)
+
 
 def inslib(source, target='/usr/lib', permission=0755):
     target = fix_target_path(target)
     shelltools.makedirs(os.path.dirname(target))
     return shelltools.install_library(source, target, permission)
 
+
 def opt(option):
-    if isinstance(applied_options, set):
-        return option in applied_options
+    try:
+        if isinstance(applied_options, set):
+            return option in applied_options
+    except NameError:
+        return False
     return False
+
 
 def config_decide(option, secondary=None, appends=['--enable-', '--disable-']):
     result = []
@@ -233,14 +319,18 @@ def config_decide(option, secondary=None, appends=['--enable-', '--disable-']):
 
     return " ".join(result)
 
+
 def config_enable(option, secondary=None):
     return config_decide(option, secondary)
+
 
 def config_with(option, secondary=None):
     return config_decide(option, secondary, appends=['--with-', '--without-'])
 
+
 def export(variable, value):
     os.environ[variable] = value
+
 
 def unpack(*filenames, **kwargs):
     location = kwargs.get("location", dirname(build_dir))
@@ -250,11 +340,13 @@ def unpack(*filenames, **kwargs):
         path = joinpath(cst.src_cache, filename)
         internal_extract(path, location, partial)
 
+
 def fetch(*urls, **params):
     location = params.get("location", None)
     if not URLFetcher().run(urls, location):
         error("download failed, please check your spec.")
         lpms.terminate()
+
 
 def get_env(value):
     try:
@@ -263,56 +355,73 @@ def get_env(value):
         warn("%s is not an environment variable." % value)
         return ""
 
+
 def makedirs(target):
     shelltools.makedirs(fix_target_path(target))
+
 
 def touch(path):
     shelltools.touch(fix_target_path(path))
 
+
 def echo(content, target):
     shelltools.echo(content, fix_target_path(target))
 
+
 def isfile(target):
     return shelltools.is_file(target)
+
 
 def isdir(target):
     return shelltools.is_dir(target)
 
+
 def realpath(target):
     return shelltools.real_path(target)
+
 
 def basename(target):
     return shelltools.basename(target)
 
+
 def dirname(target):
     return shelltools.dirname(target)
+
 
 def isempty(target):
     return shelltools.is_empty(target)
 
+
 def ls(target):
     return shelltools.listdir(target)
+
 
 def islink(target):
     return shelltools.is_link(target)
 
+
 def isfile(target):
     return shelltools.is_file(target)
 
+
 def isexists(target):
     return shelltools.is_exists(target)
+
 
 def cd(target=None):
     target = fix_source_path(target, allowed_paths=[src_cache, filesdir])
     shelltools.cd(target)
 
+
 def copytree(source, target, sym=True):
     source = fix_source_path(source, allowed_paths=[filesdir, src_cache])
     shelltools.copytree(source, fix_target_path(target), sym)
 
+
 def copy(source, target, sym=True):
     source = fix_source_path(source, allowed_paths=[filesdir, src_cache])
     shelltools.copy(source, fix_target_path(target), sym)
+
 
 def move(source, target):
     target, source = fix_target_path(target), fix_source_path(source)
@@ -320,11 +429,13 @@ def move(source, target):
         makedirs(target)
     shelltools.move(source, target)
 
+
 def insinto(source, target, target_file='', sym=True):
     target = fix_target_path(target)
     shelltools.makedirs(os.path.dirname(target))
     shelltools.insinto(fix_source_path(source, allowed_paths=[filesdir, src_cache]), \
             target, install_dir, target_file, sym)
+
 
 def insfile(source, target):
     target = fix_target_path(target)
@@ -332,11 +443,13 @@ def insfile(source, target):
     shelltools.makedirs(os.path.dirname(target))
     return shelltools.install_readable([source], target)
 
+
 def insexe(source, target='/usr/bin'):
     target = fix_target_path(target)
     shelltools.makedirs(os.path.dirname(target))
     source = fix_source_path(source, allowed_paths=[filesdir, src_cache])
     return shelltools.install_executable([source], target)
+
 
 def makesym(source, target, ignore_fix_target=False):
     if not ignore_fix_target:
@@ -349,8 +462,10 @@ def makesym(source, target, ignore_fix_target=False):
         shelltools.remove_file(target)
     shelltools.make_symlink(source, target)
 
+
 def rename(source, target):
     shelltools.rename(fix_source_path(source), fix_target_path(target))
+
 
 def rmfile(target):
     paths = glob.glob(fix_target_path(target))
@@ -359,6 +474,7 @@ def rmfile(target):
     for path in paths:
         shelltools.remove_file(path)
 
+
 def rmdir(target):
     paths = glob.glob(fix_target_path(target))
     if not paths:
@@ -366,21 +482,26 @@ def rmdir(target):
     for path in paths:
         shelltools.remove_dir(path)
 
+
 def setmod(*parameters):
     if not system('chmod %s' % " ".join(parameters)):
         lpms.terminate('setmod %s' % " ".join(parameters)+" failed.")
+
 
 def setowner(*parameters):
     if not system('chown %s' % " ".join(parameters)):
         lpms.terminate('setowner %s' % " ".join(parameters)+" failed.")
 
+
 def setgroup(*parameters):
     if not system('chgrp %s' % " ".join(parameters)):
         lpms.terminate('setgroup %s' % " ".join(parameters)+" failed.")
 
+
 def sed(*parameters):
     if not system('sed %s' % " ".join(parameters)):
         lpms.terminate('sed %s' % " ".join(parameters)+" failed.")
+
 
 # FIXME: Use decorator pattern to do this.
 # create a run_binary function for running a shell command from the spec
@@ -388,25 +509,29 @@ def sed(*parameters):
 # * svn
 # * hg
 # * chgrp/sed/chmod/chown
-
 def svn(*parameters):
     svn_binary = utils.executable_path("svn")
     if not os.access(svn_binary, os.X_OK):
         raise exceptions.NotExecutable("%s is not executable." % svn_binary)
     if not system('%s %s' % (svn_binary, " ".join(parameters))):
-        raise exceptions.CommandFailed('command failed: %s %s' % (svn_binary, " ".join(parameters)))
+        raise exceptions.CommandFailed('command failed: %s %s' % \
+                (svn_binary, " ".join(parameters)))
     return True
+
 
 def git(*parameters):
     git_binary = utils.executable_path("git")
     if not os.access(git_binary, os.X_OK):
         raise exceptions.NotExecutable("%s is not executable." % git_binary)
     if not system('%s %s' % (git_binary, " ".join(parameters))):
-        raise exceptions.CommandFailed('command failed: %s %s' % (git_binary, " ".join(parameters)))
+        raise exceptions.CommandFailed('command failed: %s %s' % \
+                (git_binary, " ".join(parameters)))
     return True
+
 
 def pwd():
     return os.getcwd()
+
 
 def apply_patch(patches, level, reverse):
     for patch in patches:
@@ -414,6 +539,7 @@ def apply_patch(patches, level, reverse):
         ret = shelltools.system("patch --remove-empty-files --no-backup-if-mismatch %s -p%d -i \"%s\"" % 
                 (reverse, level, patch), show=False)
         if not ret: return False
+
 
 def patch(*args, **kwarg):
     level = 0; reverse = ""
@@ -437,7 +563,8 @@ def patch(*args, **kwarg):
     patches = []
     for patch_name in args:
         if repo != "local":
-            src = os.path.join(cst.repos, repo, category, name, cst.files_dir, patch_name)
+            src = os.path.join(cst.repos, repo, category, \
+                    name, cst.files_dir, patch_name)
             if "location" in kwarg:
                 src = os.path.join(kwarg.get("location"), patch_name)
         else:
@@ -464,6 +591,7 @@ def patch(*args, **kwarg):
     if apply_patch(patches, level, reverse) is not None:
         raise BuildError("patch failed.")
 
+
 def system(*args, **kwargs):
     result = shelltools.system(" ".join(args), stage=current_stage, \
             sandbox=False if current_stage in cst.sandbox_exception_stages else None)
@@ -479,23 +607,29 @@ def system(*args, **kwargs):
         return result[0]
     return result
 
+
 def joinpath(*args):
     return "/".join(args)
 
-# output commands
 
+# output commands
 def notify(msg):
     out.notify(msg)
+
 
 def warn(msg):
     out.warn_notify(msg)
 
+
 def error(msg):
     out.error(msg)
+
 
 def write(msg):
     out.write(msg)
 
+
 def color(msg, color):
     return out.color(msg, color)
+
 

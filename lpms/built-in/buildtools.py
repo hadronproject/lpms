@@ -28,11 +28,16 @@ from lpms import constants as cst
 
 
 def standard_extract():
+    """
+    Runs standard extract procedure
+    """
     target = os.path.dirname(build_dir)
     for url in extract_plan:
-        out.write("   %s %s\n" % (out.color(">", "green"), os.path.join(cfg.LPMSConfig().src_cache,\
-                    os.path.basename(url))))
-        archive_path = os.path.join(cfg.LPMSConfig().src_cache, os.path.basename(url))
+        out.write("   %s %s\n" % (out.color(">", "green"), \
+                os.path.join(cfg.LPMSConfig().src_cache, \
+                os.path.basename(url))))
+        archive_path = os.path.join(cfg.LPMSConfig().src_cache, \
+                os.path.basename(url))
         try:
             partial = [atom.strip() for atom in partial.split(" ")
                     if atom != "#"]
@@ -40,17 +45,21 @@ def standard_extract():
         except NameError:
             archive.extract(str(archive_path), str(target))
 
+
 def standard_configure(*parameters):
     '''Runs standard configuration function'''
     return conf(*parameters)
+
 
 def standard_install(parameters='', arg='install'):
     '''Runs standard installation function'''
     return linstall(parameters='', arg='install')
 
+
 def standard_build(*parameters):
     '''Runs standard build function'''
     return make(*parameters)
+
 
 def conf(*args, **kwargs):
     '''Runs configure script with standard and given parameters'''
@@ -73,7 +82,8 @@ def conf(*args, **kwargs):
                 %s' % (conf_command, cst.prefix, \
                 cfg.LPMSConfig().CHOST, cst.man, \
                 cst.info, cst.data, \
-                cst.conf, cst.localstate, cst.libexec, cst.libdir, " ".join(args))
+                cst.conf, cst.localstate, \
+                cst.libexec, cst.libdir, " ".join(args))
             args = [arg for arg in args.split(" ") if arg.strip()]
             out.notify("running %s" % "\n\t".join(args))
             if not system(" ".join(args)):
@@ -82,6 +92,7 @@ def conf(*args, **kwargs):
             raise BuildError("configure script is not executable.")
     else:
         out.warn("no configure script found.")
+
 
 def raw_configure(*parameters, **kwargs):
     '''Runs configure script with only given parameters'''
@@ -94,6 +105,7 @@ def raw_configure(*parameters, **kwargs):
     if not system("%s %s" % (conf_command, " ".join(parameters))):
         raise BuildError("raw_configure failed.")
 
+
 def make(*parameters, **kwargs):
     '''Runs standard build command with given parameters'''
     if "j" in kwargs:
@@ -105,6 +117,7 @@ def make(*parameters, **kwargs):
     if not system("make %s %s" % (str(jobs), " ".join(parameters))):
         raise BuildError("make failed")
 
+
 def raw_install(parameters = '', arg='install'):
     '''Runs installation function with only given parameters'''
     out.notify("running make %s %s" % (parameters, arg))
@@ -115,6 +128,7 @@ def raw_install(parameters = '', arg='install'):
         dir_file = "%s/usr/share/info/dir" % install_dir
         if os.path.isfile(dir_file):
             shelltools.remove_file("%s/usr/share/info/dir" % install_dir)
+
 
 def linstall(parameters='', arg='install'):
     '''Runs standard installation function with given parameters and commands'''
@@ -147,12 +161,14 @@ def linstall(parameters='', arg='install'):
         if os.path.isfile(dir_file):
             shelltools.remove_file("%s/usr/share/info/dir" % install_dir)
 
+
 def aclocal(*parameters):
     '''Runs aclocal with given parameters'''
     command = " ".join(parameters)
     out.notify("running aclocal %s" % command)
     if not system("aclocal %s" % command):
         raise BuildError("aclocal failed.")
+
 
 def intltoolize(*parameters):
     '''Runs intltoolize with given parameters'''
@@ -161,12 +177,14 @@ def intltoolize(*parameters):
     if not system("intltoolize %s" % command):
         raise BuildError("intltoolize failed.")
 
+
 def libtoolize(*parameters):
     '''Runs libtoolize with given parameters'''
     command = " ".join(parameters)
     out.notify("running libtoolize %s" % command)
     if not system("libtoolize %s" % command):
         raise BuildError("libtoolize failed.")
+
 
 def autoconf(*parameters):
     '''Runs autoconf with given parameters'''
@@ -175,12 +193,14 @@ def autoconf(*parameters):
     if not system("autoconf %s" % command):
         raise BuildError("autoconf failed.")
 
+
 def autoreconf(*parameters):
     '''Runs autoreconf with given parameters'''
     command = " ".join(parameters)
     out.notify("running autoreconf %s" % command)
     if not system("autoreconf %s" % command):
         raise BuildError("autoreconf failed.")
+
 
 def automake(*parameters):
     '''Runs automake with given parameters'''
@@ -189,6 +209,7 @@ def automake(*parameters):
     if not system("automake %s" % command):
         raise BuildError("automake failed.")
 
+
 def autoheader(*parameters):
     '''Runs autoheader with given parameters'''
     command = " ".join(parameters)
@@ -196,8 +217,10 @@ def autoheader(*parameters):
     if not system("autoheader %s" % command):
         raise BuildError("autoheader failed.")
 
+
 def installd(*params, **kwargs):
     '''Runs raw_install with standard parameters'''
     arg = kwargs.get("arg", "install")
     raw_install("DESTDIR=%s %s" % (install_dir, " ".join(params)), arg)
+
 

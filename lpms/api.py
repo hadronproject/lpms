@@ -46,6 +46,7 @@ from lpms.exceptions import ConflictError
 from lpms.exceptions import LockedPackage
 from lpms.exceptions import DependencyError
 from lpms.exceptions import PackageNotFound
+from lpms.exceptions import InvalidRepository
 from lpms.exceptions import UnavailablePackage
 
 def configure_pending(packages, instruct):
@@ -87,63 +88,35 @@ def configure_pending(packages, instruct):
 
 def update_repository(cmdline):
     '''Runs repository update operation'''
-    if not utils.check_root(msg=False):
-        lpms.terminate("you must be root.")
-
     if utils.is_lpms_running():
-        out.warn("Ehmm... Seems like another lpms process is still going on. Please try again later.")
-        lpms.terminate()
+        raise AlreadyRunning
     update.main(cmdline)
 
-def syncronize(cmdline, instruct):
-    '''Syncronizes package repositories via any SCM
-    and run update and upgrade operations if wanted'''
-    if not utils.check_root(msg=False):
-        lpms.terminate("you must be root.")
-
-    query = cmdline
+def syncronization(names):
+    '''Syncronizes package repositories by use of any SCM'''
     available_repositories = utils.available_repositories()
-
-    if not cmdline:
-        query = available_repositories
-
-    for repo in query:
-        if repo in available_repositories:
-            sync.SyncronizeRepo().run(repo)
+    queue = names if names else available_repositories
+    for item in queue:
+        if item in available_repositories:
+            sync.SyncronizeRepo().run(item)
         else:
-            out.error("%s is not a valid repository." % repo)
-            lpms.terminate()
+            raise InvalidRepository("%s seems an invalid repository." % item)
 
-    if instruct["update"]:
-        update_repository(cmdline)
-
-    if instruct["upgrade"]:
-        upgrade_system(instruct)
-
-def upgrade_system(instruct):
+def upgrade_packages():
     '''Runs UpgradeSystem class and triggers API's build function
     if there are {upgrade, downgrade}able package'''
-    out.normal("scanning database for package upgrades...\n")
-    up = upgrade.UpgradeSystem()
+    upgrade_object = upgrade.UpgradeSystem()
     # prepares lists that include package names which 
     # are effected by upgrade operation.
-    up.select_pkgs()
+    upgrade_object.select_pkgs()
+    return upgrade_object.packages
 
-    if not up.packages:
-        out.write("no package found to upgrade.\n")
-        lpms.terminate()
-
-    pkgbuild(up.packages, instruct)
-
-def remove_package(pkgnames, instruct):
+def remove_package(pkgnames, instruction):
     '''Triggers remove operation for given packages'''
-    if not utils.check_root(msg=False):
-        lpms.terminate("you must be root.")
-
-    if instruct['like']:
+    if instruction.like:
         # handle shortened package names
         database = dbapi.InstallDB()
-        for item in instruct['like']:
+        for item in instruction.like:
             query = database.db.cursor.execute("SELECT name FROM package where name LIKE ?", (item,))
             results = query.fetchall()
             if results:
@@ -151,13 +124,13 @@ def remove_package(pkgnames, instruct):
                     pkgnames.append(result[0])
         del database
     file_relationsdb = dbapi.FileRelationsDB()
-    try:
-        packages = [GetPackage(pkgname, installdb=True).select() for pkgname in pkgnames]
-    except PackageNotFound as package_name:
-        out.error("%s seems not installed." % package_name)
-        lpms.terminate()
+    #try:
+    packages = [GetPackage(pkgname, installdb=True).select() for pkgname in pkgnames]
+    #except PackageNotFound as package_name:
+    #    out.error("%s seems not installed." % package_name)
+    #    lpms.terminate()
 
-    instruct['count'] = len(packages); index = 0;
+    instruction.count = len(packages); index = 0;
     # FIXME: I must create a new reverse dependency handler implementation
 
     #if instruct["show-reverse-depends"]:
@@ -184,20 +157,20 @@ def remove_package(pkgnames, instruct):
     #    else:
     #        out.warn("no reverse dependency found.")
 
-    if instruct['ask']:
+    if instruction.ask:
         out.write("\n")
         for package in packages:
             out.write(" %s %s/%s/%s-%s\n" % (out.color(">", "brightgreen"), out.color(package.repo, "green"), 
                 out.color(package.category, "green"), out.color(package.name, "green"), 
                 out.color(package.version, "green")))
         utils.xterm_title("lpms: confirmation request")
-        out.write("\nTotal %s package will be removed.\n\n" % out.color(str(instruct['count']), "green"))
-        if not utils.confirm("do you want to continue?"):
+        out.write("\nTotal %s package will be removed.\n\n" % out.color(str(instruction.count), "green"))
+        if not utils.confirm("Would you like to continue?"):
             out.write("quitting...\n")
             utils.xterm_title_reset()
             lpms.terminate()
-    
-    realroot = instruct["real_root"] if instruct["real_root"] else cst.root
+
+    realroot = instruction.new_root if instruction.new_root else cst.root
     config = conf.LPMSConfig()
     for package in packages:
         fdb = file_collisions.CollisionProtect(package.category, package.name, \
@@ -215,8 +188,8 @@ def remove_package(pkgnames, instruct):
                         out.write("\nquitting... use '--force-file-collision' to continue.\n")
                         lpms.terminate()
         index += 1;
-        instruct['index'] = index
-        if not initpreter.InitializeInterpreter(package, instruct, ['remove'], remove=True).initialize():
+        instruction.index = index
+        if not initpreter.InitializeInterpreter(package, instruction, ['remove'], remove=True).initialize():
             out.warn("an error occured during remove operation: %s/%s/%s-%s" % (package.repo, package.category, \
                     package.name, package.version))
         else:
@@ -297,15 +270,37 @@ class GetPackage:
             raise UnavailablePackage(self.package)
         return the_package
 
-def resolve_dependencies(packages, cmd_options, custom_options, use_new_options):
-    '''Resolve dependencies using fixit object. This function
-    prepares a full operation plan for the next stages'''
-    out.normal("resolving dependencies")
-    dependency_resolver = resolver.DependencyResolver(packages, cmd_options, \
-            custom_options, use_new_options)
+def resolve_dependencies(names, instruction):
+    '''
+    Resolve dependencies using fixit object. This function
+    prepares a full operation plan for the next stages
+    '''
+    packages = [GetPackage(name).select() for name in names]
+    command_line_options = instruction.command_line_options \
+            if instruction.command_line_options else []
+    custom_options = instruction.custom_options \
+            if instruction.custom_options else {}
+    dependency_resolver = resolver.DependencyResolver(
+            packages,
+            command_line_options,
+            custom_options,
+            instruction.use_new_options
+    )
+    # To trigger resolver, call create_operation_plan
     return dependency_resolver.create_operation_plan()
 
-def pkgbuild(pkgnames, instruct):
+def prepare_environment(package, instruction, **kwargs):
+    '''Prepares the system for building the package'''
+    prepare = build.Build(package, instruction,
+            dependencies=kwargs.get("dependencies", None),
+            options=kwargs.get("options", None),
+            conditional_versions=kwargs.get("conditional_versions", None),
+            conflicts=kwargs.get("conflicts", None),
+            inline_option_targets=kwargs.get("inline_option_targets", None)
+    )
+    return prepare.perform_operation()
+
+"""def package_build(package, instructions):
     '''Starting point of the build operation'''
     # Get package name or names if the user uses joker character
     if instruct['like']:
@@ -318,14 +313,14 @@ def pkgbuild(pkgnames, instruct):
                 for result in results:
                     pkgnames.append(result[0])
         del mydb
+    
     # Resolve dependencies and trigger package builder
     try:
-        plan = resolve_dependencies([GetPackage(pkgname).select() for pkgname in pkgnames], \
-                instruct['cmd_options'], \
-                instruct['specials'], \
-                instruct['use-new-opts']
-        )
-        build.Build().main(plan, instruct)
+        # Prepare a plan using dependency resolver
+        plan = resolve_dependencies([GetPackage(package).select() \
+                for package in packages], instructions)
+        # Run Build class to perform building task
+        return build.Build(plan, instructions).perform_operation()
     except PackageNotFound as package:
         out.error("%s count not found in the repository." % out.color(str(package), "red"))
     except ConflictError, DependencyError:
@@ -334,3 +329,4 @@ def pkgbuild(pkgnames, instruct):
     except UnavailablePackage as package:
         out.error("%s is unavailable for you." % out.color(str(package), "red"))
         out.error("this issue may be related with inconvenient arch or slotting.")
+"""
