@@ -22,6 +22,9 @@ import sys
 from lpms import out
 from lpms.sorter import topsort
 
+# Command line helpers
+from lpms.cli.search import run_search
+
 # Object oriented command line interpreter
 
 # Here, define some variables
@@ -81,6 +84,12 @@ class Actions(object):
         for option in self.argument_values["parse_options"].split(" "):
             if option.strip():
                 self.instruction.command_line_options.append(option)
+
+    def search(self):
+        """
+        Triggers search operation
+        """
+        run_search(self.names, self.subparameters)
 
 
 class CommandLineParser(Actions):
@@ -261,10 +270,20 @@ class CommandLineParser(Actions):
                             description='Enables debug mode.'),
         ]
 
+        # We must remove this parameter from invalid arguments list
+        # because this these commands will manage a cli script
+        self.subcommand_parameters = [
+                # For search
+                "--only-installed",
+                "--in-name",
+                "--in-summary"
+        ]
+
         self.available_arguments = []
         self.available_arguments.extend(self.other_arguments)
         self.available_arguments.extend(self.build_arguments)
         self.names = []
+        self.subparameters = []
         self.argument_values = {}
         self.invalid_arguments = []
 
@@ -340,7 +359,10 @@ class CommandLineParser(Actions):
                         valid = True
                         break
                 if not valid:
-                    self.invalid.append(argument)
+                    if argument in self.subcommand_parameters:
+                        self.subparameters.append(argument)
+                    else:
+                        self.invalid.append(argument)
             elif argument.startswith("-") and argument[1].isalpha():
                 for item in argument[1:]:
                     valid = False
@@ -353,6 +375,7 @@ class CommandLineParser(Actions):
                             break
                     if not valid:
                         self.invalid.append("-"+item)
+
         if self.invalid:
             out.warn("these commands seem invalid: %s" % \
                     ", ".join(self.invalid))
