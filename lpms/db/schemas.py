@@ -1,4 +1,4 @@
-# Copyright 2009 - 2012 Burak Sezer <purak@hadronproject.org>
+# Copyright 2009 - 2014 Burak Sezer <purak@hadronproject.org>
 # 
 # This file is part of lpms
 #  
@@ -14,6 +14,7 @@
 #   
 # You should have received a copy of the GNU General Public License
 # along with lpms.  If not, see <http://www.gnu.org/licenses/>.
+
 
 def installdb():
      return """
@@ -84,6 +85,7 @@ def installdb():
         CREATE INDEX package_name_version_slot_idx ON package (name, version, slot);
     """
 
+
 def repositorydb():
     return """
         CREATE TABLE package(
@@ -119,9 +121,10 @@ def repositorydb():
         CREATE INDEX name_version_slot_idx ON package (name, version, slot);
     """
 
+
 def file_relationsdb():
     return """
-        create table file_relations (
+        CREATE TABLE file_relations (
             repo text,
             category text,
             name text,
@@ -129,7 +132,9 @@ def file_relationsdb():
             file_path text,
             depend text
         );
+        CREATE INDEX repo_category_name_version_idx ON file_relations (repo, category, name, version);
     """
+
 
 def reverse_dependsdb():
     return """
@@ -141,9 +146,10 @@ def reverse_dependsdb():
         );
     """
 
+
 def filesdb():
     return """
-        create table files (
+        CREATE TABLE files (
             repo text,
             category text,
             name text,
@@ -158,4 +164,6 @@ def filesdb():
             realpath text,
             slot text
         );
+        CREATE INDEX repo_category_name_version_path_idx ON file_relations (repo, category, name, version, path);
     """
+
